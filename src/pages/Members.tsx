@@ -1,0 +1,107 @@
+import { useState } from 'react';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Input } from '@/components/ui/input';
+import { Search, Phone, Mail } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+
+const Members = () => {
+  const { t, language } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const members = [
+    { id: 1, name: language === 'bn' ? 'আব্দুল করিম' : 'Abdul Karim', phone: '01XXX-XXXXXX', email: 'abdul@email.com', memberSince: '2015' },
+    { id: 2, name: language === 'bn' ? 'মোহাম্মদ হাসান' : 'Mohammad Hasan', phone: '01XXX-XXXXXX', email: 'hasan@email.com', memberSince: '2016' },
+    { id: 3, name: language === 'bn' ? 'ফাতেমা খাতুন' : 'Fatema Khatun', phone: '01XXX-XXXXXX', email: 'fatema@email.com', memberSince: '2017' },
+    { id: 4, name: language === 'bn' ? 'রহিম উদ্দিন' : 'Rahim Uddin', phone: '01XXX-XXXXXX', email: 'rahim@email.com', memberSince: '2018' },
+    { id: 5, name: language === 'bn' ? 'আয়েশা বেগম' : 'Ayesha Begum', phone: '01XXX-XXXXXX', email: 'ayesha@email.com', memberSince: '2019' },
+    { id: 6, name: language === 'bn' ? 'করিম মিয়া' : 'Karim Mia', phone: '01XXX-XXXXXX', email: 'karim@email.com', memberSince: '2020' },
+    { id: 7, name: language === 'bn' ? 'জাহানারা খাতুন' : 'Jahanara Khatun', phone: '01XXX-XXXXXX', email: 'jahanara@email.com', memberSince: '2021' },
+    { id: 8, name: language === 'bn' ? 'সাইফুল ইসলাম' : 'Saiful Islam', phone: '01XXX-XXXXXX', email: 'saiful@email.com', memberSince: '2022' },
+  ];
+
+  const filteredMembers = members.filter(member =>
+    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    member.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1">
+        {/* Hero */}
+        <section className="py-20 md:py-28 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+              {t('members.title')}
+            </h1>
+            <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto">
+              {language === 'bn' 
+                ? 'আমাদের সকল সদস্যদের তালিকা দেখুন'
+                : 'View the list of all our members'}
+            </p>
+          </div>
+        </section>
+
+        {/* Members List */}
+        <section className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto px-4">
+            {/* Search & Stats */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder={t('members.search')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="text-muted-foreground">
+                {t('members.total')}: <span className="font-semibold text-foreground">{filteredMembers.length}</span>
+              </div>
+            </div>
+
+            {/* Members Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredMembers.map((member) => (
+                <Card key={member.id} className="group hover:shadow-lg transition-shadow duration-300">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 overflow-hidden">
+                      <img
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`}
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h3 className="font-heading font-semibold text-lg text-foreground mb-2">
+                      {member.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {language === 'bn' ? `সদস্য হয়েছেন: ${member.memberSince}` : `Member since: ${member.memberSince}`}
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Phone className="w-4 h-4" />
+                        <span>{member.phone}</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Mail className="w-4 h-4" />
+                        <span>{member.email}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default Members;
