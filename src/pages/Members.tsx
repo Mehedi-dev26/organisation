@@ -3,27 +3,32 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Input } from '@/components/ui/input';
-import { Search, Phone, Mail } from 'lucide-react';
+import { Search, Phone, Mail, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const Members = () => {
   const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const members = [
-    { id: 1, name: language === 'bn' ? 'আব্দুল করিম' : 'Abdul Karim', phone: '01XXX-XXXXXX', email: 'abdul@email.com', memberSince: '2015' },
-    { id: 2, name: language === 'bn' ? 'মোহাম্মদ হাসান' : 'Mohammad Hasan', phone: '01XXX-XXXXXX', email: 'hasan@email.com', memberSince: '2016' },
-    { id: 3, name: language === 'bn' ? 'ফাতেমা খাতুন' : 'Fatema Khatun', phone: '01XXX-XXXXXX', email: 'fatema@email.com', memberSince: '2017' },
-    { id: 4, name: language === 'bn' ? 'রহিম উদ্দিন' : 'Rahim Uddin', phone: '01XXX-XXXXXX', email: 'rahim@email.com', memberSince: '2018' },
-    { id: 5, name: language === 'bn' ? 'আয়েশা বেগম' : 'Ayesha Begum', phone: '01XXX-XXXXXX', email: 'ayesha@email.com', memberSince: '2019' },
-    { id: 6, name: language === 'bn' ? 'করিম মিয়া' : 'Karim Mia', phone: '01XXX-XXXXXX', email: 'karim@email.com', memberSince: '2020' },
-    { id: 7, name: language === 'bn' ? 'জাহানারা খাতুন' : 'Jahanara Khatun', phone: '01XXX-XXXXXX', email: 'jahanara@email.com', memberSince: '2021' },
-    { id: 8, name: language === 'bn' ? 'সাইফুল ইসলাম' : 'Saiful Islam', phone: '01XXX-XXXXXX', email: 'saiful@email.com', memberSince: '2022' },
-  ];
+  const { data: members, isLoading } = useQuery({
+    queryKey: ['public-members'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('status', 'approved')
+        .order('full_name', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const filteredMembers = members.filter(member =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMembers = members?.filter(member =>
+    member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    member.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -60,42 +65,61 @@ const Members = () => {
                 />
               </div>
               <div className="text-muted-foreground">
-                {t('members.total')}: <span className="font-semibold text-foreground">{filteredMembers.length}</span>
+                {t('members.total')}: <span className="font-semibold text-foreground">{filteredMembers?.length || 0}</span>
               </div>
             </div>
 
-            {/* Members Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredMembers.map((member) => (
-                <Card key={member.id} className="group hover:shadow-lg transition-shadow duration-300">
-                  <CardContent className="p-6 text-center">
-                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 overflow-hidden">
-                      <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`}
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h3 className="font-heading font-semibold text-lg text-foreground mb-2">
-                      {member.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {language === 'bn' ? `সদস্য হয়েছেন: ${member.memberSince}` : `Member since: ${member.memberSince}`}
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <Phone className="w-4 h-4" />
-                        <span>{member.phone}</span>
+            {/* Loading State */}
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : filteredMembers?.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                {language === 'bn' ? 'কোন সদস্য পাওয়া যায়নি' : 'No members found'}
+              </div>
+            ) : (
+              /* Members Grid */
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {filteredMembers?.map((member) => (
+                  <Card key={member.id} className="group hover:shadow-lg transition-shadow duration-300">
+                    <CardContent className="p-6 text-center">
+                      <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 overflow-hidden">
+                        <img
+                          src={member.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.full_name}`}
+                          alt={member.full_name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <Mail className="w-4 h-4" />
-                        <span>{member.email}</span>
+                      <h3 className="font-heading font-semibold text-lg text-foreground mb-2">
+                        {member.full_name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {member.joining_date 
+                          ? (language === 'bn' 
+                            ? `সদস্য হয়েছেন: ${new Date(member.joining_date).getFullYear()}` 
+                            : `Member since: ${new Date(member.joining_date).getFullYear()}`)
+                          : ''}
+                      </p>
+                      <div className="space-y-2 text-sm">
+                        {member.phone && (
+                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                            <Phone className="w-4 h-4" />
+                            <span>{member.phone}</span>
+                          </div>
+                        )}
+                        {member.email && (
+                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                            <Mail className="w-4 h-4" />
+                            <span>{member.email}</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>

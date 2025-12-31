@@ -1,17 +1,36 @@
 import { Users, FolderOpen, Calendar, Award } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEffect, useState, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const StatsSection = () => {
   const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
+  const { data: dbStats } = useQuery({
+    queryKey: ['home-stats'],
+    queryFn: async () => {
+      const [members, events, committee] = await Promise.all([
+        supabase.from('members').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+        supabase.from('events').select('id', { count: 'exact', head: true }).eq('is_published', true),
+        supabase.from('committee_members').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      ]);
+      
+      return {
+        members: members.count || 0,
+        events: events.count || 0,
+        committee: committee.count || 0,
+      };
+    },
+  });
+
   const stats = [
-    { icon: Users, value: 500, label: 'stats.members', suffix: '+' },
+    { icon: Users, value: dbStats?.members || 0, label: 'stats.members', suffix: '+' },
     { icon: FolderOpen, value: 25, label: 'stats.projects', suffix: '+' },
     { icon: Calendar, value: 10, label: 'stats.years', suffix: '+' },
-    { icon: Award, value: 100, label: 'stats.events', suffix: '+' },
+    { icon: Award, value: dbStats?.events || 0, label: 'stats.events', suffix: '+' },
   ];
 
   useEffect(() => {
