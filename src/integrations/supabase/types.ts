@@ -14,16 +14,272 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      committee_members: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          member_id: string | null
+          name_bn: string
+          name_en: string | null
+          phone: string | null
+          photo_url: string | null
+          position_bn: string
+          position_en: string | null
+          sort_order: number | null
+          term_end: string | null
+          term_start: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          member_id?: string | null
+          name_bn: string
+          name_en?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position_bn: string
+          position_en?: string | null
+          sort_order?: number | null
+          term_end?: string | null
+          term_start?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          member_id?: string | null
+          name_bn?: string
+          name_en?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position_bn?: string
+          position_en?: string | null
+          sort_order?: number | null
+          term_end?: string | null
+          term_start?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description_bn: string | null
+          description_en: string | null
+          event_date: string
+          id: string
+          image_url: string | null
+          is_published: boolean | null
+          location_bn: string | null
+          location_en: string | null
+          title_bn: string
+          title_en: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description_bn?: string | null
+          description_en?: string | null
+          event_date: string
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          location_bn?: string | null
+          location_en?: string | null
+          title_bn: string
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description_bn?: string | null
+          description_en?: string | null
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          location_bn?: string | null
+          location_en?: string | null
+          title_bn?: string
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      members: {
+        Row: {
+          address: string | null
+          blood_group: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string
+          id: string
+          joining_date: string | null
+          member_id: string
+          member_type: string | null
+          occupation: string | null
+          phone: string | null
+          photo_url: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          blood_group?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          joining_date?: string | null
+          member_id: string
+          member_type?: string | null
+          occupation?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          blood_group?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          joining_date?: string | null
+          member_id?: string
+          member_type?: string | null
+          occupation?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      news: {
+        Row: {
+          content_bn: string | null
+          content_en: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean | null
+          published_at: string | null
+          title_bn: string
+          title_en: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_bn?: string | null
+          content_en?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          published_at?: string | null
+          title_bn: string
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_bn?: string | null
+          content_en?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          published_at?: string | null
+          title_bn?: string
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +406,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
