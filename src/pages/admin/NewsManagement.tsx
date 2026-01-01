@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +45,9 @@ const NewsManagement = () => {
     image_url: '',
     is_published: false,
   });
+
+  // Enable realtime subscription
+  useRealtimeSubscription({ table: 'news', queryKey: ['admin-news'] });
 
   const { data: newsList, isLoading } = useQuery({
     queryKey: ['admin-news'],

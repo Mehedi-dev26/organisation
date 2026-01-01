@@ -6,9 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 const News = () => {
   const { t, language } = useLanguage();
+
+  // Enable realtime subscription
+  useRealtimeSubscription({ table: 'news', queryKey: ['public-news'] });
 
   const { data: newsList, isLoading } = useQuery({
     queryKey: ['public-news'],

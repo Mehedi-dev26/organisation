@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Phone, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface CommitteeMember {
   id: string;
@@ -18,6 +19,9 @@ interface CommitteeMember {
 
 const Committee = () => {
   const { t, language } = useLanguage();
+
+  // Enable realtime subscription
+  useRealtimeSubscription({ table: 'committee_members', queryKey: ['public-committee'] });
 
   const { data: committeeMembers, isLoading } = useQuery({
     queryKey: ['public-committee'],

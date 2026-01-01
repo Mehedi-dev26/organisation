@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,6 +52,9 @@ const CommitteeManagement = () => {
     term_start: '',
     term_end: '',
   });
+
+  // Enable realtime subscription
+  useRealtimeSubscription({ table: 'committee_members', queryKey: ['admin-committee'] });
 
   const { data: committeeMembers, isLoading } = useQuery({
     queryKey: ['admin-committee'],
