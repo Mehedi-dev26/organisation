@@ -52,6 +52,16 @@ const paymentMethods = [
   { value: 'bank', label_bn: 'ব্যাংক', label_en: 'Bank' },
 ];
 
+// Generate unique transaction ID: TRX-YYYYMMDD-XXXX
+const generateTransactionId = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const random = String(Math.floor(1000 + Math.random() * 9000)); // 4-digit random
+  return `TRX-${year}${month}${day}-${random}`;
+};
+
 const FinanceManagement = () => {
   const { language } = useLanguage();
   const { isAdmin } = useAuth();
@@ -72,7 +82,7 @@ const FinanceManagement = () => {
     donor_name: '',
     donor_phone: '',
     payment_method: 'cash',
-    payment_reference: '',
+    payment_reference: generateTransactionId(),
     transaction_date: format(new Date(), 'yyyy-MM-dd'),
     month_year: format(new Date(), 'yyyy-MM'),
     notes: '',
@@ -193,7 +203,7 @@ const FinanceManagement = () => {
       donor_name: '',
       donor_phone: '',
       payment_method: 'cash',
-      payment_reference: '',
+      payment_reference: generateTransactionId(), // Auto-generate new ID
       transaction_date: format(new Date(), 'yyyy-MM-dd'),
       month_year: format(new Date(), 'yyyy-MM'),
       notes: '',
@@ -409,12 +419,27 @@ const FinanceManagement = () => {
                   )}
 
                   <div className="space-y-2">
-                    <Label>{language === 'bn' ? 'পেমেন্ট রেফারেন্স' : 'Payment Reference'}</Label>
-                    <Input
-                      value={formData.payment_reference}
-                      onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
-                      placeholder={language === 'bn' ? 'ট্রানজেকশন আইডি' : 'Transaction ID'}
-                    />
+                    <Label>{language === 'bn' ? 'ট্রানজেকশন আইডি' : 'Transaction ID'}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={formData.payment_reference}
+                        readOnly
+                        className="bg-muted font-mono"
+                      />
+                      {!editingTransaction && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFormData({ ...formData, payment_reference: generateTransactionId() })}
+                        >
+                          {language === 'bn' ? 'নতুন' : 'New'}
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'bn' ? 'স্বয়ংক্রিয়ভাবে তৈরি হয়েছে' : 'Auto-generated'}
+                    </p>
                   </div>
                 </div>
 
