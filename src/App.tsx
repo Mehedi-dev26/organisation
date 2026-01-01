@@ -20,6 +20,7 @@ import MembersManagement from "./pages/admin/MembersManagement";
 import NewsManagement from "./pages/admin/NewsManagement";
 import EventsManagement from "./pages/admin/EventsManagement";
 import CommitteeManagement from "./pages/admin/CommitteeManagement";
+import AdminSettings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
                 <Route path="news" element={<NewsManagement />} />
                 <Route path="events" element={<EventsManagement />} />
                 <Route path="committee" element={<CommitteeManagement />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
