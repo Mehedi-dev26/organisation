@@ -62,6 +62,25 @@ const MembersManagement = () => {
     },
   });
 
+  // Generate next member ID automatically
+  const generateMemberId = () => {
+    if (!members || members.length === 0) {
+      return 'SB-0001';
+    }
+    
+    // Find the highest member ID number
+    const memberIds = members
+      .map(m => m.member_id)
+      .filter(id => id.startsWith('SB-'))
+      .map(id => parseInt(id.replace('SB-', ''), 10))
+      .filter(num => !isNaN(num));
+    
+    const maxId = memberIds.length > 0 ? Math.max(...memberIds) : 0;
+    const nextId = maxId + 1;
+    
+    return `SB-${nextId.toString().padStart(4, '0')}`;
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const { error } = await supabase.from('members').insert([data]);
@@ -175,7 +194,11 @@ const MembersManagement = () => {
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button disabled={!isAdmin} onClick={() => resetForm()}>
+            <Button disabled={!isAdmin} onClick={() => {
+              resetForm();
+              // Set auto-generated member ID for new members
+              setFormData(prev => ({ ...prev, member_id: generateMemberId() }));
+            }}>
               <Plus className="w-4 h-4 mr-2" />
               {language === 'bn' ? 'নতুন সদস্য' : 'Add Member'}
             </Button>
@@ -196,7 +219,14 @@ const MembersManagement = () => {
                     value={formData.member_id}
                     onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
                     required
+                    readOnly={!editingMember}
+                    className={!editingMember ? 'bg-muted' : ''}
                   />
+                  {!editingMember && (
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'bn' ? 'আইডি স্বয়ংক্রিয়ভাবে তৈরি হয়েছে' : 'ID is auto-generated'}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>{language === 'bn' ? 'পুরো নাম' : 'Full Name'} *</Label>
