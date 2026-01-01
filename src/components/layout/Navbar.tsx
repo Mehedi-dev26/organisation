@@ -4,7 +4,7 @@ import { Menu, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo-round.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
