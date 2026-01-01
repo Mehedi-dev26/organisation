@@ -60,6 +60,11 @@ const AdminSidebar = () => {
       url: '/admin/committee', 
       icon: UserCog 
     },
+    { 
+      title: language === 'bn' ? 'সেটিংস' : 'Settings', 
+      url: '/admin/settings', 
+      icon: Settings 
+    },
   ];
 
   const isActive = (path: string) => {
