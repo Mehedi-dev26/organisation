@@ -25,7 +25,8 @@ import {
   LogOut,
   Home,
   Settings,
-  Wallet
+  Wallet,
+  Receipt
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -65,6 +66,11 @@ const AdminSidebar = () => {
       title: language === 'bn' ? 'আর্থিক ব্যবস্থাপনা' : 'Finance', 
       url: '/admin/finance', 
       icon: Wallet 
+    },
+    { 
+      title: language === 'bn' ? 'বকেয়া চাঁদা' : 'Dues', 
+      url: '/admin/dues', 
+      icon: Receipt 
     },
     { 
       title: language === 'bn' ? 'সেটিংস' : 'Settings', 
