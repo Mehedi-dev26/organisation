@@ -12,10 +12,15 @@ const AdminLayout = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
+    if (!loading) {
+      if (!user) {
+        navigate('/auth');
+      } else if (!isAdmin) {
+        // Non-admin users cannot access admin panel
+        navigate('/');
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, isAdmin, loading, navigate]);
 
   if (loading) {
     return (
@@ -30,7 +35,7 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !isAdmin) {
     return null;
   }
 
@@ -44,11 +49,6 @@ const AdminLayout = () => {
             <h1 className="font-heading font-semibold text-foreground">
               {language === 'bn' ? 'অ্যাডমিন ড্যাশবোর্ড' : 'Admin Dashboard'}
             </h1>
-            {!isAdmin && (
-              <span className="ml-auto text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                {language === 'bn' ? 'সীমিত অ্যাক্সেস' : 'Limited Access'}
-              </span>
-            )}
           </header>
           <main className="p-6 bg-background min-h-[calc(100vh-3.5rem)]">
             <Outlet />
