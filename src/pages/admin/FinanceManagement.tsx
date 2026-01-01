@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useReactToPrint } from 'react-to-print';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Loader2, TrendingUp, TrendingDown, Wallet, Users, Search, Trash2, Edit } from 'lucide-react';
+import { Plus, Loader2, TrendingUp, TrendingDown, Wallet, Users, Search, Trash2, Edit, Printer } from 'lucide-react';
 import { format } from 'date-fns';
+import TransactionVoucher from '@/components/admin/TransactionVoucher';
 
 type TransactionType = 'member_fee' | 'donation' | 'event_fee' | 'expense' | 'other_income' | 'other_expense';
 
@@ -72,7 +74,21 @@ const FinanceManagement = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [printTransaction, setPrintTransaction] = useState<Transaction | null>(null);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   
+  const voucherRef = useRef<HTMLDivElement>(null);
+  
+  const handlePrint = useReactToPrint({
+    contentRef: voucherRef,
+    documentTitle: `Voucher-${printTransaction?.payment_reference || 'receipt'}`,
+  });
+  
+  const openPrintDialog = (transaction: Transaction) => {
+    setPrintTransaction(transaction);
+    setIsPrintDialogOpen(true);
+  };
+
   const [formData, setFormData] = useState({
     type: 'member_fee' as TransactionType,
     amount: '',
@@ -625,7 +641,15 @@ const FinanceManagement = () => {
                             {isIncome ? '+' : '-'}৳{Number(transaction.amount).toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => openPrintDialog(transaction)}
+                                title={language === 'bn' ? 'প্রিন্ট' : 'Print'}
+                              >
+                                <Printer className="h-4 w-4 text-primary" />
+                              </Button>
                               <Button variant="ghost" size="sm" onClick={() => handleEdit(transaction)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -648,6 +672,28 @@ const FinanceManagement = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Print Voucher Dialog */}
+        <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>{language === 'bn' ? 'ভাউচার প্রিভিউ' : 'Voucher Preview'}</span>
+                <Button onClick={() => handlePrint()} className="ml-4">
+                  <Printer className="h-4 w-4 mr-2" />
+                  {language === 'bn' ? 'প্রিন্ট করুন' : 'Print'}
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+            {printTransaction && (
+              <TransactionVoucher
+                ref={voucherRef}
+                transaction={printTransaction}
+                language={language as 'bn' | 'en'}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
   );
 };
