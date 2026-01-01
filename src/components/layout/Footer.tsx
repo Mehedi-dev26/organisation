@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import logo from '@/assets/logo-round.png';
+import logo from '@/assets/logo.png';
 
 const Footer = () => {
   const { t, language } = useLanguage();
@@ -26,11 +26,13 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <img 
-                src={logo} 
-                alt="সময়ের বাতিঘর" 
-                className="w-12 h-12 object-contain"
-              />
+              <div className="w-12 h-12 rounded-full bg-white shadow-lg overflow-hidden flex items-center justify-center">
+                <img 
+                  src={logo} 
+                  alt="সময়ের বাতিঘর" 
+                  className="w-10 h-10 object-contain"
+                />
+              </div>
               <div>
                 <h3 className="font-heading text-xl font-bold">
                   {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
