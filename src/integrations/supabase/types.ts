@@ -124,6 +124,57 @@ export type Database = {
         }
         Relationships: []
       }
+      member_dues: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          is_paid: boolean | null
+          member_id: string
+          month_year: string
+          paid_date: string | null
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          is_paid?: boolean | null
+          member_id: string
+          month_year: string
+          paid_date?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          is_paid?: boolean | null
+          member_id?: string
+          month_year?: string
+          paid_date?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_dues_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_dues_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           address: string | null
@@ -247,6 +298,87 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          description_bn: string | null
+          description_en: string | null
+          donor_email: string | null
+          donor_name: string | null
+          donor_phone: string | null
+          event_id: string | null
+          id: string
+          member_id: string | null
+          month_year: string | null
+          notes: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          receipt_number: string | null
+          transaction_date: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          description_bn?: string | null
+          description_en?: string | null
+          donor_email?: string | null
+          donor_name?: string | null
+          donor_phone?: string | null
+          event_id?: string | null
+          id?: string
+          member_id?: string | null
+          month_year?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          receipt_number?: string | null
+          transaction_date?: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description_bn?: string | null
+          description_en?: string | null
+          donor_email?: string | null
+          donor_name?: string | null
+          donor_phone?: string | null
+          event_id?: string | null
+          id?: string
+          member_id?: string | null
+          month_year?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          receipt_number?: string | null
+          transaction_date?: string
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -280,6 +412,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      transaction_type:
+        | "member_fee"
+        | "donation"
+        | "event_fee"
+        | "expense"
+        | "other_income"
+        | "other_expense"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -408,6 +547,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      transaction_type: [
+        "member_fee",
+        "donation",
+        "event_fee",
+        "expense",
+        "other_income",
+        "other_expense",
+      ],
     },
   },
 } as const

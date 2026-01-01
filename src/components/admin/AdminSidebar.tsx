@@ -24,7 +24,8 @@ import {
   UserCog, 
   LogOut,
   Home,
-  Settings
+  Settings,
+  Wallet
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -59,6 +60,11 @@ const AdminSidebar = () => {
       title: language === 'bn' ? 'কমিটি ব্যবস্থাপনা' : 'Committee', 
       url: '/admin/committee', 
       icon: UserCog 
+    },
+    { 
+      title: language === 'bn' ? 'আর্থিক ব্যবস্থাপনা' : 'Finance', 
+      url: '/admin/finance', 
+      icon: Wallet 
     },
     { 
       title: language === 'bn' ? 'সেটিংস' : 'Settings', 
