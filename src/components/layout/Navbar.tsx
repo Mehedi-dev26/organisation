@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Globe, ChevronDown } from 'lucide-react';
+import { Menu, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import logo from '@/assets/logo.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,9 +32,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg group-hover:shadow-primary/30 transition-shadow duration-300">
-              <span className="text-primary-foreground font-bold text-lg md:text-xl">স</span>
-            </div>
+            <img 
+              src={logo} 
+              alt="সময়ের বাতিঘর" 
+              className="w-10 h-10 md:w-12 md:h-12 object-contain"
+            />
             <div className="hidden sm:block">
               <h1 className="font-heading text-lg md:text-xl font-bold text-foreground leading-tight">
                 {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
