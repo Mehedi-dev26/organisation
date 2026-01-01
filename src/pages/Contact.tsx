@@ -44,7 +44,7 @@ const Contact = () => {
     {
       icon: Mail,
       title: language === 'bn' ? 'ইমেইল' : 'Email',
-      content: 'info@jonokallyan.org',
+      content: 'info@samoyerbatighor.org',
     },
     {
       icon: Clock,
