@@ -7,10 +7,14 @@ import { Search, Phone, Mail, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 const Members = () => {
   const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Enable realtime subscription
+  useRealtimeSubscription({ table: 'members', queryKey: ['public-members'] });
 
   const { data: members, isLoading } = useQuery({
     queryKey: ['public-members'],
