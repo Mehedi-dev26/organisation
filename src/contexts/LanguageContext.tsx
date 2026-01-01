@@ -20,7 +20,7 @@ const translations: Record<string, Record<Language, string>> = {
   'nav.login': { bn: 'লগইন', en: 'Login' },
   
   // Hero
-  'hero.title': { bn: 'জনকল্যাণ সংগঠন', en: 'Jonokallyan Sangathan' },
+  'hero.title': { bn: 'সময়ের বাতিঘর', en: 'Samoyer Batighor' },
   'hero.subtitle': { bn: 'একতাই শক্তি, সেবাই ধর্ম', en: 'Unity is Strength, Service is Religion' },
   'hero.cta': { bn: 'সদস্য হন', en: 'Become a Member' },
   'hero.learn': { bn: 'আরও জানুন', en: 'Learn More' },

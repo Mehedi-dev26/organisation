@@ -98,7 +98,7 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-2xl border-primary/20">
         <CardHeader className="text-center space-y-2">
           <CardTitle className="text-3xl font-heading text-primary">
-            {language === 'bn' ? 'জনকল্যাণ সংগঠন' : 'Jonokallyan Sangathan'}
+            {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             {language === 'bn' ? 'অ্যাডমিন প্যানেলে প্রবেশ করুন' : 'Access the Admin Panel'}

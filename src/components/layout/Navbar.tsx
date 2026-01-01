@@ -32,11 +32,11 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg group-hover:shadow-primary/30 transition-shadow duration-300">
-              <span className="text-primary-foreground font-bold text-lg md:text-xl">জ</span>
+              <span className="text-primary-foreground font-bold text-lg md:text-xl">স</span>
             </div>
             <div className="hidden sm:block">
               <h1 className="font-heading text-lg md:text-xl font-bold text-foreground leading-tight">
-                {language === 'bn' ? 'জনকল্যাণ সংগঠন' : 'Jonokallyan'}
+                {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
               </h1>
               <p className="text-xs text-muted-foreground">
                 {language === 'bn' ? 'একতাই শক্তি' : 'Unity is Strength'}

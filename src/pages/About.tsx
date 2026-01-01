@@ -92,8 +92,8 @@ const About = () => {
               </h2>
               <p className="text-muted-foreground leading-relaxed text-lg">
                 {language === 'bn'
-                  ? 'জনকল্যাণ সংগঠন ২০১৫ সালে প্রতিষ্ঠিত হয়। একদল সমাজসেবী মানুষের হাত ধরে শুরু হওয়া এই সংগঠন আজ হাজারো মানুষের পাশে দাঁড়িয়েছে। গত এক দশকে আমরা শিক্ষা, স্বাস্থ্য, এবং দারিদ্র্য বিমোচনে অসংখ্য প্রকল্প বাস্তবায়ন করেছি।'
-                  : 'Jonokallyan Sangathan was established in 2015. This organization, which started with a group of social workers, has stood by thousands of people today. Over the past decade, we have implemented numerous projects in education, health, and poverty alleviation.'}
+                  ? 'সময়ের বাতিঘর ২০১৫ সালে প্রতিষ্ঠিত হয়। একদল সমাজসেবী মানুষের হাত ধরে শুরু হওয়া এই সংগঠন আজ হাজারো মানুষের পাশে দাঁড়িয়েছে। গত এক দশকে আমরা শিক্ষা, স্বাস্থ্য, এবং দারিদ্র্য বিমোচনে অসংখ্য প্রকল্প বাস্তবায়ন করেছি।'
+                  : 'Samoyer Batighor was established in 2015. This organization, which started with a group of social workers, has stood by thousands of people today. Over the past decade, we have implemented numerous projects in education, health, and poverty alleviation.'}
               </p>
             </div>
           </div>

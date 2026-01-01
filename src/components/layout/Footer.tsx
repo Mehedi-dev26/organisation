@@ -26,11 +26,11 @@ const Footer = () => {
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center">
-                <span className="text-accent-foreground font-bold text-xl">জ</span>
+                <span className="text-accent-foreground font-bold text-xl">স</span>
               </div>
               <div>
                 <h3 className="font-heading text-xl font-bold">
-                  {language === 'bn' ? 'জনকল্যাণ সংগঠন' : 'Jonokallyan Sangathan'}
+                  {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
                 </h3>
               </div>
             </div>
@@ -74,7 +74,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-accent" />
-                <span className="text-primary-foreground/80 text-sm">info@jonokallyan.org</span>
+                <span className="text-primary-foreground/80 text-sm">info@samoyerbatighor.org</span>
               </li>
             </ul>
           </div>
@@ -100,7 +100,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-6 border-t border-primary-foreground/20 text-center">
           <p className="text-primary-foreground/60 text-sm">
-            © {new Date().getFullYear()} {language === 'bn' ? 'জনকল্যাণ সংগঠন' : 'Jonokallyan Sangathan'}. {t('footer.rights')}.
+            © {new Date().getFullYear()} {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}. {t('footer.rights')}.
           </p>
         </div>
       </div>
