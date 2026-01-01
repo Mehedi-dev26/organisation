@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Globe, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,6 +9,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navLinks = [
     { href: '/', label: 'nav.home' },
@@ -75,7 +76,12 @@ const Navbar = () => {
             </Button>
 
             {/* Login Button - Desktop */}
-            <Button variant="default" size="sm" className="hidden md:flex">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="hidden md:flex"
+              onClick={() => navigate('/auth')}
+            >
               {t('nav.login')}
             </Button>
 
@@ -110,7 +116,14 @@ const Navbar = () => {
                   {t(link.label)}
                 </Link>
               ))}
-              <Button variant="default" className="mt-4 mx-4">
+              <Button 
+                variant="default" 
+                className="mt-4 mx-4"
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/auth');
+                }}
+              >
                 {t('nav.login')}
               </Button>
             </div>
