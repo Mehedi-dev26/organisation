@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 import { format } from 'date-fns';
 import { bn } from 'date-fns/locale';
+import logo from '@/assets/logo.png';
 
 interface VoucherProps {
   transaction: {
@@ -71,8 +72,11 @@ const TransactionVoucher = forwardRef<HTMLDivElement, VoucherProps>(
 
     return (
       <div ref={ref} className="bg-white text-black p-8 max-w-2xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
-        {/* Header */}
+        {/* Header with Logo */}
         <div className="text-center border-b-2 border-black pb-4 mb-6">
+          <div className="flex justify-center mb-3">
+            <img src={logo} alt="সময়ের বাতিঘর" className="w-20 h-20 object-contain" />
+          </div>
           <h1 className="text-2xl font-bold mb-1">সময়ের বাতিঘর</h1>
           <p className="text-sm text-gray-600">Samoyer Batighor</p>
           <p className="text-xs text-gray-500 mt-1">একটি সামাজিক ও সাংস্কৃতিক সংগঠন</p>
@@ -85,16 +89,22 @@ const TransactionVoucher = forwardRef<HTMLDivElement, VoucherProps>(
           </h2>
         </div>
 
-        {/* Voucher Details */}
-        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+        {/* Voucher Details with Transaction ID */}
+        <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
           <div className="flex">
             <span className="font-semibold w-32">{language === 'bn' ? 'ভাউচার নং:' : 'Voucher No:'}</span>
-            <span className="font-mono">{transaction.payment_reference}</span>
+            <span className="font-mono font-bold">{transaction.payment_reference}</span>
           </div>
           <div className="flex justify-end">
             <span className="font-semibold w-20">{language === 'bn' ? 'তারিখ:' : 'Date:'}</span>
             <span>{format(new Date(transaction.transaction_date), 'dd/MM/yyyy')}</span>
           </div>
+        </div>
+        
+        {/* Transaction ID */}
+        <div className="mb-6 text-sm bg-gray-100 p-2 rounded">
+          <span className="font-semibold">{language === 'bn' ? 'ট্রানজেকশন আইডি:' : 'Transaction ID:'}</span>
+          <span className="font-mono ml-2 text-xs">{transaction.id}</span>
         </div>
 
         {/* Main Content */}
