@@ -37,7 +37,7 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(email, password);
+    const { error, isAdmin: userIsAdmin } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -50,7 +50,12 @@ const Auth = () => {
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description: language === 'bn' ? 'সফলভাবে লগইন হয়েছে' : 'Successfully logged in',
       });
-      navigate('/admin');
+      // Navigate based on admin status returned from signIn
+      if (userIsAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     }
 
     setIsLoading(false);
