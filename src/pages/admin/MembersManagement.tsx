@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,8 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Upload, X } from 'lucide-react';
+import { compressImage, formatFileSize } from '@/lib/imageUtils';
 
 interface Member {
   id: string;
@@ -26,6 +28,7 @@ interface Member {
   member_type: string | null;
   status: string | null;
   joining_date: string | null;
+  photo_url: string | null;
 }
 
 const MembersManagement = () => {
@@ -37,6 +40,11 @@ const MembersManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     member_id: '',
     full_name: '',
@@ -47,6 +55,7 @@ const MembersManagement = () => {
     blood_group: '',
     member_type: 'general',
     status: 'pending',
+    photo_url: '',
   });
 
   const { data: members, isLoading } = useQuery({
@@ -136,7 +145,10 @@ const MembersManagement = () => {
       blood_group: '',
       member_type: 'general',
       status: 'pending',
+      photo_url: '',
     });
+    setSelectedImage(null);
+    setImagePreview(null);
     setEditingMember(null);
     setIsDialogOpen(false);
   };
@@ -153,16 +165,94 @@ const MembersManagement = () => {
       blood_group: member.blood_group || '',
       member_type: member.member_type || 'general',
       status: member.status || 'pending',
+      photo_url: member.photo_url || '',
     });
+    setImagePreview(member.photo_url || null);
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 2MB before compression)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: language === 'bn' ? 'ছবি ২MB এর বেশি হতে পারবে না' : 'Image must be less than 2MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedImage(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadImage = async (memberId: string): Promise<string | null> => {
+    if (!selectedImage) return formData.photo_url || null;
+
+    try {
+      setIsUploading(true);
+      
+      // Compress image
+      const compressedBlob = await compressImage(selectedImage, 300, 300, 0.8);
+      
+      const fileName = `${memberId}-${Date.now()}.jpg`;
+      
+      const { data, error } = await supabase.storage
+        .from('member-photos')
+        .upload(fileName, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('member-photos')
+        .getPublicUrl(data.path);
+
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: language === 'bn' ? 'ছবি আপলোড ব্যর্থ' : 'Image upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setFormData({ ...formData, photo_url: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Upload image first if selected
+    const photoUrl = await uploadImage(formData.member_id);
+    const dataToSubmit = { ...formData, photo_url: photoUrl || '' };
+    
     if (editingMember) {
-      updateMutation.mutate({ id: editingMember.id, data: formData });
+      updateMutation.mutate({ id: editingMember.id, data: dataToSubmit });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataToSubmit);
     }
   };
 
@@ -298,14 +388,69 @@ const MembersManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {/* Photo Upload Section */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label>{language === 'bn' ? 'ছবি' : 'Photo'}</Label>
+                  <div className="flex items-center gap-4">
+                    {imagePreview ? (
+                      <div className="relative">
+                        <Avatar className="w-20 h-20">
+                          <AvatarImage src={imagePreview} alt="Preview" />
+                          <AvatarFallback>{formData.full_name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 w-6 h-6 rounded-full"
+                          onClick={removeImage}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                        <Upload className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="photo-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {language === 'bn' ? 'ছবি নির্বাচন করুন' : 'Select Photo'}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {language === 'bn' 
+                          ? 'সর্বোচ্চ ২MB, JPG/PNG/WebP। ছবি স্বয়ংক্রিয়ভাবে কম্প্রেস হবে।'
+                          : 'Max 2MB, JPG/PNG/WebP. Image will be auto-compressed.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   {language === 'bn' ? 'বাতিল' : 'Cancel'}
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {editingMember ? (language === 'bn' ? 'আপডেট' : 'Update') : (language === 'bn' ? 'সংরক্ষণ' : 'Save')}
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
+                  {(createMutation.isPending || updateMutation.isPending || isUploading) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {isUploading 
+                    ? (language === 'bn' ? 'আপলোড হচ্ছে...' : 'Uploading...')
+                    : editingMember 
+                      ? (language === 'bn' ? 'আপডেট' : 'Update') 
+                      : (language === 'bn' ? 'সংরক্ষণ' : 'Save')}
                 </Button>
               </div>
             </form>
@@ -336,6 +481,7 @@ const MembersManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>{language === 'bn' ? 'ছবি' : 'Photo'}</TableHead>
                   <TableHead>{language === 'bn' ? 'আইডি' : 'ID'}</TableHead>
                   <TableHead>{language === 'bn' ? 'নাম' : 'Name'}</TableHead>
                   <TableHead>{language === 'bn' ? 'ফোন' : 'Phone'}</TableHead>
@@ -347,13 +493,19 @@ const MembersManagement = () => {
               <TableBody>
                 {filteredMembers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       {language === 'bn' ? 'কোন সদস্য পাওয়া যায়নি' : 'No members found'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredMembers?.map((member) => (
                     <TableRow key={member.id}>
+                      <TableCell>
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={member.photo_url || undefined} alt={member.full_name} />
+                          <AvatarFallback>{member.full_name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      </TableCell>
                       <TableCell className="font-mono text-sm">{member.member_id}</TableCell>
                       <TableCell className="font-medium">{member.full_name}</TableCell>
                       <TableCell>{member.phone || '-'}</TableCell>
