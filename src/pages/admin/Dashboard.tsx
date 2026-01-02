@@ -229,29 +229,29 @@ const Dashboard = () => {
       title: language === 'bn' ? 'মোট সদস্য' : 'Total Members',
       value: stats?.members || 0,
       icon: Users,
-      gradient: 'from-blue-500 to-blue-600',
-      iconBg: 'bg-blue-400/20',
+      color: 'text-blue-600',
+      bg: 'bg-blue-100',
     },
     {
       title: language === 'bn' ? 'সংবাদ' : 'News Articles',
       value: stats?.news || 0,
       icon: Newspaper,
-      gradient: 'from-emerald-500 to-emerald-600',
-      iconBg: 'bg-emerald-400/20',
+      color: 'text-green-600',
+      bg: 'bg-green-100',
     },
     {
       title: language === 'bn' ? 'ইভেন্ট' : 'Events',
       value: stats?.events || 0,
       icon: Calendar,
-      gradient: 'from-violet-500 to-violet-600',
-      iconBg: 'bg-violet-400/20',
+      color: 'text-purple-600',
+      bg: 'bg-purple-100',
     },
     {
       title: language === 'bn' ? 'কমিটি সদস্য' : 'Committee Members',
       value: stats?.committee || 0,
       icon: UserCog,
-      gradient: 'from-amber-500 to-amber-600',
-      iconBg: 'bg-amber-400/20',
+      color: 'text-orange-600',
+      bg: 'bg-orange-100',
     },
   ];
 
@@ -280,20 +280,20 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Stats Cards with Gradient */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (
-          <Card key={index} className={`bg-gradient-to-br ${stat.gradient} text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}>
+          <Card key={index} className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-white/80">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.iconBg}`}>
-                <stat.icon className="w-5 h-5 text-white" />
+              <div className={`p-2 rounded-lg ${stat.bg}`}>
+                <stat.icon className={`w-4 h-4 ${stat.color}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">{stat.value}</div>
+              <div className="text-3xl font-bold text-foreground">{stat.value}</div>
             </CardContent>
           </Card>
         ))}
