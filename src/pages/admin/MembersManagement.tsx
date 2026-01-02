@@ -112,12 +112,46 @@ const MembersManagement = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from('members').insert([data]);
+      // First create the member
+      const { data: newMember, error } = await supabase
+        .from('members')
+        .insert([{ ...data, status: 'approved' }])
+        .select()
+        .single();
+      
       if (error) throw error;
+
+      // If member has email, auto-create login account
+      if (data.email && newMember) {
+        try {
+          const response = await supabase.functions.invoke('create-member-user', {
+            body: {
+              email: data.email,
+              password: 'member@123', // Default password for all members
+              memberId: newMember.id,
+              fullName: data.full_name,
+            },
+          });
+
+          if (response.error) {
+            console.error('Account creation error:', response.error);
+          } else if (!response.data.success) {
+            console.error('Account creation failed:', response.data.error);
+          }
+        } catch (accountError) {
+          console.error('Failed to create member account:', accountError);
+          // Don't fail the member creation, just log the error
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-members'] });
-      toast({ title: language === 'bn' ? 'সফল!' : 'Success!', description: language === 'bn' ? 'সদস্য যোগ হয়েছে' : 'Member added' });
+      toast({ 
+        title: language === 'bn' ? 'সফল!' : 'Success!', 
+        description: language === 'bn' 
+          ? 'সদস্য যোগ হয়েছে। ডিফল্ট পাসওয়ার্ড: member@123' 
+          : 'Member added. Default password: member@123' 
+      });
       resetForm();
     },
     onError: (error: any) => {
