@@ -25,6 +25,7 @@ import CommitteeManagement from "./pages/admin/CommitteeManagement";
 import AdminSettings from "./pages/admin/Settings";
 import FinanceManagement from "./pages/admin/FinanceManagement";
 import DuesManagement from "./pages/admin/DuesManagement";
+import GalleryManagement from "./pages/admin/GalleryManagement";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="news" element={<NewsManagement />} />
                 <Route path="events" element={<EventsManagement />} />
                 <Route path="committee" element={<CommitteeManagement />} />
+                <Route path="gallery" element={<GalleryManagement />} />
                 <Route path="finance" element={<FinanceManagement />} />
                 <Route path="dues" element={<DuesManagement />} />
                 <Route path="settings" element={<AdminSettings />} />
