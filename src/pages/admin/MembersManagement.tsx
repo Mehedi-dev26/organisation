@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Loader2, Upload, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Upload, X, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
 
 interface Member {
@@ -44,6 +44,8 @@ const MembersManagement = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [viewingMember, setViewingMember] = useState<Member | null>(null);
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'all'>('pending');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -132,6 +134,36 @@ const MembersManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-members'] });
       toast({ title: language === 'bn' ? 'সফল!' : 'Success!', description: language === 'bn' ? 'সদস্য মুছে ফেলা হয়েছে' : 'Member deleted' });
+    },
+    onError: (error: any) => {
+      toast({ title: language === 'bn' ? 'ত্রুটি' : 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Approve member mutation
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('members').update({ status: 'approved' }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+      toast({ title: language === 'bn' ? 'সফল!' : 'Success!', description: language === 'bn' ? 'সদস্য অনুমোদিত হয়েছে' : 'Member approved' });
+    },
+    onError: (error: any) => {
+      toast({ title: language === 'bn' ? 'ত্রুটি' : 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Reject member mutation
+  const rejectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('members').update({ status: 'rejected' }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+      toast({ title: language === 'bn' ? 'সফল!' : 'Success!', description: language === 'bn' ? 'সদস্য প্রত্যাখ্যান হয়েছে' : 'Member rejected' });
     },
     onError: (error: any) => {
       toast({ title: language === 'bn' ? 'ত্রুটি' : 'Error', description: error.message, variant: 'destructive' });
@@ -260,10 +292,17 @@ const MembersManagement = () => {
     }
   };
 
-  const filteredMembers = members?.filter(member =>
-    member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.member_id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = members?.filter(member => {
+    const matchesSearch = member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.member_id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (activeTab === 'pending') return matchesSearch && member.status === 'pending';
+    if (activeTab === 'approved') return matchesSearch && member.status === 'approved';
+    return matchesSearch;
+  });
+
+  const pendingCount = members?.filter(m => m.status === 'pending').length || 0;
+  const approvedCount = members?.filter(m => m.status === 'approved').length || 0;
 
   const getStatusBadge = (status: string | null) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
@@ -462,6 +501,72 @@ const MembersManagement = () => {
         </Dialog>
       </div>
 
+      {/* Pending Members Alert */}
+      {pendingCount > 0 && (
+        <Card className="border-2 border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/20 rounded-full">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-amber-800 dark:text-amber-200">
+                    {language === 'bn' 
+                      ? `${pendingCount}টি নতুন সদস্য আবেদন অপেক্ষমাণ` 
+                      : `${pendingCount} new member application(s) pending`}
+                  </p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    {language === 'bn' ? 'অনুমোদন বা প্রত্যাখ্যান করুন' : 'Approve or reject applications'}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                className="border-amber-500 text-amber-700 hover:bg-amber-100"
+                onClick={() => setActiveTab('pending')}
+              >
+                {language === 'bn' ? 'দেখুন' : 'View'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant={activeTab === 'pending' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('pending')}
+          className="gap-2"
+        >
+          <Clock className="w-4 h-4" />
+          {language === 'bn' ? 'অপেক্ষমাণ' : 'Pending'}
+          {pendingCount > 0 && (
+            <Badge variant="secondary" className="ml-1 bg-amber-500 text-white">
+              {pendingCount}
+            </Badge>
+          )}
+        </Button>
+        <Button
+          variant={activeTab === 'approved' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('approved')}
+          className="gap-2"
+        >
+          <CheckCircle className="w-4 h-4" />
+          {language === 'bn' ? 'অনুমোদিত' : 'Approved'}
+          <Badge variant="secondary" className="ml-1">{approvedCount}</Badge>
+        </Button>
+        <Button
+          variant={activeTab === 'all' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('all')}
+          className="gap-2"
+        >
+          {language === 'bn' ? 'সকল' : 'All'}
+          <Badge variant="secondary" className="ml-1">{members?.length || 0}</Badge>
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">
@@ -517,6 +622,30 @@ const MembersManagement = () => {
                       <TableCell>{getStatusBadge(member.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          {member.status === 'pending' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => approveMutation.mutate(member.id)} 
+                                disabled={!isAdmin || approveMutation.isPending}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => rejectMutation.mutate(member.id)} 
+                                disabled={!isAdmin || rejectMutation.isPending}
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => setViewingMember(member)}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => handleEdit(member)} disabled={!isAdmin}>
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -533,6 +662,87 @@ const MembersManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* View Member Details Dialog */}
+      <Dialog open={!!viewingMember} onOpenChange={() => setViewingMember(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{language === 'bn' ? 'সদস্যের বিবরণ' : 'Member Details'}</DialogTitle>
+          </DialogHeader>
+          {viewingMember && (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <Avatar className="w-24 h-24">
+                  <AvatarImage src={viewingMember.photo_url || undefined} alt={viewingMember.full_name} />
+                  <AvatarFallback className="text-2xl">{viewingMember.full_name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">{language === 'bn' ? 'আইডি' : 'ID'}</p>
+                  <p className="font-mono font-medium">{viewingMember.member_id}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{language === 'bn' ? 'নাম' : 'Name'}</p>
+                  <p className="font-medium">{viewingMember.full_name}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{language === 'bn' ? 'ফোন' : 'Phone'}</p>
+                  <p className="font-medium">{viewingMember.phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{language === 'bn' ? 'ইমেইল' : 'Email'}</p>
+                  <p className="font-medium">{viewingMember.email || '-'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">{language === 'bn' ? 'ঠিকানা' : 'Address'}</p>
+                  <p className="font-medium">{viewingMember.address || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{language === 'bn' ? 'পেশা' : 'Occupation'}</p>
+                  <p className="font-medium">{viewingMember.occupation || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}</p>
+                  <p className="font-medium">{viewingMember.blood_group || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{language === 'bn' ? 'স্ট্যাটাস' : 'Status'}</p>
+                  {getStatusBadge(viewingMember.status)}
+                </div>
+              </div>
+              
+              {viewingMember.status === 'pending' && (
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button 
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      approveMutation.mutate(viewingMember.id);
+                      setViewingMember(null);
+                    }}
+                    disabled={approveMutation.isPending}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {language === 'bn' ? 'অনুমোদন' : 'Approve'}
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => {
+                      rejectMutation.mutate(viewingMember.id);
+                      setViewingMember(null);
+                    }}
+                    disabled={rejectMutation.isPending}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    {language === 'bn' ? 'প্রত্যাখ্যান' : 'Reject'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
