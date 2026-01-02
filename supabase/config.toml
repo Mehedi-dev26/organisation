@@ -2,3 +2,6 @@ project_id = "dijldqswhpfzfokcdopm"
 
 [functions.send-dues-reminder]
 verify_jwt = false
+
+[functions.create-member-user]
+verify_jwt = false
