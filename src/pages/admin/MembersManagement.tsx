@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Loader2, Upload, X, CheckCircle, XCircle, Clock, Eye, Printer } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Upload, X, CheckCircle, XCircle, Clock, Eye, Printer, Key } from 'lucide-react';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
 import { useReactToPrint } from 'react-to-print';
 
@@ -49,6 +49,7 @@ const MembersManagement = () => {
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'all'>('pending');
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -214,6 +215,50 @@ const MembersManagement = () => {
     },
   });
 
+  // Create member account function
+  const handleCreateMemberAccount = async (member: Member) => {
+    if (!member.email) {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: language === 'bn' ? 'সদস্যের ইমেইল নেই' : 'Member has no email',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsCreatingAccount(member.id);
+    
+    try {
+      const response = await supabase.functions.invoke('create-member-user', {
+        body: {
+          email: member.email,
+          password: 'member@123',
+          memberId: member.id,
+          fullName: member.full_name,
+        },
+      });
+
+      if (response.error) throw response.error;
+      if (!response.data?.success) throw new Error(response.data?.error || 'Account creation failed');
+
+      toast({
+        title: language === 'bn' ? 'সফল!' : 'Success!',
+        description: language === 'bn' 
+          ? 'সদস্য অ্যাকাউন্ট তৈরি হয়েছে। ডিফল্ট পাসওয়ার্ড: member@123' 
+          : 'Member account created. Default password: member@123',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+    } catch (error: any) {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreatingAccount(null);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -698,6 +743,22 @@ const MembersManagement = () => {
                                 <XCircle className="w-4 h-4" />
                               </Button>
                             </>
+                          )}
+                          {member.status === 'approved' && !member.user_id && member.email && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="bg-blue-50 hover:bg-blue-100 border-blue-200"
+                              onClick={() => handleCreateMemberAccount(member)}
+                              disabled={!isAdmin || isCreatingAccount === member.id}
+                              title={language === 'bn' ? 'লগইন অ্যাকাউন্ট তৈরি' : 'Create Login Account'}
+                            >
+                              {isCreatingAccount === member.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Key className="w-4 h-4 text-blue-600" />
+                              )}
+                            </Button>
                           )}
                           <Button size="sm" variant="outline" onClick={() => setViewingMember(member)}>
                             <Eye className="w-4 h-4" />
