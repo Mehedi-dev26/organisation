@@ -135,14 +135,14 @@ const Contact = () => {
                 {/* Map */}
                 <div className="mt-8 rounded-xl overflow-hidden border border-border aspect-video">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14429.024728595787!2d88.52!3d25.03!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39fb74d8c8b5f8a5%3A0x8b3e8f7c5c5e8f7c!2sSapahar%2C%20Naogaon%20District!5e0!3m2!1sen!2sbd!4v1704067200000!5m2!1sen!2sbd"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3612.5!2d88.5833!3d25.0167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39fb0c0000000001%3A0x1!2s5GQW%2B5Q9%20Sapahar!5e0!3m2!1sbn!2sbd!4v1704067200000!5m2!1sbn!2sbd"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
                     allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
-                    title={language === 'bn' ? 'আমাদের অবস্থান' : 'Our Location'}
+                    title={language === 'bn' ? 'সোনাডাঙ্গা জামে মসজিদ, সাপাহার' : 'Sonadanga Jame Masjid, Sapahar'}
                   />
                 </div>
               </div>
