@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Loader2, Upload, X, CheckCircle, XCircle, Clock, Eye, Printer, Key } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Upload, X, CheckCircle, XCircle, Clock, Eye, Printer } from 'lucide-react';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
 import { useReactToPrint } from 'react-to-print';
 
@@ -49,10 +49,6 @@ const MembersManagement = () => {
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'all'>('pending');
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [isCreateAccountDialogOpen, setIsCreateAccountDialogOpen] = useState(false);
-  const [selectedMemberForAccount, setSelectedMemberForAccount] = useState<Member | null>(null);
-  const [accountPassword, setAccountPassword] = useState('');
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -218,64 +214,6 @@ const MembersManagement = () => {
     },
   });
 
-  // Create member account function
-  const handleCreateMemberAccount = async () => {
-    if (!selectedMemberForAccount || !accountPassword) return;
-    
-    if (!selectedMemberForAccount.email) {
-      toast({
-        title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: language === 'bn' ? 'সদস্যের ইমেইল নেই' : 'Member has no email',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (accountPassword.length < 6) {
-      toast({
-        title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: language === 'bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' : 'Password must be at least 6 characters',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsCreatingAccount(true);
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await supabase.functions.invoke('create-member-user', {
-        body: {
-          email: selectedMemberForAccount.email,
-          password: accountPassword,
-          memberId: selectedMemberForAccount.id,
-          fullName: selectedMemberForAccount.full_name,
-        },
-      });
-
-      if (response.error) throw response.error;
-      if (!response.data.success) throw new Error(response.data.error);
-
-      toast({
-        title: language === 'bn' ? 'সফল!' : 'Success!',
-        description: language === 'bn' ? 'সদস্য অ্যাকাউন্ট তৈরি হয়েছে' : 'Member account created',
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
-      setIsCreateAccountDialogOpen(false);
-      setSelectedMemberForAccount(null);
-      setAccountPassword('');
-    } catch (error: any) {
-      toast({
-        title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCreatingAccount(false);
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -764,22 +702,6 @@ const MembersManagement = () => {
                           <Button size="sm" variant="outline" onClick={() => setViewingMember(member)}>
                             <Eye className="w-4 h-4" />
                           </Button>
-                          {member.status === 'approved' && !member.user_id && member.email && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="bg-blue-50 hover:bg-blue-100 border-blue-200"
-                              onClick={() => {
-                                setSelectedMemberForAccount(member);
-                                setAccountPassword('');
-                                setIsCreateAccountDialogOpen(true);
-                              }}
-                              disabled={!isAdmin}
-                              title={language === 'bn' ? 'লগইন অ্যাকাউন্ট তৈরি' : 'Create Login Account'}
-                            >
-                              <Key className="w-4 h-4 text-blue-600" />
-                            </Button>
-                          )}
                           <Button size="sm" variant="outline" onClick={() => handleEdit(member)} disabled={!isAdmin}>
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -1021,51 +943,6 @@ const MembersManagement = () => {
               <p>{language === 'bn' ? 'এই তালিকা স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে' : 'This list is auto-generated'}</p>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      {/* Create Member Account Dialog */}
-      <Dialog open={isCreateAccountDialogOpen} onOpenChange={setIsCreateAccountDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Key className="w-5 h-5" />
-              {language === 'bn' ? 'সদস্য অ্যাকাউন্ট তৈরি' : 'Create Member Account'}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedMemberForAccount && (
-            <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="font-medium">{selectedMemberForAccount.full_name}</p>
-                <p className="text-sm text-muted-foreground">{selectedMemberForAccount.email}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>{language === 'bn' ? 'পাসওয়ার্ড সেট করুন' : 'Set Password'}</Label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={accountPassword}
-                  onChange={(e) => setAccountPassword(e.target.value)}
-                  minLength={6}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {language === 'bn' ? 'কমপক্ষে ৬ অক্ষর' : 'Minimum 6 characters'}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setIsCreateAccountDialogOpen(false)}>
-                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
-                </Button>
-                <Button 
-                  className="flex-1" 
-                  onClick={handleCreateMemberAccount}
-                  disabled={isCreatingAccount || !accountPassword || accountPassword.length < 6}
-                >
-                  {isCreatingAccount && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {language === 'bn' ? 'অ্যাকাউন্ট তৈরি' : 'Create Account'}
-                </Button>
-              </div>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>
