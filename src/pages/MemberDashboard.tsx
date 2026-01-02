@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -7,13 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Loader2, CreditCard, Bell, User, LogOut, Calendar, AlertCircle, CheckCircle, Key, Eye, EyeOff } from 'lucide-react';
+import { Loader2, CreditCard, Bell, User, LogOut, Calendar, AlertCircle, CheckCircle, Key, Eye, EyeOff, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { bn, enUS } from 'date-fns/locale';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useReactToPrint } from 'react-to-print';
+import TransactionVoucher from '@/components/admin/TransactionVoucher';
 
 interface MemberData {
   id: string;
@@ -36,6 +39,23 @@ interface DuesData {
   amount: number;
   is_paid: boolean;
   paid_date: string | null;
+  transaction_id: string | null;
+}
+
+interface TransactionData {
+  id: string;
+  type: string;
+  amount: number;
+  description_bn: string | null;
+  description_en: string | null;
+  donor_name: string | null;
+  donor_phone: string | null;
+  payment_method: string | null;
+  payment_reference: string | null;
+  transaction_date: string;
+  month_year: string | null;
+  notes: string | null;
+  members?: { full_name: string } | null;
 }
 
 interface NewsData {
@@ -59,6 +79,17 @@ const MemberDashboard = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  // Voucher print state
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [printTransaction, setPrintTransaction] = useState<TransactionData | null>(null);
+  const [isLoadingTransaction, setIsLoadingTransaction] = useState(false);
+  const voucherRef = useRef<HTMLDivElement>(null);
+  
+  const handlePrint = useReactToPrint({
+    contentRef: voucherRef,
+    documentTitle: `Voucher-${printTransaction?.payment_reference || 'receipt'}`,
+  });
 
   // Fetch member data
   const { data: memberData, isLoading: memberLoading } = useQuery({
@@ -152,6 +183,46 @@ const MemberDashboard = () => {
       });
     } finally {
       setIsChangingPassword(false);
+    }
+  };
+
+  // Handle voucher print for paid dues
+  const handleViewVoucher = async (due: DuesData) => {
+    if (!due.transaction_id) {
+      toast({
+        title: language === 'bn' ? 'তথ্য নেই' : 'No data',
+        description: language === 'bn' ? 'এই পেমেন্টের জন্য ট্রানজেকশন তথ্য পাওয়া যায়নি' : 'No transaction data found for this payment',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoadingTransaction(true);
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', due.transaction_id)
+        .single();
+
+      if (error) throw error;
+
+      // Add member name to transaction
+      const transactionWithMember: TransactionData = {
+        ...data,
+        members: memberData ? { full_name: memberData.full_name } : null,
+      };
+
+      setPrintTransaction(transactionWithMember);
+      setIsPrintDialogOpen(true);
+    } catch (error: any) {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingTransaction(false);
     }
   };
 
@@ -313,13 +384,29 @@ const MemberDashboard = () => {
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">{due.month_year}</span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <span className="font-bold">৳{due.amount}</span>
                         <Badge variant={due.is_paid ? 'default' : 'destructive'}>
                           {due.is_paid 
                             ? (language === 'bn' ? 'পরিশোধিত' : 'Paid') 
                             : (language === 'bn' ? 'বকেয়া' : 'Unpaid')}
                         </Badge>
+                        {due.is_paid && due.transaction_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => handleViewVoucher(due)}
+                            disabled={isLoadingTransaction}
+                            title={language === 'bn' ? 'ভাউচার দেখুন' : 'View Voucher'}
+                          >
+                            {isLoadingTransaction ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Printer className="w-4 h-4 text-primary" />
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -490,6 +577,28 @@ const MemberDashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Print Voucher Dialog */}
+      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{language === 'bn' ? 'পেমেন্ট রসিদ' : 'Payment Receipt'}</span>
+              <Button onClick={() => handlePrint()} className="ml-4">
+                <Printer className="h-4 w-4 mr-2" />
+                {language === 'bn' ? 'প্রিন্ট করুন' : 'Print'}
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {printTransaction && (
+            <TransactionVoucher
+              ref={voucherRef}
+              transaction={printTransaction}
+              language={language as 'bn' | 'en'}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer className="py-6 text-center text-sm text-muted-foreground border-t mt-8">
