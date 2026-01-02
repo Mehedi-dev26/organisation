@@ -136,7 +136,8 @@ const FinanceManagement = () => {
   // Create transaction mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from('transactions').insert({
+      // Insert transaction
+      const { data: transactionData, error } = await supabase.from('transactions').insert({
         type: data.type,
         amount: parseFloat(data.amount),
         description_bn: data.description_bn || null,
@@ -149,11 +150,53 @@ const FinanceManagement = () => {
         transaction_date: data.transaction_date,
         month_year: data.month_year || null,
         notes: data.notes || null,
-      });
+      }).select().single();
       if (error) throw error;
+
+      // If it's a member fee, update the member_dues table
+      if (data.type === 'member_fee' && data.member_id && data.month_year) {
+        // First check if dues record exists for this member and month
+        const { data: existingDue } = await supabase
+          .from('member_dues')
+          .select('id')
+          .eq('member_id', data.member_id)
+          .eq('month_year', data.month_year)
+          .maybeSingle();
+
+        if (existingDue) {
+          // Update existing dues record
+          const { error: updateError } = await supabase
+            .from('member_dues')
+            .update({
+              is_paid: true,
+              paid_date: data.transaction_date,
+              transaction_id: transactionData.id,
+            })
+            .eq('id', existingDue.id);
+          
+          if (updateError) console.error('Error updating member_dues:', updateError);
+        } else {
+          // Create new dues record if it doesn't exist
+          const { error: insertError } = await supabase
+            .from('member_dues')
+            .insert({
+              member_id: data.member_id,
+              month_year: data.month_year,
+              amount: parseFloat(data.amount),
+              is_paid: true,
+              paid_date: data.transaction_date,
+              transaction_id: transactionData.id,
+            });
+          
+          if (insertError) console.error('Error creating member_dues:', insertError);
+        }
+      }
+
+      return transactionData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['member-dues'] });
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description: language === 'bn' ? 'লেনদেন যোগ হয়েছে' : 'Transaction added',
