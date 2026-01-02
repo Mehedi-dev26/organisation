@@ -124,6 +124,54 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_images: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description_bn: string | null
+          description_en: string | null
+          event_date: string | null
+          id: string
+          image_url: string
+          is_published: boolean | null
+          sort_order: number | null
+          title_bn: string
+          title_en: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description_bn?: string | null
+          description_en?: string | null
+          event_date?: string | null
+          id?: string
+          image_url: string
+          is_published?: boolean | null
+          sort_order?: number | null
+          title_bn: string
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description_bn?: string | null
+          description_en?: string | null
+          event_date?: string | null
+          id?: string
+          image_url?: string
+          is_published?: boolean | null
+          sort_order?: number | null
+          title_bn?: string
+          title_en?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       member_dues: {
         Row: {
           amount: number
