@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Loader2, Upload, X, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Upload, X, CheckCircle, XCircle, Clock, Eye, Printer } from 'lucide-react';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
+import { useReactToPrint } from 'react-to-print';
 
 interface Member {
   id: string;
@@ -46,8 +47,16 @@ const MembersManagement = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'all'>('pending');
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
   
+  // Print handler
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: language === 'bn' ? 'সদস্য তালিকা' : 'Members List',
+  });
+
   const [formData, setFormData] = useState({
     member_id: '',
     full_name: '',
@@ -325,17 +334,27 @@ const MembersManagement = () => {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={!isAdmin} onClick={() => {
-              resetForm();
-              // Set auto-generated member ID for new members
-              setFormData(prev => ({ ...prev, member_id: generateMemberId() }));
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              {language === 'bn' ? 'নতুন সদস্য' : 'Add Member'}
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsPrintDialogOpen(true)}
+            disabled={!members || members.length === 0}
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            {language === 'bn' ? 'সকল প্রিন্ট' : 'Print All'}
+          </Button>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={!isAdmin} onClick={() => {
+                resetForm();
+                // Set auto-generated member ID for new members
+                setFormData(prev => ({ ...prev, member_id: generateMemberId() }));
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                {language === 'bn' ? 'নতুন সদস্য' : 'Add Member'}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -499,6 +518,7 @@ const MembersManagement = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Pending Members Alert */}
@@ -741,6 +761,152 @@ const MembersManagement = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Dialog */}
+      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{language === 'bn' ? 'সদস্য তালিকা প্রিন্ট' : 'Print Members List'}</span>
+              <Button onClick={() => handlePrint()} className="gap-2">
+                <Printer className="w-4 h-4" />
+                {language === 'bn' ? 'প্রিন্ট করুন' : 'Print'}
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {/* Printable Content */}
+          <div ref={printRef} className="p-4 bg-white">
+            <style type="text/css" media="print">{`
+              @page { 
+                size: landscape; 
+                margin: 10mm; 
+              }
+              body { 
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .print-header {
+                text-align: center;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+              }
+              .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+              }
+              .print-table th, .print-table td {
+                border: 1px solid #333;
+                padding: 6px 8px;
+                text-align: left;
+              }
+              .print-table th {
+                background-color: #f0f0f0 !important;
+                font-weight: bold;
+              }
+              .print-table tr:nth-child(even) {
+                background-color: #f9f9f9 !important;
+              }
+            `}</style>
+            
+            <div className="print-header">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
+              </h1>
+              <h2 className="text-lg text-gray-700 mt-1">
+                {language === 'bn' ? 'সদস্য তালিকা' : 'Members List'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {language === 'bn' 
+                  ? `মোট সদস্য: ${members?.filter(m => m.status === 'approved').length || 0}` 
+                  : `Total Members: ${members?.filter(m => m.status === 'approved').length || 0}`}
+                {' | '}
+                {language === 'bn' ? 'তারিখ: ' : 'Date: '}
+                {new Date().toLocaleDateString('bn-BD')}
+              </p>
+            </div>
+            
+            <table className="print-table w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'ক্রম' : 'SL'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'সদস্য আইডি' : 'Member ID'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'নাম' : 'Name'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'ফোন' : 'Phone'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'ইমেইল' : 'Email'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'ঠিকানা' : 'Address'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'পেশা' : 'Occupation'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood'}
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-semibold">
+                    {language === 'bn' ? 'প্রকার' : 'Type'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {members?.filter(m => m.status === 'approved').map((member, index) => (
+                  <tr key={member.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="border border-gray-300 px-2 py-1.5 text-gray-900">
+                      {index + 1}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 font-mono text-xs text-gray-900">
+                      {member.member_id}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 font-medium text-gray-900">
+                      {member.full_name}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 text-gray-900">
+                      {member.phone || '-'}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 text-gray-900 text-xs">
+                      {member.email || '-'}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 text-gray-900 text-xs">
+                      {member.address || '-'}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 text-gray-900">
+                      {member.occupation || '-'}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 text-center text-gray-900">
+                      {member.blood_group || '-'}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1.5 text-gray-900">
+                      {member.member_type === 'general' 
+                        ? (language === 'bn' ? 'সাধারণ' : 'General')
+                        : member.member_type === 'lifetime'
+                        ? (language === 'bn' ? 'আজীবন' : 'Lifetime')
+                        : member.member_type === 'honorary'
+                        ? (language === 'bn' ? 'সম্মানসূচক' : 'Honorary')
+                        : member.member_type || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            <div className="mt-6 pt-4 border-t border-gray-300 text-center text-xs text-gray-500">
+              <p>{language === 'bn' ? 'এই তালিকা স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে' : 'This list is auto-generated'}</p>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
