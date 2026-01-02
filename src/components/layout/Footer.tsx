@@ -70,12 +70,12 @@ const Footer = () => {
               <li className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 mt-1 text-accent" />
                 <span className="text-primary-foreground/80 text-sm">
-                  {language === 'bn' ? 'ঢাকা, বাংলাদেশ' : 'Dhaka, Bangladesh'}
+                  {language === 'bn' ? 'সোনাডাঙ্গা, গোপালপুর, সাপাহার, নওগাঁ' : 'Sonadanga, Gopalpur, Sapahar, Naogaon'}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-accent" />
-                <span className="text-primary-foreground/80 text-sm">+880 1XXX-XXXXXX</span>
+                <span className="text-primary-foreground/80 text-sm">০১৭৫০২২৪৭২২</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-accent" />
