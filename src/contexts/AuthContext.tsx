@@ -6,8 +6,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isMember: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any; isAdmin: boolean }>;
+  signIn: (email: string, password: string) => Promise<{ error: any; isAdmin: boolean; isMember: boolean }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -18,17 +19,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isMember, setIsMember] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkRoles = async (userId: string) => {
     const { data } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
+      .eq('user_id', userId);
     
-    setIsAdmin(!!data);
+    const roles = data?.map(r => r.role) || [];
+    setIsAdmin(roles.includes('admin'));
+    setIsMember(roles.includes('member'));
   };
 
   useEffect(() => {
@@ -40,10 +42,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (session?.user) {
           setTimeout(() => {
-            checkAdminRole(session.user.id);
+            checkRoles(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsMember(false);
         }
         setLoading(false);
       }
@@ -55,7 +58,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminRole(session.user.id);
+        checkRoles(session.user.id);
       }
       setLoading(false);
     });
@@ -69,21 +72,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       password,
     });
     
-    // Check admin role immediately after successful login
+    // Check roles immediately after successful login
     if (data?.user) {
-      const { data: roleData } = await supabase
+      const { data: rolesData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', data.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+        .eq('user_id', data.user.id);
       
-      const userIsAdmin = !!roleData;
+      const roles = rolesData?.map(r => r.role) || [];
+      const userIsAdmin = roles.includes('admin');
+      const userIsMember = roles.includes('member');
+      
       setIsAdmin(userIsAdmin);
-      return { error, isAdmin: userIsAdmin };
+      setIsMember(userIsMember);
+      
+      return { error, isAdmin: userIsAdmin, isMember: userIsMember };
     }
     
-    return { error, isAdmin: false };
+    return { error, isAdmin: false, isMember: false };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -105,10 +111,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signOut = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
+    setIsMember(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isMember, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

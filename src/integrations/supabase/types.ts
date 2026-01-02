@@ -191,6 +191,7 @@ export type Database = {
           photo_url: string | null
           status: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           address?: string | null
@@ -207,6 +208,7 @@ export type Database = {
           photo_url?: string | null
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           address?: string | null
@@ -223,6 +225,7 @@ export type Database = {
           photo_url?: string | null
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -411,7 +414,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "member"
       transaction_type:
         | "member_fee"
         | "donation"
@@ -546,7 +549,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "member"],
       transaction_type: [
         "member_fee",
         "donation",

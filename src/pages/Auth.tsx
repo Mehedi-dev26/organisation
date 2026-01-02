@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Shield, Users } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -16,28 +16,31 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginType, setLoginType] = useState<'admin' | 'member'>('member');
   
-  const { signIn, signUp, user, isAdmin, loading } = useAuth();
+  const { signIn, signUp, user, isAdmin, isMember, loading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     if (user && !loading) {
-      // Only admins can access admin panel, others go to home
+      // Redirect based on role
       if (isAdmin) {
         navigate('/admin');
+      } else if (isMember) {
+        navigate('/member-dashboard');
       } else {
         navigate('/');
       }
     }
-  }, [user, isAdmin, loading, navigate]);
+  }, [user, isAdmin, isMember, loading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error, isAdmin: userIsAdmin } = await signIn(email, password);
+    const { error, isAdmin: userIsAdmin, isMember: userIsMember } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -46,13 +49,37 @@ const Auth = () => {
         variant: 'destructive',
       });
     } else {
+      // Validate login type matches role
+      if (loginType === 'admin' && !userIsAdmin) {
+        toast({
+          title: language === 'bn' ? 'অননুমোদিত' : 'Unauthorized',
+          description: language === 'bn' ? 'আপনি অ্যাডমিন নন' : 'You are not an admin',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      if (loginType === 'member' && !userIsMember && !userIsAdmin) {
+        toast({
+          title: language === 'bn' ? 'অননুমোদিত' : 'Unauthorized',
+          description: language === 'bn' ? 'আপনি নিবন্ধিত সদস্য নন' : 'You are not a registered member',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description: language === 'bn' ? 'সফলভাবে লগইন হয়েছে' : 'Successfully logged in',
       });
-      // Navigate based on admin status returned from signIn
+
+      // Navigate based on role
       if (userIsAdmin) {
         navigate('/admin');
+      } else if (userIsMember) {
+        navigate('/member-dashboard');
       } else {
         navigate('/');
       }
@@ -106,14 +133,48 @@ const Auth = () => {
             {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            {language === 'bn' ? 'অ্যাডমিন প্যানেলে প্রবেশ করুন' : 'Access the Admin Panel'}
+            {language === 'bn' ? 'লগইন করুন' : 'Login to continue'}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Login Type Selection */}
+          <div className="mb-6">
+            <Label className="text-sm text-muted-foreground mb-2 block">
+              {language === 'bn' ? 'লগইন প্রকার নির্বাচন করুন' : 'Select Login Type'}
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={loginType === 'member' ? 'default' : 'outline'}
+                className="gap-2"
+                onClick={() => setLoginType('member')}
+              >
+                <Users className="w-4 h-4" />
+                {language === 'bn' ? 'সদস্য' : 'Member'}
+              </Button>
+              <Button
+                type="button"
+                variant={loginType === 'admin' ? 'default' : 'outline'}
+                className="gap-2"
+                onClick={() => setLoginType('admin')}
+              >
+                <Shield className="w-4 h-4" />
+                {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
+              </Button>
+            </div>
+          </div>
+
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">{language === 'bn' ? 'লগইন' : 'Login'}</TabsTrigger>
-              <TabsTrigger value="register">{language === 'bn' ? 'রেজিস্টার' : 'Register'}</TabsTrigger>
+              {loginType === 'admin' && (
+                <TabsTrigger value="register">{language === 'bn' ? 'রেজিস্টার' : 'Register'}</TabsTrigger>
+              )}
+              {loginType === 'member' && (
+                <TabsTrigger value="register" disabled className="opacity-50">
+                  {language === 'bn' ? 'রেজিস্টার' : 'Register'}
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="login">
@@ -153,63 +214,75 @@ const Auth = () => {
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {language === 'bn' ? 'লগইন' : 'Login'}
+                  {loginType === 'member' 
+                    ? (language === 'bn' ? 'সদস্য লগইন' : 'Member Login')
+                    : (language === 'bn' ? 'অ্যাডমিন লগইন' : 'Admin Login')}
                 </Button>
+                
+                {loginType === 'member' && (
+                  <p className="text-xs text-center text-muted-foreground mt-4">
+                    {language === 'bn' 
+                      ? 'সদস্য অ্যাকাউন্ট অ্যাডমিন দ্বারা তৈরি করা হয়। নতুন সদস্য হতে অ্যাডমিনের সাথে যোগাযোগ করুন।' 
+                      : 'Member accounts are created by admins. Contact admin to become a member.'}
+                  </p>
+                )}
               </form>
             </TabsContent>
 
-            <TabsContent value="register">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="register-name">{language === 'bn' ? 'পুরো নাম' : 'Full Name'}</Label>
-                  <Input
-                    id="register-name"
-                    type="text"
-                    placeholder={language === 'bn' ? 'আপনার নাম' : 'Your Name'}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-email">{language === 'bn' ? 'ইমেইল' : 'Email'}</Label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    placeholder="email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-password">{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</Label>
-                  <div className="relative">
+            {loginType === 'admin' && (
+              <TabsContent value="register">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-name">{language === 'bn' ? 'পুরো নাম' : 'Full Name'}</Label>
                     <Input
-                      id="register-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      id="register-name"
+                      type="text"
+                      placeholder={language === 'bn' ? 'আপনার নাম' : 'Your Name'}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
                       required
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
                   </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {language === 'bn' ? 'রেজিস্টার' : 'Register'}
-                </Button>
-              </form>
-            </TabsContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email">{language === 'bn' ? 'ইমেইল' : 'Email'}</Label>
+                    <Input
+                      id="register-email"
+                      type="email"
+                      placeholder="email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password">{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</Label>
+                    <div className="relative">
+                      <Input
+                        id="register-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {language === 'bn' ? 'রেজিস্টার' : 'Register'}
+                  </Button>
+                </form>
+              </TabsContent>
+            )}
           </Tabs>
         </CardContent>
       </Card>
