@@ -2,9 +2,20 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity } from 'lucide-react';
+import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity, DollarSign, UserPlus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { bn } from 'date-fns/locale';
+
+interface RecentActivity {
+  id: string;
+  type: 'member' | 'news' | 'event' | 'transaction';
+  title: string;
+  date: string;
+  icon: React.ElementType;
+  color: string;
+}
 
 const Dashboard = () => {
   const { language } = useLanguage();
@@ -28,6 +39,103 @@ const Dashboard = () => {
       };
     },
   });
+
+  const { data: recentActivities } = useQuery({
+    queryKey: ['recent-activities'],
+    queryFn: async () => {
+      const activities: RecentActivity[] = [];
+      
+      // Fetch recent members
+      const { data: recentMembers } = await supabase
+        .from('members')
+        .select('id, full_name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (recentMembers) {
+        recentMembers.forEach(member => {
+          activities.push({
+            id: `member-${member.id}`,
+            type: 'member',
+            title: language === 'bn' 
+              ? `নতুন সদস্য: ${member.full_name}`
+              : `New member: ${member.full_name}`,
+            date: member.created_at || '',
+            icon: UserPlus,
+            color: 'text-blue-600',
+          });
+        });
+      }
+      
+      // Fetch recent news
+      const { data: recentNews } = await supabase
+        .from('news')
+        .select('id, title_bn, title_en, created_at')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (recentNews) {
+        recentNews.forEach(news => {
+          activities.push({
+            id: `news-${news.id}`,
+            type: 'news',
+            title: language === 'bn' 
+              ? `নতুন সংবাদ: ${news.title_bn}`
+              : `New news: ${news.title_en || news.title_bn}`,
+            date: news.created_at || '',
+            icon: Newspaper,
+            color: 'text-green-600',
+          });
+        });
+      }
+      
+      // Fetch recent transactions
+      const { data: recentTransactions } = await supabase
+        .from('transactions')
+        .select('id, type, amount, created_at, description_bn, description_en')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (recentTransactions) {
+        recentTransactions.forEach(tx => {
+          const typeLabels: Record<string, { bn: string; en: string }> = {
+            member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
+            donation: { bn: 'অনুদান', en: 'Donation' },
+            event_fee: { bn: 'ইভেন্ট ফি', en: 'Event Fee' },
+            expense: { bn: 'ব্যয়', en: 'Expense' },
+            other_income: { bn: 'অন্যান্য আয়', en: 'Other Income' },
+            other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense' },
+          };
+          const label = typeLabels[tx.type] || { bn: tx.type, en: tx.type };
+          activities.push({
+            id: `tx-${tx.id}`,
+            type: 'transaction',
+            title: language === 'bn' 
+              ? `${label.bn}: ৳${tx.amount}`
+              : `${label.en}: ৳${tx.amount}`,
+            date: tx.created_at || '',
+            icon: DollarSign,
+            color: 'text-purple-600',
+          });
+        });
+      }
+      
+      // Sort by date and take top 5
+      return activities
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5);
+    },
+  });
+
+  const formatActivityDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return format(date, 'dd MMM yyyy, hh:mm a', { locale: language === 'bn' ? bn : undefined });
+    } catch {
+      return dateStr;
+    }
+  };
 
   const statCards = [
     {
@@ -112,11 +220,31 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-muted-foreground text-center py-8">
-              {language === 'bn' 
-                ? 'কোন সাম্প্রতিক কার্যক্রম নেই' 
-                : 'No recent activity'}
-            </div>
+            {recentActivities && recentActivities.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-3 pb-3 border-b border-border last:border-0 last:pb-0">
+                    <div className={`p-2 rounded-lg bg-muted ${activity.color}`}>
+                      <activity.icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {activity.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatActivityDate(activity.date)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-center py-8">
+                {language === 'bn' 
+                  ? 'কোন সাম্প্রতিক কার্যক্রম নেই' 
+                  : 'No recent activity'}
+              </div>
+            )}
           </CardContent>
         </Card>
 
