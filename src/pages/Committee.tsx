@@ -1,5 +1,4 @@
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import MainLayout from '@/components/layout/MainLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Phone, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -57,79 +56,73 @@ const Committee = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
+      <MainLayout>
+        <div className="flex-1 flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </main>
-        <Footer />
-      </div>
+        </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="py-20 md:py-28 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
-          <div className="container mx-auto px-4 text-center">
-            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-              {t('committee.title')}
-            </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto">
-              {language === 'bn' 
-                ? 'আমাদের নির্বাহী কমিটির সদস্যদের সাথে পরিচিত হন'
-                : 'Meet our executive committee members'}
-            </p>
-          </div>
-        </section>
+    <MainLayout>
+      {/* Hero */}
+      <section className="py-20 md:py-28 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+            {t('committee.title')}
+          </h1>
+          <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto">
+            {language === 'bn' 
+              ? 'আমাদের নির্বাহী কমিটির সদস্যদের সাথে পরিচিত হন'
+              : 'Meet our executive committee members'}
+          </p>
+        </div>
+      </section>
 
-        {/* Committee */}
-        <section className="py-16 md:py-24 bg-background">
-          <div className="container mx-auto px-4">
-            {committeeMembers?.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                {language === 'bn' ? 'কোন কমিটি সদস্য পাওয়া যায়নি' : 'No committee members found'}
-              </div>
-            ) : (
-              <>
-                {/* President */}
-                {president && (
-                  <div className="max-w-md mx-auto mb-12">
-                    <CommitteeMemberCard member={president} language={language} isLarge />
-                  </div>
-                )}
-
-                {/* Vice President, Secretary, Treasurer */}
-                <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
-                  {vicePresident && <CommitteeMemberCard member={vicePresident} language={language} />}
-                  {secretary && <CommitteeMemberCard member={secretary} language={language} />}
-                  {treasurer && <CommitteeMemberCard member={treasurer} language={language} />}
+      {/* Committee */}
+      <section className="py-16 md:py-24 bg-background">
+        <div className="container mx-auto px-4">
+          {committeeMembers?.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {language === 'bn' ? 'কোন কমিটি সদস্য পাওয়া যায়নি' : 'No committee members found'}
+            </div>
+          ) : (
+            <>
+              {/* President */}
+              {president && (
+                <div className="max-w-md mx-auto mb-12">
+                  <CommitteeMemberCard member={president} language={language} isLarge />
                 </div>
+              )}
 
-                {/* Executive Members */}
-                {executiveMembers && executiveMembers.length > 0 && (
-                  <>
-                    <div className="text-center mb-8">
-                      <h2 className="font-heading text-2xl font-bold text-foreground">
-                        {language === 'bn' ? 'কার্যনির্বাহী সদস্যবৃন্দ' : 'Executive Members'}
-                      </h2>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-                      {executiveMembers.map((member) => (
-                        <CommitteeMemberCard key={member.id} member={member} language={language} isSmall />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </div>
+              {/* Vice President, Secretary, Treasurer */}
+              <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+                {vicePresident && <CommitteeMemberCard member={vicePresident} language={language} />}
+                {secretary && <CommitteeMemberCard member={secretary} language={language} />}
+                {treasurer && <CommitteeMemberCard member={treasurer} language={language} />}
+              </div>
+
+              {/* Executive Members */}
+              {executiveMembers && executiveMembers.length > 0 && (
+                <>
+                  <div className="text-center mb-8">
+                    <h2 className="font-heading text-2xl font-bold text-foreground">
+                      {language === 'bn' ? 'কার্যনির্বাহী সদস্যবৃন্দ' : 'Executive Members'}
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+                    {executiveMembers.map((member) => (
+                      <CommitteeMemberCard key={member.id} member={member} language={language} isSmall />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+    </MainLayout>
   );
 };
 
