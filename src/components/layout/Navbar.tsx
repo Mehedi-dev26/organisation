@@ -31,19 +31,19 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-lg overflow-hidden flex items-center justify-center">
+          <Link to="/" className="flex items-center gap-2 md:gap-3 group">
+            <div className="w-9 h-9 md:w-12 md:h-12 rounded-full bg-white shadow-lg overflow-hidden flex items-center justify-center flex-shrink-0">
               <img 
                 src={logo} 
                 alt="সময়ের বাতিঘর" 
-                className="w-8 h-8 md:w-10 md:h-10 object-contain"
+                className="w-7 h-7 md:w-10 md:h-10 object-contain"
               />
             </div>
-            <div className="hidden sm:block">
-              <h1 className="font-heading text-lg md:text-xl font-bold text-foreground leading-tight">
+            <div className="block">
+              <h1 className="font-heading text-sm sm:text-lg md:text-xl font-bold text-foreground leading-tight truncate max-w-[120px] sm:max-w-none">
                 {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
               </h1>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground hidden xs:block sm:block">
                 {language === 'bn' ? 'একতাই শক্তি' : 'Unity is Strength'}
               </p>
             </div>

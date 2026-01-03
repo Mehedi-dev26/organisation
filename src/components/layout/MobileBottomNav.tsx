@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Newspaper, Image, Phone, Info, UserCircle } from 'lucide-react';
+import { Home, Users, Newspaper, Image, Phone, Info } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -17,8 +17,8 @@ const MobileBottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border shadow-lg md:hidden">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] md:hidden safe-area-pb">
+      <div className="flex items-center justify-around h-16 px-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.href;
@@ -28,21 +28,32 @@ const MobileBottomNav = () => {
               key={item.href}
               to={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-2 py-1 rounded-lg transition-all duration-200 min-w-[50px]",
+                "flex flex-col items-center justify-center gap-0.5 py-2 px-3 rounded-xl transition-all duration-300 relative",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground active:scale-95"
               )}
             >
+              {/* Active indicator dot */}
+              {isActive && (
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+              )}
+              
               <div className={cn(
-                "p-1.5 rounded-full transition-all duration-200",
-                isActive && "bg-primary/10"
+                "p-2 rounded-xl transition-all duration-300",
+                isActive 
+                  ? "bg-primary/15 shadow-sm" 
+                  : "hover:bg-accent"
               )}>
-                <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")} />
+                <Icon className={cn(
+                  "w-5 h-5 transition-all duration-300",
+                  isActive && "stroke-[2.5] scale-110"
+                )} />
               </div>
+              
               <span className={cn(
-                "text-[10px] font-medium leading-tight text-center",
-                isActive && "font-semibold"
+                "text-[9px] font-medium leading-tight text-center transition-all duration-300",
+                isActive ? "font-bold text-primary" : "text-muted-foreground"
               )}>
                 {t(item.label)}
               </span>
