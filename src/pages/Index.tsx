@@ -1,5 +1,6 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import HeroSection from '@/components/home/HeroSection';
 import StatsSection from '@/components/home/StatsSection';
 import AboutPreview from '@/components/home/AboutPreview';
@@ -11,7 +12,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0">
         <HeroSection />
         <StatsSection />
         <AboutPreview />
@@ -20,6 +21,7 @@ const Index = () => {
         <CTASection />
       </main>
       <Footer />
+      <MobileBottomNav />
     </div>
   );
 };
