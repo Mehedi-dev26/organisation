@@ -56,6 +56,8 @@ const DuesManagement = () => {
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isSendingReminders, setIsSendingReminders] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+  const [generateMonth, setGenerateMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
 
   // Generate last 12 months options
   const monthOptions = React.useMemo(() => {
@@ -125,8 +127,15 @@ const DuesManagement = () => {
     mutationFn: async (monthYear: string) => {
       const duesAmount = 100; // Default monthly due amount
       
-      const existingDues = dues.filter(d => d.month_year === monthYear);
-      const existingMemberIds = existingDues.map(d => d.member_id);
+      // Check existing dues from database directly to prevent duplicates
+      const { data: existingDuesData, error: fetchError } = await supabase
+        .from('member_dues')
+        .select('member_id')
+        .eq('month_year', monthYear);
+      
+      if (fetchError) throw fetchError;
+      
+      const existingMemberIds = existingDuesData?.map(d => d.member_id) || [];
       
       const newDues = members
         .filter(m => !existingMemberIds.includes(m.id))
@@ -138,7 +147,9 @@ const DuesManagement = () => {
         }));
       
       if (newDues.length === 0) {
-        throw new Error('সব সদস্যের জন্য এই মাসের চাঁদা ইতিমধ্যে তৈরি করা হয়েছে');
+        throw new Error(language === 'bn' 
+          ? 'সব সদস্যের জন্য এই মাসের চাঁদা ইতিমধ্যে তৈরি করা হয়েছে' 
+          : 'Dues already exist for all members for this month');
       }
       
       const { error } = await supabase
@@ -146,15 +157,16 @@ const DuesManagement = () => {
         .insert(newDues);
       
       if (error) throw error;
-      return newDues.length;
+      return { count: newDues.length, monthYear };
     },
-    onSuccess: (count) => {
+    onSuccess: ({ count, monthYear }) => {
       queryClient.invalidateQueries({ queryKey: ['member-dues'] });
+      setIsGenerateDialogOpen(false);
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description: language === 'bn' 
-          ? `${count} জন সদস্যের জন্য চাঁদা তৈরি হয়েছে` 
-          : `Dues generated for ${count} members`,
+          ? `${monthYear} মাসে ${count} জন সদস্যের জন্য চাঁদা তৈরি হয়েছে` 
+          : `Dues generated for ${count} members for ${monthYear}`,
       });
     },
     onError: (error: any) => {
@@ -302,14 +314,8 @@ const DuesManagement = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            onClick={() => generateDuesMutation.mutate(format(new Date(), 'yyyy-MM'))}
-            disabled={generateDuesMutation.isPending}
-          >
-            {generateDuesMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : null}
-            {language === 'bn' ? 'এই মাসের চাঁদা তৈরি করুন' : 'Generate This Month Dues'}
+          <Button onClick={() => setIsGenerateDialogOpen(true)}>
+            {language === 'bn' ? 'চাঁদা তৈরি করুন' : 'Generate Dues'}
           </Button>
         </div>
       </div>
@@ -507,6 +513,53 @@ const DuesManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Generate Dues Dialog */}
+      <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'bn' ? 'মাসিক চাঁদা তৈরি করুন' : 'Generate Monthly Dues'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              {language === 'bn' 
+                ? 'কোন মাসের জন্য চাঁদা তৈরি করতে চান সেটি নির্বাচন করুন। যদি সেই মাসের চাঁদা ইতিমধ্যে তৈরি থাকে, তাহলে ডুপ্লিকেট হবে না।'
+                : 'Select the month for which you want to generate dues. Duplicate dues will not be created.'}
+            </p>
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                {language === 'bn' ? 'মাস নির্বাচন করুন' : 'Select Month'}
+              </label>
+              <Select value={generateMonth} onValueChange={setGenerateMonth}>
+                <SelectTrigger>
+                  <SelectValue placeholder={language === 'bn' ? 'মাস নির্বাচন করুন' : 'Select Month'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)}>
+                {language === 'bn' ? 'বাতিল' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={() => generateDuesMutation.mutate(generateMonth)}
+                disabled={generateDuesMutation.isPending}
+              >
+                {generateDuesMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : null}
+                {language === 'bn' ? 'চাঁদা তৈরি করুন' : 'Generate Dues'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Reminder Confirmation Dialog */}
       <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
