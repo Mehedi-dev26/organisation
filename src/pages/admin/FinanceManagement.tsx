@@ -418,7 +418,10 @@ const FinanceManagement = () => {
                     <Label>{language === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Type'}</Label>
                     <Select
                       value={formData.type}
-                      onValueChange={(value: TransactionType) => setFormData({ ...formData, type: value })}
+                      onValueChange={(value: TransactionType) => {
+                        setFormData({ ...formData, type: value, member_id: '', amount: '' });
+                        setSelectedMonths([]);
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -433,53 +436,17 @@ const FinanceManagement = () => {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>{language === 'bn' ? 'পরিমাণ (টাকা)' : 'Amount (BDT)'}</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
-                    <Input
-                      type="date"
-                      value={formData.transaction_date}
-                      onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{language === 'bn' ? 'পেমেন্ট পদ্ধতি' : 'Payment Method'}</Label>
-                    <Select
-                      value={formData.payment_method}
-                      onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paymentMethods.map(method => (
-                          <SelectItem key={method.value} value={method.value}>
-                            {language === 'bn' ? method.label_bn : method.label_en}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
+                  {/* Member Fee Section - Show member selection first */}
                   {formData.type === 'member_fee' && (
                     <>
-                      <div className="space-y-2 md:col-span-2">
+                      <div className="space-y-2">
                         <Label>{language === 'bn' ? 'সদস্য নির্বাচন করুন' : 'Select Member'}</Label>
                         <Select
                           value={formData.member_id}
-                          onValueChange={(value) => setFormData({ ...formData, member_id: value, month_year: '' })}
+                          onValueChange={(value) => {
+                            setFormData({ ...formData, member_id: value, month_year: '', amount: '' });
+                            setSelectedMonths([]);
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder={language === 'bn' ? 'সদস্য নির্বাচন করুন' : 'Select member'} />
@@ -564,16 +531,16 @@ const FinanceManagement = () => {
                                 </div>
                               </div>
 
-                              {/* Selected months summary */}
+                              {/* Selected months summary with amount */}
                               {selectedMonths.length > 0 && (
                                 <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                                   <div className="flex justify-between items-center">
                                     <span className="text-sm font-medium">
                                       {language === 'bn' 
-                                        ? `${selectedMonths.length} মাস নির্বাচিত` 
-                                        : `${selectedMonths.length} month(s) selected`}
+                                        ? `${selectedMonths.length} মাস নির্বাচিত - পরিশোধযোগ্য:` 
+                                        : `${selectedMonths.length} month(s) selected - Payable:`}
                                     </span>
-                                    <span className="text-lg font-bold text-primary">
+                                    <span className="text-xl font-bold text-primary">
                                       ৳{selectedMonthsTotal.toLocaleString('bn-BD')}
                                     </span>
                                   </div>
@@ -589,6 +556,49 @@ const FinanceManagement = () => {
                       )}
                     </>
                   )}
+
+                  {/* Amount field - only show for non-member-fee or when no months selected */}
+                  {(formData.type !== 'member_fee' || selectedMonths.length === 0) && (
+                    <div className="space-y-2">
+                      <Label>{language === 'bn' ? 'পরিমাণ (টাকা)' : 'Amount (BDT)'}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        required={formData.type !== 'member_fee' || selectedMonths.length === 0}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
+                    <Input
+                      type="date"
+                      value={formData.transaction_date}
+                      onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{language === 'bn' ? 'পেমেন্ট পদ্ধতি' : 'Payment Method'}</Label>
+                    <Select
+                      value={formData.payment_method}
+                      onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentMethods.map(method => (
+                          <SelectItem key={method.value} value={method.value}>
+                            {language === 'bn' ? method.label_bn : method.label_en}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {formData.type === 'donation' && (
                     <>
