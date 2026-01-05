@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Loader2, TrendingUp, TrendingDown, Wallet, Users, Search, Trash2, Edit, Printer } from 'lucide-react';
 import { format } from 'date-fns';
@@ -103,6 +104,9 @@ const FinanceManagement = () => {
     month_year: format(new Date(), 'yyyy-MM'),
     notes: '',
   });
+  
+  // For multiple month selection
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
 
   // Fetch transactions
   const { data: transactions, isLoading } = useQuery({
@@ -157,9 +161,19 @@ const FinanceManagement = () => {
     return memberUnpaidDues?.reduce((sum, due) => sum + Number(due.amount), 0) || 0;
   }, [memberUnpaidDues]);
 
+  // Calculate selected months total
+  const selectedMonthsTotal = React.useMemo(() => {
+    if (!memberUnpaidDues) return 0;
+    return memberUnpaidDues
+      .filter(due => selectedMonths.includes(due.month_year))
+      .reduce((sum, due) => sum + Number(due.amount), 0);
+  }, [memberUnpaidDues, selectedMonths]);
+
   // Create transaction mutation
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: typeof formData & { selectedMonths?: string[] }) => {
+      const monthsToProcess = data.selectedMonths || (data.month_year ? [data.month_year] : []);
+      
       // Insert transaction
       const { data: transactionData, error } = await supabase.from('transactions').insert({
         type: data.type,
@@ -172,47 +186,49 @@ const FinanceManagement = () => {
         payment_method: data.payment_method,
         payment_reference: data.payment_reference || null,
         transaction_date: data.transaction_date,
-        month_year: data.month_year || null,
+        month_year: monthsToProcess.length === 1 ? monthsToProcess[0] : monthsToProcess.join(', '),
         notes: data.notes || null,
       }).select().single();
       if (error) throw error;
 
-      // If it's a member fee, update the member_dues table
-      if (data.type === 'member_fee' && data.member_id && data.month_year) {
-        // First check if dues record exists for this member and month
-        const { data: existingDue } = await supabase
-          .from('member_dues')
-          .select('id')
-          .eq('member_id', data.member_id)
-          .eq('month_year', data.month_year)
-          .maybeSingle();
+      // If it's a member fee, update the member_dues table for all selected months
+      if (data.type === 'member_fee' && data.member_id && monthsToProcess.length > 0) {
+        for (const monthYear of monthsToProcess) {
+          // Check if dues record exists for this member and month
+          const { data: existingDue } = await supabase
+            .from('member_dues')
+            .select('id, amount')
+            .eq('member_id', data.member_id)
+            .eq('month_year', monthYear)
+            .maybeSingle();
 
-        if (existingDue) {
-          // Update existing dues record
-          const { error: updateError } = await supabase
-            .from('member_dues')
-            .update({
-              is_paid: true,
-              paid_date: data.transaction_date,
-              transaction_id: transactionData.id,
-            })
-            .eq('id', existingDue.id);
-          
-          if (updateError) console.error('Error updating member_dues:', updateError);
-        } else {
-          // Create new dues record if it doesn't exist
-          const { error: insertError } = await supabase
-            .from('member_dues')
-            .insert({
-              member_id: data.member_id,
-              month_year: data.month_year,
-              amount: parseFloat(data.amount),
-              is_paid: true,
-              paid_date: data.transaction_date,
-              transaction_id: transactionData.id,
-            });
-          
-          if (insertError) console.error('Error creating member_dues:', insertError);
+          if (existingDue) {
+            // Update existing dues record
+            const { error: updateError } = await supabase
+              .from('member_dues')
+              .update({
+                is_paid: true,
+                paid_date: data.transaction_date,
+                transaction_id: transactionData.id,
+              })
+              .eq('id', existingDue.id);
+            
+            if (updateError) console.error('Error updating member_dues:', updateError);
+          } else {
+            // Create new dues record if it doesn't exist
+            const { error: insertError } = await supabase
+              .from('member_dues')
+              .insert({
+                member_id: data.member_id,
+                month_year: monthYear,
+                amount: 100, // Default amount
+                is_paid: true,
+                paid_date: data.transaction_date,
+                transaction_id: transactionData.id,
+              });
+            
+            if (insertError) console.error('Error creating member_dues:', insertError);
+          }
         }
       }
 
@@ -291,6 +307,7 @@ const FinanceManagement = () => {
       month_year: format(new Date(), 'yyyy-MM'),
       notes: '',
     });
+    setSelectedMonths([]);
     setEditingTransaction(null);
     setIsDialogOpen(false);
   };
@@ -319,7 +336,12 @@ const FinanceManagement = () => {
     if (editingTransaction) {
       updateMutation.mutate({ ...formData, id: editingTransaction.id });
     } else {
-      createMutation.mutate(formData);
+      // For member fees with multiple months selected
+      if (formData.type === 'member_fee' && selectedMonths.length > 0) {
+        createMutation.mutate({ ...formData, amount: selectedMonthsTotal.toString(), selectedMonths });
+      } else {
+        createMutation.mutate(formData);
+      }
     }
   };
 
@@ -474,7 +496,7 @@ const FinanceManagement = () => {
 
                       {/* Show unpaid dues summary */}
                       {formData.member_id && (
-                        <div className="md:col-span-2 p-4 bg-muted rounded-lg space-y-3">
+                        <div className="md:col-span-2 p-4 bg-muted rounded-lg space-y-4">
                           {isLoadingDues ? (
                             <div className="flex items-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -492,36 +514,71 @@ const FinanceManagement = () => {
                                   ৳{totalUnpaidAmount.toLocaleString('bn-BD')}
                                 </span>
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                {language === 'bn' 
-                                  ? `${memberUnpaidDues.length} মাসের বকেয়া আছে` 
-                                  : `${memberUnpaidDues.length} month(s) unpaid`}
-                              </div>
+                              
                               <div className="space-y-2">
-                                <Label>{language === 'bn' ? 'কোন মাসের চাঁদা পরিশোধ করবেন?' : 'Which month to pay?'}</Label>
-                                <Select
-                                  value={formData.month_year}
-                                  onValueChange={(value) => {
-                                    const selectedDue = memberUnpaidDues.find(d => d.month_year === value);
-                                    setFormData({ 
-                                      ...formData, 
-                                      month_year: value,
-                                      amount: selectedDue ? selectedDue.amount.toString() : formData.amount
-                                    });
-                                  }}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder={language === 'bn' ? 'মাস নির্বাচন করুন' : 'Select month'} />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {memberUnpaidDues.map(due => (
-                                      <SelectItem key={due.id} value={due.month_year}>
+                                <div className="flex justify-between items-center">
+                                  <Label>{language === 'bn' ? 'কোন মাসের চাঁদা পরিশোধ করবেন?' : 'Which month(s) to pay?'}</Label>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (selectedMonths.length === memberUnpaidDues.length) {
+                                        setSelectedMonths([]);
+                                      } else {
+                                        setSelectedMonths(memberUnpaidDues.map(d => d.month_year));
+                                      }
+                                    }}
+                                  >
+                                    {selectedMonths.length === memberUnpaidDues.length 
+                                      ? (language === 'bn' ? 'সব বাদ দিন' : 'Deselect All')
+                                      : (language === 'bn' ? 'সব নির্বাচন' : 'Select All')}
+                                  </Button>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                                  {memberUnpaidDues.map(due => (
+                                    <label
+                                      key={due.id}
+                                      className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
+                                        selectedMonths.includes(due.month_year)
+                                          ? 'bg-primary/10 border-primary'
+                                          : 'bg-background border-border hover:border-primary/50'
+                                      }`}
+                                    >
+                                      <Checkbox
+                                        checked={selectedMonths.includes(due.month_year)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedMonths([...selectedMonths, due.month_year]);
+                                          } else {
+                                            setSelectedMonths(selectedMonths.filter(m => m !== due.month_year));
+                                          }
+                                        }}
+                                      />
+                                      <span className="text-sm">
                                         {due.month_year} - ৳{Number(due.amount).toLocaleString('bn-BD')}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
                               </div>
+
+                              {/* Selected months summary */}
+                              {selectedMonths.length > 0 && (
+                                <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium">
+                                      {language === 'bn' 
+                                        ? `${selectedMonths.length} মাস নির্বাচিত` 
+                                        : `${selectedMonths.length} month(s) selected`}
+                                    </span>
+                                    <span className="text-lg font-bold text-primary">
+                                      ৳{selectedMonthsTotal.toLocaleString('bn-BD')}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </>
                           ) : (
                             <div className="text-sm text-green-600 dark:text-green-400">
