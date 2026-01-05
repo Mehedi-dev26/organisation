@@ -2,12 +2,13 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity, DollarSign, UserPlus, ArrowUpRight, ArrowDownRight, ClipboardList, Trash2, CreditCard } from 'lucide-react';
+import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity, DollarSign, UserPlus, ArrowUpRight, ArrowDownRight, ClipboardList, Trash2, CreditCard, HardDrive, Database } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { bn } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
+import { Progress } from '@/components/ui/progress';
 
 interface RecentActivity {
   id: string;
@@ -130,6 +131,90 @@ const Dashboard = () => {
       };
     },
   });
+
+  // Storage usage query
+  const { data: storageUsage } = useQuery({
+    queryKey: ['storage-usage'],
+    queryFn: async () => {
+      // Get all files from member-photos bucket
+      const { data: memberPhotos } = await supabase.storage
+        .from('member-photos')
+        .list('', { limit: 1000 });
+      
+      // Get files from pending folder
+      const { data: pendingPhotos } = await supabase.storage
+        .from('member-photos')
+        .list('pending', { limit: 1000 });
+      
+      // Get all files from gallery-images bucket
+      const { data: galleryImages } = await supabase.storage
+        .from('gallery-images')
+        .list('', { limit: 1000 });
+      
+      let memberPhotosSize = 0;
+      let gallerySize = 0;
+      let memberPhotosCount = 0;
+      let galleryCount = 0;
+      
+      // Calculate member photos size (root level)
+      if (memberPhotos) {
+        for (const file of memberPhotos) {
+          if (file.metadata?.size) {
+            memberPhotosSize += file.metadata.size;
+            memberPhotosCount++;
+          }
+        }
+      }
+      
+      // Add pending folder files
+      if (pendingPhotos) {
+        for (const file of pendingPhotos) {
+          if (file.metadata?.size) {
+            memberPhotosSize += file.metadata.size;
+            memberPhotosCount++;
+          }
+        }
+      }
+      
+      // Calculate gallery size
+      if (galleryImages) {
+        for (const file of galleryImages) {
+          if (file.metadata?.size) {
+            gallerySize += file.metadata.size;
+            galleryCount++;
+          }
+        }
+      }
+      
+      const totalSize = memberPhotosSize + gallerySize;
+      const totalFiles = memberPhotosCount + galleryCount;
+      
+      // Lovable Cloud has 1GB storage limit
+      const maxStorage = 1 * 1024 * 1024 * 1024; // 1GB in bytes
+      const usagePercent = (totalSize / maxStorage) * 100;
+      
+      return {
+        totalSize,
+        totalFiles,
+        memberPhotosSize,
+        memberPhotosCount,
+        gallerySize,
+        galleryCount,
+        maxStorage,
+        usagePercent,
+      };
+    },
+    enabled: isAdmin,
+  });
+
+  // Format bytes to human readable
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   // Fetch cashier activity logs
   const { data: activityLogs } = useQuery({
@@ -371,6 +456,80 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Storage Usage Card */}
+      {isAdmin && storageUsage && (
+        <Card className="border-l-4 border-l-cyan-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <HardDrive className="w-5 h-5 text-cyan-600" />
+              {language === 'bn' ? 'স্টোরেজ ব্যবহার' : 'Storage Usage'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Overall Usage */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {language === 'bn' ? 'মোট ব্যবহৃত' : 'Total Used'}
+                </span>
+                <span className="font-medium">
+                  {formatBytes(storageUsage.totalSize)} / {formatBytes(storageUsage.maxStorage)}
+                </span>
+              </div>
+              <Progress 
+                value={storageUsage.usagePercent} 
+                className="h-3"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {storageUsage.usagePercent.toFixed(2)}% {language === 'bn' ? 'ব্যবহৃত' : 'used'}
+              </p>
+            </div>
+            
+            {/* Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {language === 'bn' ? 'সদস্যদের ছবি' : 'Member Photos'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatBytes(storageUsage.memberPhotosSize)} • {storageUsage.memberPhotosCount} {language === 'bn' ? 'টি ফাইল' : 'files'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Database className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {language === 'bn' ? 'গ্যালারি ছবি' : 'Gallery Images'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatBytes(storageUsage.gallerySize)} • {storageUsage.galleryCount} {language === 'bn' ? 'টি ফাইল' : 'files'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Warning if usage is high */}
+            {storageUsage.usagePercent > 80 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  ⚠️ {language === 'bn' 
+                    ? 'সতর্কতা: আপনার স্টোরেজ প্রায় পূর্ণ। অব্যবহৃত ফাইল মুছে ফেলুন।' 
+                    : 'Warning: Your storage is almost full. Consider deleting unused files.'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
