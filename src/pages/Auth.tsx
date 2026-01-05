@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff, Shield, Users } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Shield, Users, Wallet } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -16,9 +16,9 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [loginType, setLoginType] = useState<'admin' | 'member'>('member');
+  const [loginType, setLoginType] = useState<'admin' | 'member' | 'cashier'>('member');
   
-  const { signIn, signUp, user, isAdmin, isMember, loading } = useAuth();
+  const { signIn, signUp, user, isAdmin, isMember, isCashier, loading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,19 +28,21 @@ const Auth = () => {
       // Redirect based on role
       if (isAdmin) {
         navigate('/admin');
+      } else if (isCashier) {
+        navigate('/cashier');
       } else if (isMember) {
         navigate('/member-dashboard');
       } else {
         navigate('/');
       }
     }
-  }, [user, isAdmin, isMember, loading, navigate]);
+  }, [user, isAdmin, isMember, isCashier, loading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error, isAdmin: userIsAdmin, isMember: userIsMember } = await signIn(email, password);
+    const { error, isAdmin: userIsAdmin, isMember: userIsMember, isCashier: userIsCashier } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -59,8 +61,18 @@ const Auth = () => {
         setIsLoading(false);
         return;
       }
+
+      if (loginType === 'cashier' && !userIsCashier) {
+        toast({
+          title: language === 'bn' ? 'অননুমোদিত' : 'Unauthorized',
+          description: language === 'bn' ? 'আপনি ক্যাশিয়ার নন' : 'You are not a cashier',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
       
-      if (loginType === 'member' && !userIsMember && !userIsAdmin) {
+      if (loginType === 'member' && !userIsMember && !userIsAdmin && !userIsCashier) {
         toast({
           title: language === 'bn' ? 'অননুমোদিত' : 'Unauthorized',
           description: language === 'bn' ? 'আপনি নিবন্ধিত সদস্য নন' : 'You are not a registered member',
@@ -78,6 +90,8 @@ const Auth = () => {
       // Navigate based on role
       if (userIsAdmin) {
         navigate('/admin');
+      } else if (userIsCashier) {
+        navigate('/cashier');
       } else if (userIsMember) {
         navigate('/member-dashboard');
       } else {
@@ -142,21 +156,33 @@ const Auth = () => {
             <Label className="text-sm text-muted-foreground mb-2 block">
               {language === 'bn' ? 'লগইন প্রকার নির্বাচন করুন' : 'Select Login Type'}
             </Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
                 variant={loginType === 'member' ? 'default' : 'outline'}
                 className="gap-2"
                 onClick={() => setLoginType('member')}
+                size="sm"
               >
                 <Users className="w-4 h-4" />
                 {language === 'bn' ? 'সদস্য' : 'Member'}
               </Button>
               <Button
                 type="button"
+                variant={loginType === 'cashier' ? 'default' : 'outline'}
+                className="gap-2"
+                onClick={() => setLoginType('cashier')}
+                size="sm"
+              >
+                <Wallet className="w-4 h-4" />
+                {language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier'}
+              </Button>
+              <Button
+                type="button"
                 variant={loginType === 'admin' ? 'default' : 'outline'}
                 className="gap-2"
                 onClick={() => setLoginType('admin')}
+                size="sm"
               >
                 <Shield className="w-4 h-4" />
                 {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
@@ -216,6 +242,8 @@ const Auth = () => {
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {loginType === 'member' 
                     ? (language === 'bn' ? 'সদস্য লগইন' : 'Member Login')
+                    : loginType === 'cashier'
+                    ? (language === 'bn' ? 'ক্যাশিয়ার লগইন' : 'Cashier Login')
                     : (language === 'bn' ? 'অ্যাডমিন লগইন' : 'Admin Login')}
                 </Button>
                 
@@ -224,6 +252,13 @@ const Auth = () => {
                     {language === 'bn' 
                       ? 'সদস্য অ্যাকাউন্ট অ্যাডমিন দ্বারা তৈরি করা হয়। নতুন সদস্য হতে অ্যাডমিনের সাথে যোগাযোগ করুন।' 
                       : 'Member accounts are created by admins. Contact admin to become a member.'}
+                  </p>
+                )}
+                {loginType === 'cashier' && (
+                  <p className="text-xs text-center text-muted-foreground mt-4">
+                    {language === 'bn' 
+                      ? 'ক্যাশিয়ার অ্যাকাউন্ট অ্যাডমিন দ্বারা তৈরি করা হয়।' 
+                      : 'Cashier accounts are created by admins.'}
                   </p>
                 )}
               </form>

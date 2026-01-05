@@ -46,7 +46,7 @@ interface MemberDue {
 
 const DuesManagement = () => {
   const { language } = useLanguage();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isCashier } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -279,7 +279,7 @@ const DuesManagement = () => {
     setIsSendingReminders(false);
   };
 
-  if (!isAdmin) {
+  if (!isAdmin && !isCashier) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">

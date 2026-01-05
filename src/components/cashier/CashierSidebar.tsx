@@ -15,24 +15,16 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard, 
-  Users, 
-  Newspaper, 
-  Calendar, 
-  UserCog, 
   LogOut,
   Home,
-  Settings,
   Wallet,
   Receipt,
-  ImageIcon,
-  History,
-  UserCog2
+  History
 } from 'lucide-react';
 
-const AdminSidebar = () => {
+const CashierSidebar = () => {
   const { language } = useLanguage();
   const { signOut } = useAuth();
   const location = useLocation();
@@ -42,64 +34,29 @@ const AdminSidebar = () => {
   const menuItems = [
     { 
       title: language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard', 
-      url: '/admin', 
+      url: '/cashier', 
       icon: LayoutDashboard 
     },
     { 
-      title: language === 'bn' ? 'সদস্য ব্যবস্থাপনা' : 'Members', 
-      url: '/admin/members', 
-      icon: Users 
-    },
-    { 
-      title: language === 'bn' ? 'সংবাদ ব্যবস্থাপনা' : 'News', 
-      url: '/admin/news', 
-      icon: Newspaper 
-    },
-    { 
-      title: language === 'bn' ? 'ইভেন্ট ব্যবস্থাপনা' : 'Events', 
-      url: '/admin/events', 
-      icon: Calendar 
-    },
-    { 
-      title: language === 'bn' ? 'কমিটি ব্যবস্থাপনা' : 'Committee', 
-      url: '/admin/committee', 
-      icon: UserCog 
-    },
-    { 
-      title: language === 'bn' ? 'গ্যালারি' : 'Gallery', 
-      url: '/admin/gallery', 
-      icon: ImageIcon 
-    },
-    { 
       title: language === 'bn' ? 'আর্থিক ব্যবস্থাপনা' : 'Finance', 
-      url: '/admin/finance', 
+      url: '/cashier/finance', 
       icon: Wallet 
     },
     { 
       title: language === 'bn' ? 'বকেয়া চাঁদা' : 'Dues', 
-      url: '/admin/dues', 
+      url: '/cashier/dues', 
       icon: Receipt 
     },
     { 
       title: language === 'bn' ? 'বিগত বছরের হিসাব' : 'Yearly Accounts', 
-      url: '/admin/yearly-accounts', 
+      url: '/cashier/yearly-accounts', 
       icon: History 
-    },
-    { 
-      title: language === 'bn' ? 'ক্যাশিয়ার' : 'Cashiers', 
-      url: '/admin/cashiers', 
-      icon: UserCog2 
-    },
-    { 
-      title: language === 'bn' ? 'সেটিংস' : 'Settings', 
-      url: '/admin/settings', 
-      icon: Settings 
     },
   ];
 
   const isActive = (path: string) => {
-    if (path === '/admin') {
-      return location.pathname === '/admin';
+    if (path === '/cashier') {
+      return location.pathname === '/cashier';
     }
     return location.pathname.startsWith(path);
   };
@@ -108,16 +65,16 @@ const AdminSidebar = () => {
     <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center">
-            <Settings className="w-5 h-5 text-sidebar-primary-foreground" />
+          <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center">
+            <Wallet className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
             <div>
               <h2 className="font-heading font-bold text-sidebar-foreground">
-                {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
+                {language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier'}
               </h2>
               <p className="text-xs text-sidebar-foreground/70">
-                {language === 'bn' ? 'ব্যবস্থাপনা প্যানেল' : 'Management Panel'}
+                {language === 'bn' ? 'আর্থিক প্যানেল' : 'Finance Panel'}
               </p>
             </div>
           )}
@@ -138,7 +95,7 @@ const AdminSidebar = () => {
                     isActive={isActive(item.url)}
                     className="hover:bg-sidebar-accent"
                   >
-                    <NavLink to={item.url} end={item.url === '/admin'}>
+                    <NavLink to={item.url} end={item.url === '/cashier'}>
                       <item.icon className="w-4 h-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -175,4 +132,4 @@ const AdminSidebar = () => {
   );
 };
 
-export default AdminSidebar;
+export default CashierSidebar;

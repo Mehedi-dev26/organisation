@@ -16,7 +16,7 @@ import { bn, enUS } from 'date-fns/locale';
 
 const YearlyAccounts = () => {
   const { language } = useLanguage();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isCashier } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
 
@@ -40,7 +40,7 @@ const YearlyAccounts = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: isAdmin,
+    enabled: isAdmin || isCashier,
   });
 
   // Calculate yearly summary
@@ -143,7 +143,7 @@ const YearlyAccounts = () => {
     },
   };
 
-  if (!isAdmin) {
+  if (!isAdmin && !isCashier) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">
