@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, CartesianGrid, Tooltip } from 'recharts';
-import { Calendar, TrendingUp, TrendingDown, Wallet, FileText, Download, ArrowUpRight, ArrowDownRight, Scale, Edit, Trash2, Save, X } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, Wallet, FileText, Download, ArrowUpRight, ArrowDownRight, Scale, Edit, Trash2, Save, X, Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { bn, enUS } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Database } from '@/integrations/supabase/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { parseExcelFile, generateExcelTemplate, exportTransactionsToExcel, ExcelTransaction, ValidationError } from '@/lib/excelUtils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 type TransactionType = Database['public']['Enums']['transaction_type'];
 
@@ -597,6 +601,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
   queryClient,
   user
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [editForm, setEditForm] = useState({
     amount: '',
     description_bn: '',
@@ -617,6 +622,14 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
     payment_method: 'cash',
     donor_name: '',
   });
+
+  // Excel Import States
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importStep, setImportStep] = useState<'upload' | 'preview' | 'importing' | 'done'>('upload');
+  const [parsedData, setParsedData] = useState<ExcelTransaction[]>([]);
+  const [parseErrors, setParseErrors] = useState<ValidationError[]>([]);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importResult, setImportResult] = useState({ success: 0, failed: 0 });
 
   const typeLabels: { [key: string]: { bn: string; en: string } } = {
     member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
@@ -782,10 +795,103 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
     });
   };
 
+  // Excel Import Functions
+  const openImportDialog = () => {
+    setImportStep('upload');
+    setParsedData([]);
+    setParseErrors([]);
+    setImportProgress(0);
+    setImportResult({ success: 0, failed: 0 });
+    setIsImportDialogOpen(true);
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await parseExcelFile(file);
+      setParsedData(result.data);
+      setParseErrors(result.errors);
+      setImportStep('preview');
+    } catch (error) {
+      toast.error(language === 'bn' ? 'ফাইল পড়তে সমস্যা হয়েছে' : 'Failed to read file');
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImport = async () => {
+    if (parsedData.length === 0) return;
+
+    setImportStep('importing');
+    setImportProgress(0);
+
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < parsedData.length; i++) {
+      const tx = parsedData[i];
+      
+      try {
+        const { error } = await supabase.from('transactions').insert({
+          type: tx.type,
+          amount: tx.amount,
+          transaction_date: tx.date,
+          description_bn: tx.description_bn,
+          description_en: tx.description_en,
+          donor_name: tx.donor_name,
+          payment_method: tx.payment_method,
+          receipt_number: tx.receipt_number,
+          notes: tx.notes,
+          created_by: user?.id,
+        });
+
+        if (error) throw error;
+        success++;
+      } catch (error) {
+        failed++;
+      }
+
+      setImportProgress(Math.round(((i + 1) / parsedData.length) * 100));
+    }
+
+    setImportResult({ success, failed });
+    setImportStep('done');
+
+    // Log activity
+    if (user && success > 0) {
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        user_name: user.email,
+        user_role: isAdmin ? 'admin' : 'cashier',
+        action_type: 'import',
+        entity_type: 'transaction',
+        description_bn: `Excel থেকে ${success}টি লেনদেন ইমপোর্ট করা হয়েছে (${selectedYear})`,
+        description_en: `Imported ${success} transactions from Excel (${selectedYear})`,
+      });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['yearly-transactions', selectedYear] });
+  };
+
+  const handleDownloadTemplate = () => {
+    generateExcelTemplate();
+    toast.success(language === 'bn' ? 'টেমপ্লেট ডাউনলোড হয়েছে' : 'Template downloaded');
+  };
+
+  const handleExportTransactions = () => {
+    exportTransactionsToExcel(transactions, selectedYear);
+    toast.success(language === 'bn' ? 'লেনদেন এক্সপোর্ট হয়েছে' : 'Transactions exported');
+  };
+
   return (
     <TabsContent value="transactions">
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
               <Edit className="w-5 h-5" />
@@ -797,10 +903,20 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
                 : `Edit or add transactions for ${selectedYear}`}
             </CardDescription>
           </div>
-          <Button onClick={openAddDialog} className="gap-2">
-            <FileText className="w-4 h-4" />
-            {language === 'bn' ? 'নতুন লেনদেন যোগ করুন' : 'Add Transaction'}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={openImportDialog} className="gap-2">
+              <Upload className="w-4 h-4" />
+              {language === 'bn' ? 'Excel ইমপোর্ট' : 'Import Excel'}
+            </Button>
+            <Button variant="outline" onClick={handleExportTransactions} className="gap-2">
+              <Download className="w-4 h-4" />
+              {language === 'bn' ? 'এক্সপোর্ট' : 'Export'}
+            </Button>
+            <Button onClick={openAddDialog} className="gap-2">
+              <FileText className="w-4 h-4" />
+              {language === 'bn' ? 'নতুন লেনদেন' : 'Add New'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
@@ -1057,6 +1173,222 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Excel Import Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5" />
+              {language === 'bn' ? 'Excel থেকে লেনদেন ইমপোর্ট' : 'Import Transactions from Excel'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-6">
+            {/* Upload Step */}
+            {importStep === 'upload' && (
+              <div className="space-y-6 py-4">
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>{language === 'bn' ? 'নির্দেশিকা' : 'Instructions'}</AlertTitle>
+                  <AlertDescription className="mt-2">
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      <li>{language === 'bn' ? 'প্রথমে টেমপ্লেট ডাউনলোড করুন এবং সঠিক ফরম্যাটে ডেটা পূরণ করুন' : 'Download template first and fill data in correct format'}</li>
+                      <li>{language === 'bn' ? 'তারিখ ফরম্যাট: YYYY-MM-DD অথবা DD/MM/YYYY' : 'Date format: YYYY-MM-DD or DD/MM/YYYY'}</li>
+                      <li>{language === 'bn' ? 'লেনদেনের ধরন: সদস্য চাঁদা, দান/অনুদান, ব্যয়, অন্যান্য আয়, অন্যান্য ব্যয়' : 'Types: member_fee, donation, expense, other_income, other_expense'}</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+
+                <div className="flex justify-center">
+                  <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
+                    <Download className="w-4 h-4" />
+                    {language === 'bn' ? 'টেমপ্লেট ডাউনলোড করুন' : 'Download Template'}
+                  </Button>
+                </div>
+
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <FileSpreadsheet className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    {language === 'bn' ? 'Excel ফাইল (.xlsx, .xls) আপলোড করুন' : 'Upload Excel file (.xlsx, .xls)'}
+                  </p>
+                  <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
+                    <Upload className="w-4 h-4" />
+                    {language === 'bn' ? 'ফাইল নির্বাচন করুন' : 'Select File'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Preview Step */}
+            {importStep === 'preview' && (
+              <div className="space-y-4 py-4">
+                {parseErrors.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>{language === 'bn' ? 'ভ্যালিডেশন এরর' : 'Validation Errors'}</AlertTitle>
+                    <AlertDescription>
+                      <ScrollArea className="h-24 mt-2">
+                        <ul className="list-disc list-inside text-sm space-y-1">
+                          {parseErrors.map((err, i) => (
+                            <li key={i}>
+                              {language === 'bn' 
+                                ? `রো ${err.row}: ${err.messageBn}`
+                                : `Row ${err.row}: ${err.message}`}
+                            </li>
+                          ))}
+                        </ul>
+                      </ScrollArea>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {language === 'bn' 
+                      ? `${parsedData.length}টি সফল লেনদেন পাওয়া গেছে`
+                      : `${parsedData.length} valid transactions found`}
+                  </p>
+                  <Button variant="ghost" size="sm" onClick={() => setImportStep('upload')}>
+                    {language === 'bn' ? 'অন্য ফাইল' : 'Different file'}
+                  </Button>
+                </div>
+
+                {parsedData.length > 0 && (
+                  <ScrollArea className="h-[300px] border rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="sticky top-0 bg-background">{language === 'bn' ? 'তারিখ' : 'Date'}</TableHead>
+                          <TableHead className="sticky top-0 bg-background">{language === 'bn' ? 'ধরন' : 'Type'}</TableHead>
+                          <TableHead className="sticky top-0 bg-background">{language === 'bn' ? 'বিবরণ' : 'Description'}</TableHead>
+                          <TableHead className="sticky top-0 bg-background text-right">{language === 'bn' ? 'টাকা' : 'Amount'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {parsedData.slice(0, 50).map((tx, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-sm">{tx.date}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {typeLabels[tx.type]?.[language === 'bn' ? 'bn' : 'en'] || tx.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm max-w-[150px] truncate">
+                              {tx.description_bn || tx.donor_name || '-'}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">৳{tx.amount.toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {parsedData.length > 50 && (
+                      <p className="text-center text-sm text-muted-foreground py-2">
+                        {language === 'bn' 
+                          ? `...এবং আরও ${parsedData.length - 50}টি লেনদেন`
+                          : `...and ${parsedData.length - 50} more transactions`}
+                      </p>
+                    )}
+                  </ScrollArea>
+                )}
+              </div>
+            )}
+
+            {/* Importing Step */}
+            {importStep === 'importing' && (
+              <div className="space-y-6 py-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <div>
+                  <p className="font-medium">
+                    {language === 'bn' ? 'ইমপোর্ট হচ্ছে...' : 'Importing...'}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {language === 'bn' ? 'অনুগ্রহ করে অপেক্ষা করুন' : 'Please wait'}
+                  </p>
+                </div>
+                <Progress value={importProgress} className="w-full max-w-xs mx-auto" />
+                <p className="text-sm text-muted-foreground">{importProgress}%</p>
+              </div>
+            )}
+
+            {/* Done Step */}
+            {importStep === 'done' && (
+              <div className="space-y-6 py-8 text-center">
+                <CheckCircle2 className="w-16 h-16 mx-auto text-emerald-500" />
+                <div>
+                  <p className="font-medium text-lg">
+                    {language === 'bn' ? 'ইমপোর্ট সম্পন্ন!' : 'Import Complete!'}
+                  </p>
+                  <div className="flex justify-center gap-6 mt-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-emerald-600">{importResult.success}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {language === 'bn' ? 'সফল' : 'Successful'}
+                      </p>
+                    </div>
+                    {importResult.failed > 0 && (
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-red-600">{importResult.failed}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {language === 'bn' ? 'ব্যর্থ' : 'Failed'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="p-6 pt-4 border-t">
+            {importStep === 'upload' && (
+              <DialogClose asChild>
+                <Button variant="outline">
+                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                </Button>
+              </DialogClose>
+            )}
+            
+            {importStep === 'preview' && (
+              <>
+                <Button variant="outline" onClick={() => setImportStep('upload')}>
+                  {language === 'bn' ? 'পিছনে' : 'Back'}
+                </Button>
+                <Button onClick={handleImport} disabled={parsedData.length === 0} className="gap-2">
+                  <Upload className="w-4 h-4" />
+                  {language === 'bn' 
+                    ? `${parsedData.length}টি লেনদেন ইমপোর্ট করুন`
+                    : `Import ${parsedData.length} Transactions`}
+                </Button>
+              </>
+            )}
+
+            {importStep === 'done' && (
+              <DialogClose asChild>
+                <Button>
+                  {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
+                </Button>
+              </DialogClose>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
     </TabsContent>
   );
 };
