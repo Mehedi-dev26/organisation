@@ -137,15 +137,21 @@ const CommitteeMemberCard = ({ member, language, isLarge, isSmall }: CommitteeMe
   const imageSize = isLarge ? 'w-32 h-32 md:w-40 md:h-40' : isSmall ? 'w-20 h-20' : 'w-24 h-24 md:w-28 md:h-28';
   const name = language === 'bn' ? member.name_bn : (member.name_en || member.name_bn);
   const position = language === 'bn' ? member.position_bn : (member.position_en || member.position_bn);
+  const fallbackImage = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name_bn}`;
+  
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = fallbackImage;
+  };
   
   return (
     <div className="text-center group">
       <div className="relative mb-4 inline-block">
         <div className={`${imageSize} rounded-full overflow-hidden border-4 border-primary/20 group-hover:border-primary transition-colors duration-300 mx-auto`}>
           <img
-            src={member.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name_bn}`}
+            src={member.photo_url || fallbackImage}
             alt={name}
             className="w-full h-full object-cover bg-muted"
+            onError={handleImageError}
           />
         </div>
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium whitespace-nowrap">
