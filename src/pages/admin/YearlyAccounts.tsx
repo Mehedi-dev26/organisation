@@ -1,0 +1,531 @@
+import React, { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, CartesianGrid, Tooltip } from 'recharts';
+import { Calendar, TrendingUp, TrendingDown, Wallet, FileText, Download, ArrowUpRight, ArrowDownRight, Scale } from 'lucide-react';
+import { format } from 'date-fns';
+import { bn, enUS } from 'date-fns/locale';
+
+const YearlyAccounts = () => {
+  const { language } = useLanguage();
+  const { isAdmin } = useAuth();
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+
+  // Generate years from 2020 to current year
+  const years = Array.from({ length: currentYear - 2019 }, (_, i) => (currentYear - i).toString());
+
+  // Fetch transactions for the selected year
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['yearly-transactions', selectedYear],
+    queryFn: async () => {
+      const startDate = `${selectedYear}-01-01`;
+      const endDate = `${selectedYear}-12-31`;
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .gte('transaction_date', startDate)
+        .lte('transaction_date', endDate)
+        .order('transaction_date', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isAdmin,
+  });
+
+  // Calculate yearly summary
+  const yearlySummary = React.useMemo(() => {
+    const incomeTypes = ['member_fee', 'donation', 'event_income', 'other_income'];
+    
+    const totalIncome = transactions
+      .filter(t => incomeTypes.includes(t.type))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    
+    const totalExpense = transactions
+      .filter(t => !incomeTypes.includes(t.type))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    return {
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
+      transactionCount: transactions.length
+    };
+  }, [transactions]);
+
+  // Calculate monthly breakdown
+  const monthlyData = React.useMemo(() => {
+    const months = Array.from({ length: 12 }, (_, i) => ({
+      month: i + 1,
+      monthName: format(new Date(2024, i, 1), 'MMM', { locale: language === 'bn' ? bn : enUS }),
+      income: 0,
+      expense: 0,
+    }));
+
+    const incomeTypes = ['member_fee', 'donation', 'event_income', 'other_income'];
+
+    transactions.forEach(t => {
+      const month = new Date(t.transaction_date).getMonth();
+      if (incomeTypes.includes(t.type)) {
+        months[month].income += Number(t.amount);
+      } else {
+        months[month].expense += Number(t.amount);
+      }
+    });
+
+    return months;
+  }, [transactions, language]);
+
+  // Calculate category breakdown
+  const categoryData = React.useMemo(() => {
+    const categories: { [key: string]: { income: number; expense: number } } = {};
+    
+    const typeLabels: { [key: string]: { bn: string; en: string; isIncome: boolean } } = {
+      member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee', isIncome: true },
+      donation: { bn: 'দান/অনুদান', en: 'Donation', isIncome: true },
+      event_income: { bn: 'অনুষ্ঠান আয়', en: 'Event Income', isIncome: true },
+      other_income: { bn: 'অন্যান্য আয়', en: 'Other Income', isIncome: true },
+      event_expense: { bn: 'অনুষ্ঠান ব্যয়', en: 'Event Expense', isIncome: false },
+      office_expense: { bn: 'অফিস ব্যয়', en: 'Office Expense', isIncome: false },
+      utility_expense: { bn: 'ইউটিলিটি বিল', en: 'Utility Bill', isIncome: false },
+      welfare_expense: { bn: 'কল্যাণ ব্যয়', en: 'Welfare Expense', isIncome: false },
+      other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense', isIncome: false },
+    };
+
+    transactions.forEach(t => {
+      const label = typeLabels[t.type]?.[language === 'bn' ? 'bn' : 'en'] || t.type;
+      const isIncome = typeLabels[t.type]?.isIncome ?? false;
+      
+      if (!categories[label]) {
+        categories[label] = { income: 0, expense: 0 };
+      }
+      
+      if (isIncome) {
+        categories[label].income += Number(t.amount);
+      } else {
+        categories[label].expense += Number(t.amount);
+      }
+    });
+
+    return Object.entries(categories).map(([name, values]) => ({
+      name,
+      value: values.income > 0 ? values.income : values.expense,
+      type: values.income > 0 ? 'income' : 'expense'
+    }));
+  }, [transactions, language]);
+
+  // Colors for pie chart
+  const INCOME_COLORS = ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0'];
+  const EXPENSE_COLORS = ['#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'];
+
+  const incomeCategories = categoryData.filter(c => c.type === 'income');
+  const expenseCategories = categoryData.filter(c => c.type === 'expense');
+
+  // Chart config
+  const chartConfig = {
+    income: {
+      label: language === 'bn' ? 'আয়' : 'Income',
+      color: 'hsl(var(--chart-1))',
+    },
+    expense: {
+      label: language === 'bn' ? 'ব্যয়' : 'Expense',
+      color: 'hsl(var(--chart-2))',
+    },
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">
+          {language === 'bn' ? 'আপনার অ্যাক্সেস নেই' : 'You do not have access'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground">
+            {language === 'bn' ? 'বিগত বছরের হিসাব' : 'Yearly Accounts'}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {language === 'bn' 
+              ? 'বার্ষিক আয়-ব্যয়ের বিস্তারিত প্রতিবেদন' 
+              : 'Detailed annual income and expense report'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[140px]">
+              <Calendar className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map(year => (
+                <SelectItem key={year} value={year}>
+                  {year} {language === 'bn' ? 'সাল' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" className="gap-2">
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">
+              {language === 'bn' ? 'রিপোর্ট' : 'Report'}
+            </span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'bn' ? 'মোট আয়' : 'Total Income'}
+                </p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  ৳{yearlySummary.totalIncome.toLocaleString()}
+                </p>
+              </div>
+              <div className="p-3 bg-emerald-500/20 rounded-full">
+                <TrendingUp className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'bn' ? 'মোট ব্যয়' : 'Total Expense'}
+                </p>
+                <p className="text-2xl font-bold text-red-600">
+                  ৳{yearlySummary.totalExpense.toLocaleString()}
+                </p>
+              </div>
+              <div className="p-3 bg-red-500/20 rounded-full">
+                <TrendingDown className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={`bg-gradient-to-br ${yearlySummary.balance >= 0 ? 'from-blue-500/10 to-blue-500/5 border-blue-500/20' : 'from-orange-500/10 to-orange-500/5 border-orange-500/20'}`}>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'bn' ? 'উদ্বৃত্ত/ঘাটতি' : 'Balance'}
+                </p>
+                <p className={`text-2xl font-bold ${yearlySummary.balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                  ৳{Math.abs(yearlySummary.balance).toLocaleString()}
+                  {yearlySummary.balance < 0 && ' (-)'}
+                </p>
+              </div>
+              <div className={`p-3 rounded-full ${yearlySummary.balance >= 0 ? 'bg-blue-500/20' : 'bg-orange-500/20'}`}>
+                <Scale className={`w-6 h-6 ${yearlySummary.balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'bn' ? 'মোট লেনদেন' : 'Total Transactions'}
+                </p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {yearlySummary.transactionCount}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-500/20 rounded-full">
+                <FileText className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs for different views */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-grid">
+          <TabsTrigger value="overview">
+            {language === 'bn' ? 'সারাংশ' : 'Overview'}
+          </TabsTrigger>
+          <TabsTrigger value="monthly">
+            {language === 'bn' ? 'মাসিক' : 'Monthly'}
+          </TabsTrigger>
+          <TabsTrigger value="category">
+            {language === 'bn' ? 'ক্যাটাগরি' : 'Category'}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Monthly Comparison Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {language === 'bn' ? 'মাসওয়ারি আয়-ব্যয় তুলনা' : 'Monthly Income vs Expense'}
+                </CardTitle>
+                <CardDescription>
+                  {selectedYear} {language === 'bn' ? 'সালের মাসওয়ারি তুলনামূলক চিত্র' : 'monthly comparison'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                  <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="monthName" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="income" name={language === 'bn' ? 'আয়' : 'Income'} fill="#10B981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="expense" name={language === 'bn' ? 'ব্যয়' : 'Expense'} fill="#EF4444" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            {/* Trend Line Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {language === 'bn' ? 'আয়-ব্যয় ট্রেন্ড' : 'Income-Expense Trend'}
+                </CardTitle>
+                <CardDescription>
+                  {language === 'bn' ? 'বছরজুড়ে ট্রেন্ড বিশ্লেষণ' : 'Year-round trend analysis'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                  <LineChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="monthName" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line type="monotone" dataKey="income" name={language === 'bn' ? 'আয়' : 'Income'} stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981' }} />
+                    <Line type="monotone" dataKey="expense" name={language === 'bn' ? 'ব্যয়' : 'Expense'} stroke="#EF4444" strokeWidth={2} dot={{ fill: '#EF4444' }} />
+                  </LineChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Monthly Tab */}
+        <TabsContent value="monthly">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {language === 'bn' ? 'মাসওয়ারি বিস্তারিত হিসাব' : 'Monthly Detailed Accounts'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{language === 'bn' ? 'মাস' : 'Month'}</TableHead>
+                    <TableHead className="text-right text-emerald-600">
+                      {language === 'bn' ? 'আয়' : 'Income'}
+                    </TableHead>
+                    <TableHead className="text-right text-red-600">
+                      {language === 'bn' ? 'ব্যয়' : 'Expense'}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {language === 'bn' ? 'উদ্বৃত্ত' : 'Balance'}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {monthlyData.map((month, index) => {
+                    const balance = month.income - month.expense;
+                    return (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">
+                          {format(new Date(parseInt(selectedYear), month.month - 1, 1), 'MMMM yyyy', { locale: language === 'bn' ? bn : enUS })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="inline-flex items-center gap-1 text-emerald-600">
+                            <ArrowUpRight className="w-3 h-3" />
+                            ৳{month.income.toLocaleString()}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="inline-flex items-center gap-1 text-red-600">
+                            <ArrowDownRight className="w-3 h-3" />
+                            ৳{month.expense.toLocaleString()}
+                          </span>
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                          ৳{Math.abs(balance).toLocaleString()} {balance < 0 && '(-)'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {/* Total Row */}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell>{language === 'bn' ? 'মোট' : 'Total'}</TableCell>
+                    <TableCell className="text-right text-emerald-600">
+                      ৳{yearlySummary.totalIncome.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right text-red-600">
+                      ৳{yearlySummary.totalExpense.toLocaleString()}
+                    </TableCell>
+                    <TableCell className={`text-right ${yearlySummary.balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                      ৳{Math.abs(yearlySummary.balance).toLocaleString()} {yearlySummary.balance < 0 && '(-)'}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Category Tab */}
+        <TabsContent value="category" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Income by Category */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+                  {language === 'bn' ? 'ক্যাটাগরি অনুযায়ী আয়' : 'Income by Category'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {incomeCategories.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={incomeCategories}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                          >
+                            {incomeCategories.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={INCOME_COLORS[index % INCOME_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => `৳${value.toLocaleString()}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-2">
+                      {incomeCategories.map((cat, index) => (
+                        <div key={cat.name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: INCOME_COLORS[index % INCOME_COLORS.length] }}
+                            />
+                            <span className="text-sm">{cat.name}</span>
+                          </div>
+                          <span className="text-sm font-medium">৳{cat.value.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    {language === 'bn' ? 'কোনো আয় নেই' : 'No income data'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Expense by Category */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingDown className="w-5 h-5 text-red-600" />
+                  {language === 'bn' ? 'ক্যাটাগরি অনুযায়ী ব্যয়' : 'Expense by Category'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {expenseCategories.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={expenseCategories}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                          >
+                            {expenseCategories.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={EXPENSE_COLORS[index % EXPENSE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => `৳${value.toLocaleString()}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-2">
+                      {expenseCategories.map((cat, index) => (
+                        <div key={cat.name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: EXPENSE_COLORS[index % EXPENSE_COLORS.length] }}
+                            />
+                            <span className="text-sm">{cat.name}</span>
+                          </div>
+                          <span className="text-sm font-medium">৳{cat.value.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    {language === 'bn' ? 'কোনো ব্যয় নেই' : 'No expense data'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default YearlyAccounts;
