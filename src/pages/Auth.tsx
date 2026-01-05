@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff, Shield, Users, Wallet } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Shield, Users, Wallet, ArrowLeft, Home } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -141,6 +141,22 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
+      {/* Back Button - Fixed Position */}
+      <div className="fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="gap-2 bg-background/80 backdrop-blur-sm shadow-md hover:bg-background"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <Home className="w-4 h-4" />
+          <span className="hidden sm:inline">
+            {language === 'bn' ? 'হোমপেজ' : 'Home'}
+          </span>
+        </Button>
+      </div>
+
       <Card className="w-full max-w-md shadow-2xl border-primary/20">
         <CardHeader className="text-center space-y-2">
           <CardTitle className="text-3xl font-heading text-primary">
