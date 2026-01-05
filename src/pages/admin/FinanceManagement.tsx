@@ -169,6 +169,61 @@ const FinanceManagement = () => {
       .reduce((sum, due) => sum + Number(due.amount), 0);
   }, [memberUnpaidDues, selectedMonths]);
 
+  // Get current user info for logging
+  const { user } = useAuth();
+
+  // Log activity helper
+  const logActivity = async (
+    actionType: string,
+    entityType: string,
+    entityId: string,
+    descriptionBn: string,
+    descriptionEn: string,
+    metadata: Record<string, unknown> = {}
+  ) => {
+    try {
+      // Get user name from profile or cashier table
+      let userName = 'Unknown';
+      let userRole = 'unknown';
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (profile?.full_name) {
+          userName = profile.full_name;
+        }
+        
+        // Check if admin or cashier
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+        
+        if (roles && roles.length > 0) {
+          userRole = roles.map(r => r.role).join(', ');
+        }
+      }
+
+      await supabase.from('activity_logs').insert([{
+        user_id: user?.id || '',
+        user_name: userName,
+        user_role: userRole,
+        action_type: actionType,
+        entity_type: entityType,
+        entity_id: entityId,
+        description_bn: descriptionBn,
+        description_en: descriptionEn,
+        metadata: JSON.parse(JSON.stringify(metadata)),
+      }]);
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+  };
+
   // Create transaction mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData & { selectedMonths?: string[] }) => {
@@ -190,6 +245,13 @@ const FinanceManagement = () => {
         notes: data.notes || null,
       }).select().single();
       if (error) throw error;
+
+      // Get member name for logging
+      let memberName = '';
+      if (data.member_id) {
+        const member = members?.find(m => m.id === data.member_id);
+        memberName = member?.full_name || '';
+      }
 
       // If it's a member fee, update the member_dues table for all selected months
       if (data.type === 'member_fee' && data.member_id && monthsToProcess.length > 0) {
@@ -230,6 +292,36 @@ const FinanceManagement = () => {
             if (insertError) console.error('Error creating member_dues:', insertError);
           }
         }
+
+        // Log member fee collection
+        await logActivity(
+          'payment',
+          'member_dues',
+          transactionData.id,
+          `${memberName} এর ${monthsToProcess.length} মাসের চাঁদা (৳${data.amount}) গ্রহণ করা হয়েছে`,
+          `Collected ${monthsToProcess.length} month(s) dues (৳${data.amount}) from ${memberName}`,
+          { member_id: data.member_id, member_name: memberName, months: monthsToProcess, amount: data.amount }
+        );
+      } else {
+        // Log other transaction types
+        const typeLabels: Record<string, { bn: string; en: string }> = {
+          member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
+          donation: { bn: 'অনুদান', en: 'Donation' },
+          event_fee: { bn: 'ইভেন্ট ফি', en: 'Event Fee' },
+          expense: { bn: 'ব্যয়', en: 'Expense' },
+          other_income: { bn: 'অন্যান্য আয়', en: 'Other Income' },
+          other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense' },
+        };
+        const label = typeLabels[data.type] || { bn: data.type, en: data.type };
+        
+        await logActivity(
+          'create',
+          'transaction',
+          transactionData.id,
+          `${label.bn}: ৳${data.amount} যোগ করা হয়েছে`,
+          `Added ${label.en}: ৳${data.amount}`,
+          { type: data.type, amount: data.amount }
+        );
       }
 
       return transactionData;
@@ -237,6 +329,7 @@ const FinanceManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['member-dues'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description: language === 'bn' ? 'লেনদেন যোগ হয়েছে' : 'Transaction added',
@@ -279,12 +372,38 @@ const FinanceManagement = () => {
 
   // Delete transaction mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('transactions').delete().eq('id', id);
+    mutationFn: async (transaction: Transaction) => {
+      const { error } = await supabase.from('transactions').delete().eq('id', transaction.id);
       if (error) throw error;
+
+      // Log the deletion
+      const typeLabels: Record<string, { bn: string; en: string }> = {
+        member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
+        donation: { bn: 'অনুদান', en: 'Donation' },
+        event_fee: { bn: 'ইভেন্ট ফি', en: 'Event Fee' },
+        expense: { bn: 'ব্যয়', en: 'Expense' },
+        other_income: { bn: 'অন্যান্য আয়', en: 'Other Income' },
+        other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense' },
+      };
+      const label = typeLabels[transaction.type] || { bn: transaction.type, en: transaction.type };
+      
+      await logActivity(
+        'delete',
+        'transaction',
+        transaction.id,
+        `${label.bn}: ৳${transaction.amount} মুছে ফেলা হয়েছে`,
+        `Deleted ${label.en}: ৳${transaction.amount}`,
+        { 
+          type: transaction.type, 
+          amount: transaction.amount,
+          member_name: transaction.members?.full_name || null,
+          payment_reference: transaction.payment_reference
+        }
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       toast({
         title: language === 'bn' ? 'মুছে ফেলা হয়েছে' : 'Deleted',
         description: language === 'bn' ? 'লেনদেন মুছে ফেলা হয়েছে' : 'Transaction deleted',
@@ -841,7 +960,7 @@ const FinanceManagement = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => deleteMutation.mutate(transaction.id)}
+                                onClick={() => deleteMutation.mutate(transaction)}
                                 disabled={deleteMutation.isPending}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
