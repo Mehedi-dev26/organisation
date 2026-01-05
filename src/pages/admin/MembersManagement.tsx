@@ -719,7 +719,13 @@ const MembersManagement = () => {
                       <TableCell className="font-mono text-sm">{member.member_id}</TableCell>
                       <TableCell className="font-medium">{member.full_name}</TableCell>
                       <TableCell>{member.phone || '-'}</TableCell>
-                      <TableCell>{member.member_type}</TableCell>
+                      <TableCell>
+                        <Badge variant={member.member_type === 'renewal' ? 'secondary' : 'outline'}>
+                          {member.member_type === 'renewal' 
+                            ? (language === 'bn' ? 'আগের সদস্য' : 'Existing')
+                            : (language === 'bn' ? 'নতুন সদস্য' : 'New')}
+                        </Badge>
+                      </TableCell>
                       <TableCell>{getStatusBadge(member.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
