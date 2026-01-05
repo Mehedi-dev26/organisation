@@ -26,6 +26,7 @@ import AdminSettings from "./pages/admin/Settings";
 import FinanceManagement from "./pages/admin/FinanceManagement";
 import DuesManagement from "./pages/admin/DuesManagement";
 import GalleryManagement from "./pages/admin/GalleryManagement";
+import YearlyAccounts from "./pages/admin/YearlyAccounts";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="gallery" element={<GalleryManagement />} />
                 <Route path="finance" element={<FinanceManagement />} />
                 <Route path="dues" element={<DuesManagement />} />
+                <Route path="yearly-accounts" element={<YearlyAccounts />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
               <Route path="*" element={<NotFound />} />

@@ -27,7 +27,8 @@ import {
   Settings,
   Wallet,
   Receipt,
-  ImageIcon
+  ImageIcon,
+  History
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -77,6 +78,11 @@ const AdminSidebar = () => {
       title: language === 'bn' ? 'বকেয়া চাঁদা' : 'Dues', 
       url: '/admin/dues', 
       icon: Receipt 
+    },
+    { 
+      title: language === 'bn' ? 'বিগত বছরের হিসাব' : 'Yearly Accounts', 
+      url: '/admin/yearly-accounts', 
+      icon: History 
     },
     { 
       title: language === 'bn' ? 'সেটিংস' : 'Settings', 
