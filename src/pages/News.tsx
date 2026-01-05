@@ -1,14 +1,29 @@
+import { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CalendarDays, ArrowRight, Loader2 } from 'lucide-react';
+import { CalendarDays, ArrowRight, Loader2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
+interface NewsItem {
+  id: string;
+  title_bn: string;
+  title_en: string | null;
+  content_bn: string | null;
+  content_en: string | null;
+  image_url: string | null;
+  published_at: string | null;
+  created_at: string | null;
+}
+
 const News = () => {
   const { t, language } = useLanguage();
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
   // Enable realtime subscription
   useRealtimeSubscription({ table: 'news', queryKey: ['public-news'] });
@@ -23,7 +38,7 @@ const News = () => {
         .order('published_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as NewsItem[];
     },
   });
 
@@ -86,7 +101,11 @@ const News = () => {
                     <p className="text-muted-foreground text-sm line-clamp-3 mb-4">
                       {language === 'bn' ? item.content_bn : (item.content_en || item.content_bn)}
                     </p>
-                    <Button variant="link" className="p-0 h-auto text-primary group/btn">
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-primary group/btn"
+                      onClick={() => setSelectedNews(item)}
+                    >
                       {t('news.readMore')}
                       <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
                     </Button>
@@ -97,6 +116,39 @@ const News = () => {
           )}
         </div>
       </section>
+
+      {/* News Detail Dialog */}
+      <Dialog open={!!selectedNews} onOpenChange={() => setSelectedNews(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden">
+          <ScrollArea className="max-h-[90vh]">
+            {selectedNews?.image_url && (
+              <div className="aspect-video w-full overflow-hidden">
+                <img
+                  src={selectedNews.image_url}
+                  alt={language === 'bn' ? selectedNews.title_bn : (selectedNews.title_en || selectedNews.title_bn)}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="p-6 md:p-8">
+              <DialogHeader className="mb-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+                  <CalendarDays className="w-4 h-4" />
+                  <span>{formatDate(selectedNews?.published_at || selectedNews?.created_at || null)}</span>
+                </div>
+                <DialogTitle className="font-heading text-xl md:text-2xl font-bold text-foreground">
+                  {language === 'bn' ? selectedNews?.title_bn : (selectedNews?.title_en || selectedNews?.title_bn)}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="prose prose-sm md:prose-base max-w-none text-foreground">
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {language === 'bn' ? selectedNews?.content_bn : (selectedNews?.content_en || selectedNews?.content_bn)}
+                </p>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
