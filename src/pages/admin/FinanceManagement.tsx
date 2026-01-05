@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Loader2, TrendingUp, TrendingDown, Wallet, Users, Search, Trash2, Edit, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import TransactionVoucher from '@/components/admin/TransactionVoucher';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 type TransactionType = 'member_fee' | 'donation' | 'event_fee' | 'expense' | 'other_income' | 'other_expense';
 
@@ -70,6 +71,9 @@ const FinanceManagement = () => {
   const { isAdmin, isCashier } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Real-time subscription for transactions
+  useRealtimeSubscription({ table: 'transactions', queryKey: ['transactions'] });
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);

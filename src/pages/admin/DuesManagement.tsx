@@ -24,6 +24,7 @@ import {
   Filter
 } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface Member {
   id: string;
@@ -49,6 +50,9 @@ const DuesManagement = () => {
   const { isAdmin, isCashier } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Real-time subscription for member dues
+  useRealtimeSubscription({ table: 'member_dues', queryKey: ['member-dues'] });
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('unpaid');

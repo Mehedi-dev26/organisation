@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity, DollarSign, UserPlus, ArrowUpRight, ArrowDownRight, ClipboardList, Trash2, CreditCard, HardDrive, Database } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { bn } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { Progress } from '@/components/ui/progress';
+import { useMultiTableRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface RecentActivity {
   id: string;
@@ -24,6 +25,12 @@ const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#e
 const Dashboard = () => {
   const { language } = useLanguage();
   const { isAdmin } = useAuth();
+
+  // Real-time subscriptions for all dashboard data
+  useMultiTableRealtimeSubscription([
+    { table: 'transactions', queryKeys: [['monthly-transactions'], ['transaction-types'], ['financial-summary']] },
+    { table: 'members', queryKeys: [['admin-stats']] },
+  ]);
 
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
