@@ -124,7 +124,7 @@ const FinanceManagement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('members')
-        .select('id, full_name')
+        .select('id, full_name, member_id')
         .eq('status', 'approved')
         .order('full_name');
       
@@ -132,6 +132,30 @@ const FinanceManagement = () => {
       return data;
     },
   });
+
+  // Fetch unpaid dues for selected member
+  const { data: memberUnpaidDues, isLoading: isLoadingDues } = useQuery({
+    queryKey: ['member-unpaid-dues', formData.member_id],
+    queryFn: async () => {
+      if (!formData.member_id) return [];
+      
+      const { data, error } = await supabase
+        .from('member_dues')
+        .select('*')
+        .eq('member_id', formData.member_id)
+        .eq('is_paid', false)
+        .order('month_year', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!formData.member_id && formData.type === 'member_fee',
+  });
+
+  // Calculate total unpaid amount for selected member
+  const totalUnpaidAmount = React.useMemo(() => {
+    return memberUnpaidDues?.reduce((sum, due) => sum + Number(due.amount), 0) || 0;
+  }, [memberUnpaidDues]);
 
   // Create transaction mutation
   const createMutation = useMutation({
@@ -429,11 +453,11 @@ const FinanceManagement = () => {
 
                   {formData.type === 'member_fee' && (
                     <>
-                      <div className="space-y-2">
-                        <Label>{language === 'bn' ? 'সদস্য নির্বাচন' : 'Select Member'}</Label>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>{language === 'bn' ? 'সদস্য নির্বাচন করুন' : 'Select Member'}</Label>
                         <Select
                           value={formData.member_id}
-                          onValueChange={(value) => setFormData({ ...formData, member_id: value })}
+                          onValueChange={(value) => setFormData({ ...formData, member_id: value, month_year: '' })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder={language === 'bn' ? 'সদস্য নির্বাচন করুন' : 'Select member'} />
@@ -441,20 +465,71 @@ const FinanceManagement = () => {
                           <SelectContent>
                             {members?.map(member => (
                               <SelectItem key={member.id} value={member.id}>
-                                {member.full_name}
+                                {member.full_name} ({member.member_id})
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-2">
-                        <Label>{language === 'bn' ? 'মাস-বছর' : 'Month-Year'}</Label>
-                        <Input
-                          type="month"
-                          value={formData.month_year}
-                          onChange={(e) => setFormData({ ...formData, month_year: e.target.value })}
-                        />
-                      </div>
+
+                      {/* Show unpaid dues summary */}
+                      {formData.member_id && (
+                        <div className="md:col-span-2 p-4 bg-muted rounded-lg space-y-3">
+                          {isLoadingDues ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span className="text-sm text-muted-foreground">
+                                {language === 'bn' ? 'বকেয়া লোড হচ্ছে...' : 'Loading dues...'}
+                              </span>
+                            </div>
+                          ) : memberUnpaidDues && memberUnpaidDues.length > 0 ? (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">
+                                  {language === 'bn' ? 'মোট বকেয়া চাঁদা:' : 'Total Unpaid Dues:'}
+                                </span>
+                                <span className="text-lg font-bold text-destructive">
+                                  ৳{totalUnpaidAmount.toLocaleString('bn-BD')}
+                                </span>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {language === 'bn' 
+                                  ? `${memberUnpaidDues.length} মাসের বকেয়া আছে` 
+                                  : `${memberUnpaidDues.length} month(s) unpaid`}
+                              </div>
+                              <div className="space-y-2">
+                                <Label>{language === 'bn' ? 'কোন মাসের চাঁদা পরিশোধ করবেন?' : 'Which month to pay?'}</Label>
+                                <Select
+                                  value={formData.month_year}
+                                  onValueChange={(value) => {
+                                    const selectedDue = memberUnpaidDues.find(d => d.month_year === value);
+                                    setFormData({ 
+                                      ...formData, 
+                                      month_year: value,
+                                      amount: selectedDue ? selectedDue.amount.toString() : formData.amount
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={language === 'bn' ? 'মাস নির্বাচন করুন' : 'Select month'} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {memberUnpaidDues.map(due => (
+                                      <SelectItem key={due.id} value={due.month_year}>
+                                        {due.month_year} - ৳{Number(due.amount).toLocaleString('bn-BD')}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-green-600 dark:text-green-400">
+                              ✓ {language === 'bn' ? 'এই সদস্যের কোনো বকেয়া নেই' : 'No unpaid dues for this member'}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
 
