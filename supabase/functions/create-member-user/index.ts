@@ -20,45 +20,64 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log("=== Create Member User Function Started ===");
+
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    console.log("SUPABASE_URL exists:", !!supabaseUrl);
+    console.log("SUPABASE_SERVICE_ROLE_KEY exists:", !!supabaseServiceRoleKey);
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error("Missing required environment variables");
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Get the authorization header to verify admin
     const authHeader = req.headers.get("Authorization");
+    console.log("Authorization header exists:", !!authHeader);
+
     if (!authHeader) {
-      throw new Error("No authorization header");
+      throw new Error("No authorization header provided");
     }
 
     // Verify the calling user is an admin
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user: callingUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
     
-    if (authError || !callingUser) {
-      throw new Error("Invalid authorization");
+    console.log("Auth verification - User:", userData?.user?.email);
+    console.log("Auth verification - Error:", authError?.message);
+
+    if (authError || !userData?.user) {
+      throw new Error("Invalid authorization token");
     }
 
     // Check if calling user is admin
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", callingUser.id)
+      .eq("user_id", userData.user.id)
       .eq("role", "admin")
       .maybeSingle();
+
+    console.log("Role check - Data:", roleData);
+    console.log("Role check - Error:", roleError?.message);
 
     if (roleError || !roleData) {
       throw new Error("Unauthorized: Admin access required");
     }
 
-    const { email, password, memberId, fullName }: CreateMemberUserRequest = await req.json();
+    const body = await req.json();
+    console.log("Request body received:", { ...body, password: "[HIDDEN]" });
+
+    const { email, password, memberId, fullName }: CreateMemberUserRequest = body;
 
     if (!email || !password || !memberId) {
       throw new Error("Email, password, and member ID are required");
@@ -67,6 +86,8 @@ serve(async (req) => {
     if (password.length < 6) {
       throw new Error("Password must be at least 6 characters");
     }
+
+    console.log("Creating user for email:", email);
 
     // Create the user account
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -78,13 +99,18 @@ serve(async (req) => {
       },
     });
 
+    console.log("Create user result - Success:", !!newUser?.user);
+    console.log("Create user result - Error:", createError?.message);
+
     if (createError) {
-      throw createError;
+      throw new Error(`Failed to create user: ${createError.message}`);
     }
 
     if (!newUser.user) {
-      throw new Error("Failed to create user");
+      throw new Error("Failed to create user - no user returned");
     }
+
+    console.log("User created with ID:", newUser.user.id);
 
     // Add 'member' role to the user
     const { error: roleInsertError } = await supabaseAdmin
@@ -95,8 +121,10 @@ serve(async (req) => {
       });
 
     if (roleInsertError) {
-      console.error("Role insert error:", roleInsertError);
+      console.error("Role insert error:", roleInsertError.message);
       // Don't throw, just log - the user is created
+    } else {
+      console.log("Member role assigned successfully");
     }
 
     // Link the user to the member
@@ -106,8 +134,12 @@ serve(async (req) => {
       .eq("id", memberId);
 
     if (updateError) {
-      throw updateError;
+      console.error("Member link error:", updateError.message);
+      throw new Error(`Failed to link user to member: ${updateError.message}`);
     }
+
+    console.log("User linked to member successfully");
+    console.log("=== Create Member User Function Completed ===");
 
     return new Response(
       JSON.stringify({
@@ -121,6 +153,7 @@ serve(async (req) => {
       }
     );
   } catch (error: unknown) {
+    console.error("=== Error in Create Member User Function ===");
     console.error("Error:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     return new Response(
