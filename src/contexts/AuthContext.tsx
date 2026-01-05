@@ -7,8 +7,9 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   isMember: boolean;
+  isCashier: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any; isAdmin: boolean; isMember: boolean }>;
+  signIn: (email: string, password: string) => Promise<{ error: any; isAdmin: boolean; isMember: boolean; isCashier: boolean }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -20,6 +21,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMember, setIsMember] = useState(false);
+  const [isCashier, setIsCashier] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const checkRoles = async (userId: string) => {
@@ -31,6 +33,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const roles = data?.map(r => r.role) || [];
     setIsAdmin(roles.includes('admin'));
     setIsMember(roles.includes('member'));
+    setIsCashier(roles.includes('cashier'));
   };
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           setIsAdmin(false);
           setIsMember(false);
+          setIsCashier(false);
         }
         setLoading(false);
       }
@@ -82,14 +86,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const roles = rolesData?.map(r => r.role) || [];
       const userIsAdmin = roles.includes('admin');
       const userIsMember = roles.includes('member');
+      const userIsCashier = roles.includes('cashier');
       
       setIsAdmin(userIsAdmin);
       setIsMember(userIsMember);
+      setIsCashier(userIsCashier);
       
-      return { error, isAdmin: userIsAdmin, isMember: userIsMember };
+      return { error, isAdmin: userIsAdmin, isMember: userIsMember, isCashier: userIsCashier };
     }
     
-    return { error, isAdmin: false, isMember: false };
+    return { error, isAdmin: false, isMember: false, isCashier: false };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -112,10 +118,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await supabase.auth.signOut();
     setIsAdmin(false);
     setIsMember(false);
+    setIsCashier(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isMember, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isMember, isCashier, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -66,7 +66,7 @@ const generateTransactionId = () => {
 
 const FinanceManagement = () => {
   const { language } = useLanguage();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isCashier } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -333,7 +333,7 @@ const FinanceManagement = () => {
     return language === 'bn' ? found?.label_bn : found?.label_en;
   };
 
-  if (!isAdmin) {
+  if (!isAdmin && !isCashier) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">

@@ -27,6 +27,12 @@ import FinanceManagement from "./pages/admin/FinanceManagement";
 import DuesManagement from "./pages/admin/DuesManagement";
 import GalleryManagement from "./pages/admin/GalleryManagement";
 import YearlyAccounts from "./pages/admin/YearlyAccounts";
+import CashierManagement from "./pages/admin/CashierManagement";
+import CashierLayout from "./components/cashier/CashierLayout";
+import CashierDashboard from "./pages/cashier/CashierDashboard";
+import CashierFinance from "./pages/cashier/CashierFinance";
+import CashierDues from "./pages/cashier/CashierDues";
+import CashierYearlyAccounts from "./pages/cashier/CashierYearlyAccounts";
 
 const queryClient = new QueryClient();
 
@@ -57,10 +63,17 @@ const App = () => (
                 <Route path="committee" element={<CommitteeManagement />} />
                 <Route path="gallery" element={<GalleryManagement />} />
                 <Route path="finance" element={<FinanceManagement />} />
-                <Route path="dues" element={<DuesManagement />} />
-                <Route path="yearly-accounts" element={<YearlyAccounts />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
+              <Route path="dues" element={<DuesManagement />} />
+              <Route path="yearly-accounts" element={<YearlyAccounts />} />
+              <Route path="cashiers" element={<CashierManagement />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+            <Route path="/cashier" element={<CashierLayout />}>
+              <Route index element={<CashierDashboard />} />
+              <Route path="finance" element={<CashierFinance />} />
+              <Route path="dues" element={<CashierDues />} />
+              <Route path="yearly-accounts" element={<CashierYearlyAccounts />} />
+            </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
