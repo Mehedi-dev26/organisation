@@ -270,13 +270,38 @@ const CommitteeManagement = () => {
                     onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label>{language === 'bn' ? 'ছবি URL' : 'Photo URL'}</Label>
                   <Input
                     value={formData.photo_url}
                     onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
                     placeholder="https://..."
                   />
+                  {formData.photo_url && (
+                    <div className="mt-2 flex items-center gap-4">
+                      <div className="relative w-20 h-20 rounded-lg overflow-hidden border bg-muted">
+                        <img
+                          src={formData.photo_url}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                          onLoad={(e) => {
+                            e.currentTarget.style.display = 'block';
+                            e.currentTarget.nextElementSibling?.classList.add('hidden');
+                          }}
+                        />
+                        <div className="hidden absolute inset-0 flex items-center justify-center text-xs text-muted-foreground text-center p-2">
+                          {language === 'bn' ? 'ছবি লোড হয়নি' : 'Image failed'}
+                        </div>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {language === 'bn' ? 'ছবি প্রিভিউ' : 'Image Preview'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
