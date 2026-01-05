@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,15 +10,41 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, CartesianGrid, Tooltip } from 'recharts';
-import { Calendar, TrendingUp, TrendingDown, Wallet, FileText, Download, ArrowUpRight, ArrowDownRight, Scale } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, Wallet, FileText, Download, ArrowUpRight, ArrowDownRight, Scale, Edit, Trash2, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { bn, enUS } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Database } from '@/integrations/supabase/types';
+
+type TransactionType = Database['public']['Enums']['transaction_type'];
+
+interface Transaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  transaction_date: string;
+  description_bn: string | null;
+  description_en: string | null;
+  notes: string | null;
+  payment_method: string | null;
+  receipt_number: string | null;
+  member_id: string | null;
+  donor_name: string | null;
+}
 
 const YearlyAccounts = () => {
   const { language } = useLanguage();
-  const { isAdmin, isCashier } = useAuth();
+  const { isAdmin, isCashier, user } = useAuth();
+  const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Generate years from 2020 to current year
   const years = Array.from({ length: currentYear - 2019 }, (_, i) => (currentYear - i).toString());
@@ -270,7 +296,7 @@ const YearlyAccounts = () => {
 
       {/* Tabs for different views */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-grid">
+        <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-grid">
           <TabsTrigger value="overview">
             {language === 'bn' ? 'সারাংশ' : 'Overview'}
           </TabsTrigger>
@@ -279,6 +305,9 @@ const YearlyAccounts = () => {
           </TabsTrigger>
           <TabsTrigger value="category">
             {language === 'bn' ? 'ক্যাটাগরি' : 'Category'}
+          </TabsTrigger>
+          <TabsTrigger value="transactions">
+            {language === 'bn' ? 'লেনদেন সম্পাদনা' : 'Edit Transactions'}
           </TabsTrigger>
         </TabsList>
 
@@ -516,6 +545,20 @@ const YearlyAccounts = () => {
             </Card>
           </div>
         </TabsContent>
+
+        {/* Transactions Edit Tab */}
+        <TransactionsEditTab 
+          transactions={transactions}
+          language={language}
+          selectedYear={selectedYear}
+          isAdmin={isAdmin}
+          editingTransaction={editingTransaction}
+          setEditingTransaction={setEditingTransaction}
+          isEditDialogOpen={isEditDialogOpen}
+          setIsEditDialogOpen={setIsEditDialogOpen}
+          queryClient={queryClient}
+          user={user}
+        />
       </Tabs>
 
       {/* Loading State */}
@@ -525,6 +568,253 @@ const YearlyAccounts = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Transactions Edit Tab Component
+interface TransactionsEditTabProps {
+  transactions: Transaction[];
+  language: string;
+  selectedYear: string;
+  isAdmin: boolean;
+  editingTransaction: Transaction | null;
+  setEditingTransaction: (t: Transaction | null) => void;
+  isEditDialogOpen: boolean;
+  setIsEditDialogOpen: (open: boolean) => void;
+  queryClient: ReturnType<typeof useQueryClient>;
+  user: any;
+}
+
+const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
+  transactions,
+  language,
+  selectedYear,
+  isAdmin,
+  editingTransaction,
+  setEditingTransaction,
+  isEditDialogOpen,
+  setIsEditDialogOpen,
+  queryClient,
+  user
+}) => {
+  const [editForm, setEditForm] = useState({
+    amount: '',
+    description_bn: '',
+    description_en: '',
+    notes: '',
+    transaction_date: '',
+  });
+
+  const typeLabels: { [key: string]: { bn: string; en: string } } = {
+    member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
+    donation: { bn: 'দান/অনুদান', en: 'Donation' },
+    event_fee: { bn: 'অনুষ্ঠান ফি', en: 'Event Fee' },
+    other_income: { bn: 'অন্যান্য আয়', en: 'Other Income' },
+    expense: { bn: 'ব্যয়', en: 'Expense' },
+    other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense' },
+  };
+
+  const openEditDialog = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setEditForm({
+      amount: transaction.amount.toString(),
+      description_bn: transaction.description_bn || '',
+      description_en: transaction.description_en || '',
+      notes: transaction.notes || '',
+      transaction_date: transaction.transaction_date,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string; updates: Partial<Transaction> }) => {
+      const { error } = await supabase
+        .from('transactions')
+        .update(data.updates)
+        .eq('id', data.id);
+      
+      if (error) throw error;
+
+      // Log activity
+      if (user) {
+        await supabase.from('activity_logs').insert({
+          user_id: user.id,
+          user_name: user.email,
+          user_role: isAdmin ? 'admin' : 'cashier',
+          action_type: 'update',
+          entity_type: 'transaction',
+          entity_id: data.id,
+          description_bn: `লেনদেন আপডেট করা হয়েছে (৳${data.updates.amount})`,
+          description_en: `Transaction updated (৳${data.updates.amount})`,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['yearly-transactions', selectedYear] });
+      toast.success(language === 'bn' ? 'লেনদেন আপডেট হয়েছে' : 'Transaction updated');
+      setIsEditDialogOpen(false);
+      setEditingTransaction(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || (language === 'bn' ? 'আপডেট ব্যর্থ' : 'Update failed'));
+    },
+  });
+
+  const handleSaveEdit = () => {
+    if (!editingTransaction) return;
+    
+    updateMutation.mutate({
+      id: editingTransaction.id,
+      updates: {
+        amount: parseFloat(editForm.amount),
+        description_bn: editForm.description_bn || null,
+        description_en: editForm.description_en || null,
+        notes: editForm.notes || null,
+        transaction_date: editForm.transaction_date,
+      },
+    });
+  };
+
+  return (
+    <TabsContent value="transactions">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Edit className="w-5 h-5" />
+            {language === 'bn' ? 'বিগত বছরের লেনদেন সম্পাদনা' : 'Edit Past Year Transactions'}
+          </CardTitle>
+          <CardDescription>
+            {language === 'bn' 
+              ? `${selectedYear} সালের সকল লেনদেন এখানে সম্পাদনা করতে পারবেন`
+              : `Edit all transactions from ${selectedYear}`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {transactions.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {language === 'bn' ? 'এই বছরে কোনো লেনদেন নেই' : 'No transactions found for this year'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{language === 'bn' ? 'তারিখ' : 'Date'}</TableHead>
+                    <TableHead>{language === 'bn' ? 'ধরন' : 'Type'}</TableHead>
+                    <TableHead>{language === 'bn' ? 'বিবরণ' : 'Description'}</TableHead>
+                    <TableHead className="text-right">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</TableHead>
+                    <TableHead className="text-center">{language === 'bn' ? 'অ্যাকশন' : 'Action'}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((transaction) => {
+                    const isIncome = ['member_fee', 'donation', 'event_fee', 'other_income'].includes(transaction.type);
+                    return (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          {format(new Date(transaction.transaction_date), 'dd MMM yyyy', { 
+                            locale: language === 'bn' ? bn : enUS 
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={isIncome ? 'default' : 'destructive'} className="text-xs">
+                            {typeLabels[transaction.type]?.[language === 'bn' ? 'bn' : 'en'] || transaction.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {language === 'bn' 
+                            ? transaction.description_bn || transaction.donor_name || '-'
+                            : transaction.description_en || transaction.donor_name || '-'}
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${isIncome ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {isIncome ? '+' : '-'}৳{Number(transaction.amount).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(transaction)}
+                            className="hover:bg-primary/10"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'bn' ? 'লেনদেন সম্পাদনা' : 'Edit Transaction'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
+              <Input
+                type="date"
+                value={editForm.transaction_date}
+                onChange={(e) => setEditForm({ ...editForm, transaction_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'পরিমাণ (৳)' : 'Amount (৳)'}</Label>
+              <Input
+                type="number"
+                value={editForm.amount}
+                onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'বিবরণ (বাংলা)' : 'Description (Bengali)'}</Label>
+              <Textarea
+                value={editForm.description_bn}
+                onChange={(e) => setEditForm({ ...editForm, description_bn: e.target.value })}
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'বিবরণ (ইংরেজি)' : 'Description (English)'}</Label>
+              <Textarea
+                value={editForm.description_en}
+                onChange={(e) => setEditForm({ ...editForm, description_en: e.target.value })}
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'নোট' : 'Notes'}</Label>
+              <Textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">
+                {language === 'bn' ? 'বাতিল' : 'Cancel'}
+              </Button>
+            </DialogClose>
+            <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+              <Save className="w-4 h-4 mr-2" />
+              {updateMutation.isPending 
+                ? (language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') 
+                : (language === 'bn' ? 'সংরক্ষণ করুন' : 'Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </TabsContent>
   );
 };
 
