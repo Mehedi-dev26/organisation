@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { Users, Upload, CheckCircle } from 'lucide-react';
+import { Users, Upload, CheckCircle, ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { compressImage } from '@/lib/imageUtils';
+import { compressImage, formatFileSize } from '@/lib/imageUtils';
 
 const registrationSchema = z.object({
   full_name: z.string().min(3, 'নাম কমপক্ষে ৩ অক্ষরের হতে হবে'),
@@ -36,7 +36,11 @@ const MemberRegistration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [originalSize, setOriginalSize] = useState<number>(0);
+  const [compressedSize, setCompressedSize] = useState<number>(0);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const {
     register,
@@ -51,11 +55,35 @@ const MemberRegistration = () => {
     const file = e.target.files?.[0];
     if (file) {
       setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setOriginalSize(file.size);
+      setIsCompressing(true);
+      
+      try {
+        // Compress the image immediately
+        const compressed = await compressImage(file, 300, 300, 0.8);
+        setCompressedBlob(compressed);
+        setCompressedSize(compressed.size);
+        
+        // Create preview from compressed blob
+        const previewUrl = URL.createObjectURL(compressed);
+        setPhotoPreview(previewUrl);
+        
+        toast.success(
+          language === 'bn' 
+            ? `ছবি কম্প্রেস হয়েছে: ${formatFileSize(file.size)} → ${formatFileSize(compressed.size)}`
+            : `Image compressed: ${formatFileSize(file.size)} → ${formatFileSize(compressed.size)}`
+        );
+      } catch (error) {
+        console.error('Compression error:', error);
+        // Fallback to original if compression fails
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -71,9 +99,8 @@ const MemberRegistration = () => {
       let photoUrl = null;
 
       // Upload photo if provided
-      if (photoFile) {
-        const compressedBlob = await compressImage(photoFile, 300, 300, 0.8);
-        const fileName = `pending/${Date.now()}-${photoFile.name}`;
+      if (compressedBlob) {
+        const fileName = `pending/${Date.now()}-${photoFile?.name || 'photo.jpg'}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('member-photos')
@@ -178,7 +205,11 @@ const MemberRegistration = () => {
                   {/* Photo Upload */}
                   <div className="flex flex-col items-center mb-8 p-6 bg-muted/30 rounded-xl border border-border/50">
                     <div className="relative w-32 h-32 mb-4">
-                      {photoPreview ? (
+                      {isCompressing ? (
+                        <div className="w-full h-full rounded-full border-4 border-primary/30 flex items-center justify-center bg-muted animate-pulse">
+                          <ImageIcon className="w-12 h-12 text-primary/40" />
+                        </div>
+                      ) : photoPreview ? (
                         <img
                           src={photoPreview}
                           alt="Preview"
@@ -190,12 +221,23 @@ const MemberRegistration = () => {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Show compression info */}
+                    {compressedSize > 0 && originalSize > 0 && (
+                      <div className="text-xs text-muted-foreground mb-3 bg-green-500/10 text-green-700 px-3 py-1 rounded-full">
+                        {language === 'bn' ? 'কম্প্রেসড:' : 'Compressed:'} {formatFileSize(originalSize)} → {formatFileSize(compressedSize)}
+                        {' '}({Math.round((1 - compressedSize / originalSize) * 100)}% {language === 'bn' ? 'কম' : 'smaller'})
+                      </div>
+                    )}
+                    
                     <Label
                       htmlFor="photo"
                       className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors bg-primary/10 px-4 py-2 rounded-full"
                     >
                       <Upload className="w-4 h-4" />
-                      {language === 'bn' ? 'ছবি আপলোড করুন' : 'Upload Photo'}
+                      {isCompressing 
+                        ? (language === 'bn' ? 'কম্প্রেস হচ্ছে...' : 'Compressing...') 
+                        : (language === 'bn' ? 'ছবি আপলোড করুন' : 'Upload Photo')}
                     </Label>
                     <input
                       type="file"
@@ -203,9 +245,10 @@ const MemberRegistration = () => {
                       accept="image/*"
                       onChange={handlePhotoChange}
                       className="hidden"
+                      disabled={isCompressing}
                     />
                     <p className="text-xs text-muted-foreground mt-2">
-                      {language === 'bn' ? '(ঐচ্ছিক)' : '(Optional)'}
+                      {language === 'bn' ? '(ঐচ্ছিক - স্বয়ংক্রিয়ভাবে কম্প্রেস হবে)' : '(Optional - auto compressed)'}
                     </p>
                   </div>
 
