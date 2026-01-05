@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { parseExcelFile, generateExcelTemplate, exportTransactionsToExcel, ExcelTransaction, ValidationError } from '@/lib/excelUtils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 type TransactionType = Database['public']['Enums']['transaction_type'];
 
@@ -49,6 +50,9 @@ const YearlyAccounts = () => {
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Real-time subscription for transactions
+  useRealtimeSubscription({ table: 'transactions', queryKey: ['yearly-transactions', selectedYear] });
 
   // Generate years from 2020 to current year
   const years = Array.from({ length: currentYear - 2019 }, (_, i) => (currentYear - i).toString());
