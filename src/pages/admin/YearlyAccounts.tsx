@@ -603,6 +603,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
     description_en: '',
     notes: '',
     transaction_date: '',
+    donor_name: '',
   });
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -614,6 +615,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
     notes: '',
     transaction_date: `${selectedYear}-01-01`,
     payment_method: 'cash',
+    donor_name: '',
   });
 
   const typeLabels: { [key: string]: { bn: string; en: string } } = {
@@ -642,6 +644,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
       description_en: transaction.description_en || '',
       notes: transaction.notes || '',
       transaction_date: transaction.transaction_date,
+      donor_name: transaction.donor_name || '',
     });
     setIsEditDialogOpen(true);
   };
@@ -655,6 +658,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
       notes: '',
       transaction_date: `${selectedYear}-01-01`,
       payment_method: 'cash',
+      donor_name: '',
     });
     setIsAddDialogOpen(true);
   };
@@ -704,6 +708,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
         description_en: editForm.description_en || null,
         notes: editForm.notes || null,
         transaction_date: editForm.transaction_date,
+        donor_name: editForm.donor_name || null,
       },
     });
   };
@@ -718,6 +723,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
       notes: string | null;
       transaction_date: string;
       payment_method: string;
+      donor_name: string | null;
     }) => {
       const { error } = await supabase
         .from('transactions')
@@ -729,6 +735,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
           notes: data.notes,
           transaction_date: data.transaction_date,
           payment_method: data.payment_method,
+          donor_name: data.donor_name,
           created_by: user?.id,
         });
       
@@ -771,6 +778,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
       notes: addForm.notes || null,
       transaction_date: addForm.transaction_date,
       payment_method: addForm.payment_method,
+      donor_name: addForm.donor_name || null,
     });
   };
 
@@ -856,55 +864,67 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>
               {language === 'bn' ? 'লেনদেন সম্পাদনা' : 'Edit Transaction'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
-              <Input
-                type="date"
-                value={editForm.transaction_date}
-                onChange={(e) => setEditForm({ ...editForm, transaction_date: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'পরিমাণ (৳)' : 'Amount (৳)'}</Label>
-              <Input
-                type="number"
-                value={editForm.amount}
-                onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'বিবরণ (বাংলা)' : 'Description (Bengali)'}</Label>
-              <Textarea
-                value={editForm.description_bn}
-                onChange={(e) => setEditForm({ ...editForm, description_bn: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'বিবরণ (ইংরেজি)' : 'Description (English)'}</Label>
-              <Textarea
-                value={editForm.description_en}
-                onChange={(e) => setEditForm({ ...editForm, description_en: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'নোট' : 'Notes'}</Label>
-              <Textarea
-                value={editForm.notes}
-                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                rows={2}
-              />
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'নাম (সদস্য/দাতা)' : 'Name (Member/Donor)'}</Label>
+                <Input
+                  value={editForm.donor_name}
+                  onChange={(e) => setEditForm({ ...editForm, donor_name: e.target.value })}
+                  placeholder={language === 'bn' ? 'নাম লিখুন...' : 'Enter name...'}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
+                  <Input
+                    type="date"
+                    value={editForm.transaction_date}
+                    onChange={(e) => setEditForm({ ...editForm, transaction_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'পরিমাণ (৳)' : 'Amount (৳)'}</Label>
+                  <Input
+                    type="number"
+                    value={editForm.amount}
+                    onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'বিবরণ (বাংলা)' : 'Description (Bengali)'}</Label>
+                <Textarea
+                  value={editForm.description_bn}
+                  onChange={(e) => setEditForm({ ...editForm, description_bn: e.target.value })}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'বিবরণ (ইংরেজি)' : 'Description (English)'}</Label>
+                <Textarea
+                  value={editForm.description_en}
+                  onChange={(e) => setEditForm({ ...editForm, description_en: e.target.value })}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'নোট' : 'Notes'}</Label>
+                <Textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  rows={2}
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 border-t">
             <DialogClose asChild>
               <Button variant="outline">
                 {language === 'bn' ? 'বাতিল' : 'Cancel'}
@@ -922,95 +942,107 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
 
       {/* Add New Transaction Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>
               {language === 'bn' ? 'নতুন লেনদেন যোগ করুন' : 'Add New Transaction'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Type'}</Label>
-              <Select
-                value={addForm.type}
-                onValueChange={(value) => setAddForm({ ...addForm, type: value as TransactionType })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {transactionTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {language === 'bn' ? type.labelBn : type.labelEn}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
-              <Input
-                type="date"
-                value={addForm.transaction_date}
-                onChange={(e) => setAddForm({ ...addForm, transaction_date: e.target.value })}
-                min={`${selectedYear}-01-01`}
-                max={`${selectedYear}-12-31`}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'পরিমাণ (৳)' : 'Amount (৳)'}</Label>
-              <Input
-                type="number"
-                value={addForm.amount}
-                onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'পেমেন্ট মেথড' : 'Payment Method'}</Label>
-              <Select
-                value={addForm.payment_method}
-                onValueChange={(value) => setAddForm({ ...addForm, payment_method: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">{language === 'bn' ? 'নগদ' : 'Cash'}</SelectItem>
-                  <SelectItem value="bank">{language === 'bn' ? 'ব্যাংক' : 'Bank'}</SelectItem>
-                  <SelectItem value="mobile">{language === 'bn' ? 'মোবাইল ব্যাংকিং' : 'Mobile Banking'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'বিবরণ (বাংলা)' : 'Description (Bengali)'}</Label>
-              <Textarea
-                value={addForm.description_bn}
-                onChange={(e) => setAddForm({ ...addForm, description_bn: e.target.value })}
-                rows={2}
-                placeholder={language === 'bn' ? 'বিবরণ লিখুন...' : 'Enter description...'}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'বিবরণ (ইংরেজি)' : 'Description (English)'}</Label>
-              <Textarea
-                value={addForm.description_en}
-                onChange={(e) => setAddForm({ ...addForm, description_en: e.target.value })}
-                rows={2}
-                placeholder="Enter description..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === 'bn' ? 'নোট' : 'Notes'}</Label>
-              <Textarea
-                value={addForm.notes}
-                onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
-                rows={2}
-                placeholder={language === 'bn' ? 'অতিরিক্ত নোট...' : 'Additional notes...'}
-              />
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Type'}</Label>
+                <Select
+                  value={addForm.type}
+                  onValueChange={(value) => setAddForm({ ...addForm, type: value as TransactionType })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {transactionTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {language === 'bn' ? type.labelBn : type.labelEn}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'নাম (সদস্য/দাতা)' : 'Name (Member/Donor)'}</Label>
+                <Input
+                  value={addForm.donor_name}
+                  onChange={(e) => setAddForm({ ...addForm, donor_name: e.target.value })}
+                  placeholder={language === 'bn' ? 'নাম লিখুন...' : 'Enter name...'}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
+                  <Input
+                    type="date"
+                    value={addForm.transaction_date}
+                    onChange={(e) => setAddForm({ ...addForm, transaction_date: e.target.value })}
+                    min={`${selectedYear}-01-01`}
+                    max={`${selectedYear}-12-31`}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'পরিমাণ (৳)' : 'Amount (৳)'}</Label>
+                  <Input
+                    type="number"
+                    value={addForm.amount}
+                    onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'পেমেন্ট মেথড' : 'Payment Method'}</Label>
+                <Select
+                  value={addForm.payment_method}
+                  onValueChange={(value) => setAddForm({ ...addForm, payment_method: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">{language === 'bn' ? 'নগদ' : 'Cash'}</SelectItem>
+                    <SelectItem value="bank">{language === 'bn' ? 'ব্যাংক' : 'Bank'}</SelectItem>
+                    <SelectItem value="mobile">{language === 'bn' ? 'মোবাইল ব্যাংকিং' : 'Mobile Banking'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'বিবরণ (বাংলা)' : 'Description (Bengali)'}</Label>
+                <Textarea
+                  value={addForm.description_bn}
+                  onChange={(e) => setAddForm({ ...addForm, description_bn: e.target.value })}
+                  rows={2}
+                  placeholder={language === 'bn' ? 'বিবরণ লিখুন...' : 'Enter description...'}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'বিবরণ (ইংরেজি)' : 'Description (English)'}</Label>
+                <Textarea
+                  value={addForm.description_en}
+                  onChange={(e) => setAddForm({ ...addForm, description_en: e.target.value })}
+                  rows={2}
+                  placeholder="Enter description..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'bn' ? 'নোট' : 'Notes'}</Label>
+                <Textarea
+                  value={addForm.notes}
+                  onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
+                  rows={2}
+                  placeholder={language === 'bn' ? 'অতিরিক্ত নোট...' : 'Additional notes...'}
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 border-t">
             <DialogClose asChild>
               <Button variant="outline">
                 {language === 'bn' ? 'বাতিল' : 'Cancel'}
