@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          description_bn: string | null
+          description_en: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+          user_name: string | null
+          user_role: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description_bn?: string | null
+          description_en?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+          user_name?: string | null
+          user_role: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description_bn?: string | null
+          description_en?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+          user_name?: string | null
+          user_role?: string
+        }
+        Relationships: []
+      }
       cashiers: {
         Row: {
           created_at: string

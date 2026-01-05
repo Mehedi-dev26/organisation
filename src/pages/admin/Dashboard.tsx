@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity, DollarSign, UserPlus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity, DollarSign, UserPlus, ArrowUpRight, ArrowDownRight, ClipboardList, Trash2, CreditCard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
@@ -129,6 +129,22 @@ const Dashboard = () => {
         balance: totalIncome - totalExpense,
       };
     },
+  });
+
+  // Fetch cashier activity logs
+  const { data: activityLogs } = useQuery({
+    queryKey: ['activity-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
   });
 
   const { data: recentActivities } = useQuery({
@@ -460,6 +476,71 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cashier Activity Logs - Only for Admin */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary" />
+              {language === 'bn' ? 'ক্যাশিয়ার কার্যকলাপ লগ' : 'Cashier Activity Logs'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {activityLogs && activityLogs.length > 0 ? (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {activityLogs.map((log) => (
+                  <div key={log.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border">
+                    <div className={`p-2 rounded-lg ${
+                      log.action_type === 'delete' 
+                        ? 'bg-red-100 text-red-600' 
+                        : log.action_type === 'payment' 
+                          ? 'bg-green-100 text-green-600' 
+                          : 'bg-blue-100 text-blue-600'
+                    }`}>
+                      {log.action_type === 'delete' ? (
+                        <Trash2 className="w-4 h-4" />
+                      ) : log.action_type === 'payment' ? (
+                        <CreditCard className="w-4 h-4" />
+                      ) : (
+                        <Activity className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">
+                        {language === 'bn' ? log.description_bn : log.description_en}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          log.user_role?.includes('cashier') 
+                            ? 'bg-amber-100 text-amber-700' 
+                            : 'bg-purple-100 text-purple-700'
+                        }`}>
+                          {log.user_role?.includes('cashier') 
+                            ? (language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier')
+                            : (language === 'bn' ? 'অ্যাডমিন' : 'Admin')}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {log.user_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          • {formatActivityDate(log.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-center py-8">
+                {language === 'bn' 
+                  ? 'কোন কার্যকলাপ লগ নেই' 
+                  : 'No activity logs'}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Activity & Bar Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
