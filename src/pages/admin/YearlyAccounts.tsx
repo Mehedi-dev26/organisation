@@ -605,6 +605,17 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
     transaction_date: '',
   });
 
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    type: 'other_income' as TransactionType,
+    amount: '',
+    description_bn: '',
+    description_en: '',
+    notes: '',
+    transaction_date: `${selectedYear}-01-01`,
+    payment_method: 'cash',
+  });
+
   const typeLabels: { [key: string]: { bn: string; en: string } } = {
     member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
     donation: { bn: 'দান/অনুদান', en: 'Donation' },
@@ -613,6 +624,15 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
     expense: { bn: 'ব্যয়', en: 'Expense' },
     other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense' },
   };
+
+  const transactionTypes: { value: TransactionType; labelBn: string; labelEn: string }[] = [
+    { value: 'member_fee', labelBn: 'সদস্য চাঁদা', labelEn: 'Member Fee' },
+    { value: 'donation', labelBn: 'দান/অনুদান', labelEn: 'Donation' },
+    { value: 'event_fee', labelBn: 'অনুষ্ঠান ফি', labelEn: 'Event Fee' },
+    { value: 'other_income', labelBn: 'অন্যান্য আয়', labelEn: 'Other Income' },
+    { value: 'expense', labelBn: 'ব্যয়', labelEn: 'Expense' },
+    { value: 'other_expense', labelBn: 'অন্যান্য ব্যয়', labelEn: 'Other Expense' },
+  ];
 
   const openEditDialog = (transaction: Transaction) => {
     setEditingTransaction(transaction);
@@ -624,6 +644,19 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
       transaction_date: transaction.transaction_date,
     });
     setIsEditDialogOpen(true);
+  };
+
+  const openAddDialog = () => {
+    setAddForm({
+      type: 'other_income',
+      amount: '',
+      description_bn: '',
+      description_en: '',
+      notes: '',
+      transaction_date: `${selectedYear}-01-01`,
+      payment_method: 'cash',
+    });
+    setIsAddDialogOpen(true);
   };
 
   const updateMutation = useMutation({
@@ -675,19 +708,91 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
     });
   };
 
+  // Add new transaction mutation
+  const addMutation = useMutation({
+    mutationFn: async (data: {
+      type: TransactionType;
+      amount: number;
+      description_bn: string | null;
+      description_en: string | null;
+      notes: string | null;
+      transaction_date: string;
+      payment_method: string;
+    }) => {
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          type: data.type,
+          amount: data.amount,
+          description_bn: data.description_bn,
+          description_en: data.description_en,
+          notes: data.notes,
+          transaction_date: data.transaction_date,
+          payment_method: data.payment_method,
+          created_by: user?.id,
+        });
+      
+      if (error) throw error;
+
+      // Log activity
+      if (user) {
+        await supabase.from('activity_logs').insert({
+          user_id: user.id,
+          user_name: user.email,
+          user_role: isAdmin ? 'admin' : 'cashier',
+          action_type: 'create',
+          entity_type: 'transaction',
+          description_bn: `বিগত বছরের লেনদেন যোগ করা হয়েছে (৳${data.amount}) - ${selectedYear}`,
+          description_en: `Past year transaction added (৳${data.amount}) - ${selectedYear}`,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['yearly-transactions', selectedYear] });
+      toast.success(language === 'bn' ? 'নতুন লেনদেন যোগ হয়েছে' : 'New transaction added');
+      setIsAddDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || (language === 'bn' ? 'লেনদেন যোগ ব্যর্থ' : 'Failed to add transaction'));
+    },
+  });
+
+  const handleAddTransaction = () => {
+    if (!addForm.amount || parseFloat(addForm.amount) <= 0) {
+      toast.error(language === 'bn' ? 'সঠিক পরিমাণ দিন' : 'Enter a valid amount');
+      return;
+    }
+
+    addMutation.mutate({
+      type: addForm.type,
+      amount: parseFloat(addForm.amount),
+      description_bn: addForm.description_bn || null,
+      description_en: addForm.description_en || null,
+      notes: addForm.notes || null,
+      transaction_date: addForm.transaction_date,
+      payment_method: addForm.payment_method,
+    });
+  };
+
   return (
     <TabsContent value="transactions">
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Edit className="w-5 h-5" />
-            {language === 'bn' ? 'বিগত বছরের লেনদেন সম্পাদনা' : 'Edit Past Year Transactions'}
-          </CardTitle>
-          <CardDescription>
-            {language === 'bn' 
-              ? `${selectedYear} সালের সকল লেনদেন এখানে সম্পাদনা করতে পারবেন`
-              : `Edit all transactions from ${selectedYear}`}
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Edit className="w-5 h-5" />
+              {language === 'bn' ? 'বিগত বছরের লেনদেন সম্পাদনা' : 'Edit Past Year Transactions'}
+            </CardTitle>
+            <CardDescription>
+              {language === 'bn' 
+                ? `${selectedYear} সালের সকল লেনদেন এখানে সম্পাদনা বা নতুন যোগ করতে পারবেন`
+                : `Edit or add transactions for ${selectedYear}`}
+            </CardDescription>
+          </div>
+          <Button onClick={openAddDialog} className="gap-2">
+            <FileText className="w-4 h-4" />
+            {language === 'bn' ? 'নতুন লেনদেন যোগ করুন' : 'Add Transaction'}
+          </Button>
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
@@ -808,6 +913,112 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
             <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>
               <Save className="w-4 h-4 mr-2" />
               {updateMutation.isPending 
+                ? (language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') 
+                : (language === 'bn' ? 'সংরক্ষণ করুন' : 'Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Transaction Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'bn' ? 'নতুন লেনদেন যোগ করুন' : 'Add New Transaction'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Type'}</Label>
+              <Select
+                value={addForm.type}
+                onValueChange={(value) => setAddForm({ ...addForm, type: value as TransactionType })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {transactionTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {language === 'bn' ? type.labelBn : type.labelEn}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'তারিখ' : 'Date'}</Label>
+              <Input
+                type="date"
+                value={addForm.transaction_date}
+                onChange={(e) => setAddForm({ ...addForm, transaction_date: e.target.value })}
+                min={`${selectedYear}-01-01`}
+                max={`${selectedYear}-12-31`}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'পরিমাণ (৳)' : 'Amount (৳)'}</Label>
+              <Input
+                type="number"
+                value={addForm.amount}
+                onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'পেমেন্ট মেথড' : 'Payment Method'}</Label>
+              <Select
+                value={addForm.payment_method}
+                onValueChange={(value) => setAddForm({ ...addForm, payment_method: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">{language === 'bn' ? 'নগদ' : 'Cash'}</SelectItem>
+                  <SelectItem value="bank">{language === 'bn' ? 'ব্যাংক' : 'Bank'}</SelectItem>
+                  <SelectItem value="mobile">{language === 'bn' ? 'মোবাইল ব্যাংকিং' : 'Mobile Banking'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'বিবরণ (বাংলা)' : 'Description (Bengali)'}</Label>
+              <Textarea
+                value={addForm.description_bn}
+                onChange={(e) => setAddForm({ ...addForm, description_bn: e.target.value })}
+                rows={2}
+                placeholder={language === 'bn' ? 'বিবরণ লিখুন...' : 'Enter description...'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'বিবরণ (ইংরেজি)' : 'Description (English)'}</Label>
+              <Textarea
+                value={addForm.description_en}
+                onChange={(e) => setAddForm({ ...addForm, description_en: e.target.value })}
+                rows={2}
+                placeholder="Enter description..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'bn' ? 'নোট' : 'Notes'}</Label>
+              <Textarea
+                value={addForm.notes}
+                onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
+                rows={2}
+                placeholder={language === 'bn' ? 'অতিরিক্ত নোট...' : 'Additional notes...'}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">
+                {language === 'bn' ? 'বাতিল' : 'Cancel'}
+              </Button>
+            </DialogClose>
+            <Button onClick={handleAddTransaction} disabled={addMutation.isPending}>
+              <Save className="w-4 h-4 mr-2" />
+              {addMutation.isPending 
                 ? (language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') 
                 : (language === 'bn' ? 'সংরক্ষণ করুন' : 'Save')}
             </Button>
