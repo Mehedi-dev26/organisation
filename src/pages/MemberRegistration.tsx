@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { Users, Upload, CheckCircle, ImageIcon } from 'lucide-react';
+import { Users, Upload, CheckCircle, ImageIcon, UserPlus, UserCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const registrationSchema = z.object({
   full_name: z.string().min(3, 'নাম কমপক্ষে ৩ অক্ষরের হতে হবে'),
@@ -35,6 +36,8 @@ const MemberRegistration = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [memberType, setMemberType] = useState<'new' | 'existing'>('new');
+  const [previousMemberId, setPreviousMemberId] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -119,7 +122,7 @@ const MemberRegistration = () => {
 
       // Insert member with pending status
       const { error } = await supabase.from('members').insert({
-        member_id: generateMemberId(),
+        member_id: memberType === 'existing' && previousMemberId ? previousMemberId : generateMemberId(),
         full_name: data.full_name,
         email: data.email || null,
         phone: data.phone,
@@ -128,7 +131,7 @@ const MemberRegistration = () => {
         blood_group: data.blood_group || null,
         photo_url: photoUrl,
         status: 'pending',
-        member_type: 'general',
+        member_type: memberType === 'existing' ? 'renewal' : 'general',
       });
 
       if (error) throw error;
@@ -202,6 +205,94 @@ const MemberRegistration = () => {
               </CardHeader>
               <CardContent className="pt-8 px-6 md:px-10">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Member Type Selection */}
+                  <div className="p-6 bg-muted/30 rounded-xl border border-border/50 mb-6">
+                    <Label className="text-base font-medium mb-4 block">
+                      {language === 'bn' ? 'সদস্যের ধরন নির্বাচন করুন' : 'Select Member Type'}
+                    </Label>
+                    <RadioGroup
+                      value={memberType}
+                      onValueChange={(value) => setMemberType(value as 'new' | 'existing')}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    >
+                      <div className="relative">
+                        <RadioGroupItem
+                          value="new"
+                          id="new-member"
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor="new-member"
+                          className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                            memberType === 'new'
+                              ? 'border-primary bg-primary/10 shadow-md'
+                              : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                          }`}
+                        >
+                          <div className={`p-3 rounded-full ${memberType === 'new' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            <UserPlus className="w-6 h-6" />
+                          </div>
+                          <div className="text-center">
+                            <p className="font-medium">
+                              {language === 'bn' ? 'নতুন সদস্য' : 'New Member'}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {language === 'bn' ? 'প্রথমবার যোগ দিচ্ছি' : 'Joining for the first time'}
+                            </p>
+                          </div>
+                        </Label>
+                      </div>
+
+                      <div className="relative">
+                        <RadioGroupItem
+                          value="existing"
+                          id="existing-member"
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor="existing-member"
+                          className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                            memberType === 'existing'
+                              ? 'border-primary bg-primary/10 shadow-md'
+                              : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                          }`}
+                        >
+                          <div className={`p-3 rounded-full ${memberType === 'existing' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            <UserCheck className="w-6 h-6" />
+                          </div>
+                          <div className="text-center">
+                            <p className="font-medium">
+                              {language === 'bn' ? 'আগের সদস্য' : 'Existing Member'}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {language === 'bn' ? 'আগে থেকে সদস্য ছিলাম' : 'Was a member before'}
+                            </p>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+
+                    {/* Previous Member ID Input */}
+                    {memberType === 'existing' && (
+                      <div className="mt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <Label htmlFor="previous_member_id">
+                          {language === 'bn' ? 'আগের সদস্য আইডি (যদি জানা থাকে)' : 'Previous Member ID (if known)'}
+                        </Label>
+                        <Input
+                          id="previous_member_id"
+                          placeholder={language === 'bn' ? 'যেমন: SB-2023-1234' : 'e.g., SB-2023-1234'}
+                          value={previousMemberId}
+                          onChange={(e) => setPreviousMemberId(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'bn' 
+                            ? 'আইডি না জানা থাকলে খালি রাখুন, অ্যাডমিন পরে আপডেট করবেন' 
+                            : 'Leave empty if unknown, admin will update later'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Photo Upload */}
                   <div className="flex flex-col items-center mb-8 p-6 bg-muted/30 rounded-xl border border-border/50">
                     <div className="relative w-32 h-32 mb-4">
