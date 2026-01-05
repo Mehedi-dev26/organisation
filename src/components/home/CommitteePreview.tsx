@@ -45,28 +45,35 @@ const CommitteePreview = () => {
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto mb-12">
-            {committeeMembers?.map((member) => (
-              <div
-                key={member.id}
-                className="group text-center"
-              >
-                <div className="relative mb-6 inline-block">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-primary/20 group-hover:border-primary transition-colors duration-300 mx-auto">
-                    <img
-                      src={member.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name_bn}`}
-                      alt={language === 'bn' ? member.name_bn : (member.name_en || member.name_bn)}
-                      className="w-full h-full object-cover bg-muted"
-                    />
+            {committeeMembers?.map((member) => {
+              const fallbackImage = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name_bn}`;
+              const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+                e.currentTarget.src = fallbackImage;
+              };
+              return (
+                <div
+                  key={member.id}
+                  className="group text-center"
+                >
+                  <div className="relative mb-6 inline-block">
+                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-primary/20 group-hover:border-primary transition-colors duration-300 mx-auto">
+                      <img
+                        src={member.photo_url || fallbackImage}
+                        alt={language === 'bn' ? member.name_bn : (member.name_en || member.name_bn)}
+                        className="w-full h-full object-cover bg-muted"
+                        onError={handleImageError}
+                      />
+                    </div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium whitespace-nowrap">
+                      {language === 'bn' ? member.position_bn : (member.position_en || member.position_bn)}
+                    </div>
                   </div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium whitespace-nowrap">
-                    {language === 'bn' ? member.position_bn : (member.position_en || member.position_bn)}
-                  </div>
+                  <h3 className="font-heading text-lg md:text-xl font-semibold text-foreground">
+                    {language === 'bn' ? member.name_bn : (member.name_en || member.name_bn)}
+                  </h3>
                 </div>
-                <h3 className="font-heading text-lg md:text-xl font-semibold text-foreground">
-                  {language === 'bn' ? member.name_bn : (member.name_en || member.name_bn)}
-                </h3>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
