@@ -107,8 +107,8 @@ const handler = async (req: Request): Promise<Response> => {
                 
                 <p><strong>পেমেন্ট মাধ্যম:</strong></p>
                 <ul>
-                  <li>বিকাশ: 01XXXXXXXXX</li>
-                  <li>নগদ: কোষাধ্যক্ষের কাছে</li>
+                  <li>বিকাশ: 01770323801</li>
+                  <li>নগদ: 01770323801</li>
                 </ul>
                 
                 <p>কোনো প্রশ্ন থাকলে আমাদের সাথে যোগাযোগ করুন।</p>
