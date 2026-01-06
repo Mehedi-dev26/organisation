@@ -1,19 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Newspaper, Image, Phone, Info } from 'lucide-react';
+import { Home, Users, Newspaper, Image, Phone, UserCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 const MobileBottomNav = () => {
   const location = useLocation();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const navItems = [
     { href: '/', icon: Home, label: 'nav.home' },
-    { href: '/about', icon: Info, label: 'nav.about' },
     { href: '/members', icon: Users, label: 'nav.members' },
     { href: '/news', icon: Newspaper, label: 'nav.news' },
     { href: '/gallery', icon: Image, label: 'nav.gallery' },
     { href: '/contact', icon: Phone, label: 'nav.contact' },
+    { href: '/auth', icon: UserCircle, labelBn: 'লগইন', labelEn: 'Login' },
   ];
 
   return (
@@ -55,7 +55,7 @@ const MobileBottomNav = () => {
                 "text-[9px] font-medium leading-tight text-center transition-all duration-300",
                 isActive ? "font-bold text-primary" : "text-muted-foreground"
               )}>
-                {t(item.label)}
+                {item.label ? t(item.label) : (language === 'bn' ? item.labelBn : item.labelEn)}
               </span>
             </Link>
           );
