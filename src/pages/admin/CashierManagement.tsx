@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Loader2, Eye, EyeOff, UserCheck, UserX, Trash2 } from 'lucide-react';
@@ -109,6 +110,39 @@ const CashierManagement = () => {
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description: language === 'bn' ? 'স্ট্যাটাস আপডেট হয়েছে' : 'Status updated',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete cashier mutation
+  const deleteCashierMutation = useMutation({
+    mutationFn: async ({ cashierId, userId }: { cashierId: string; userId: string }) => {
+      const response = await supabase.functions.invoke('delete-cashier-user', {
+        body: { cashierId, userId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to delete cashier');
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cashiers'] });
+      toast({
+        title: language === 'bn' ? 'সফল!' : 'Success!',
+        description: language === 'bn' ? 'ক্যাশিয়ার মুছে ফেলা হয়েছে' : 'Cashier deleted successfully',
       });
     },
     onError: (error: Error) => {
@@ -318,21 +352,64 @@ const CashierManagement = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleActiveMutation.mutate({ 
-                            id: cashier.id, 
-                            isActive: !cashier.is_active 
-                          })}
-                          title={cashier.is_active 
-                            ? (language === 'bn' ? 'নিষ্ক্রিয় করুন' : 'Deactivate')
-                            : (language === 'bn' ? 'সক্রিয় করুন' : 'Activate')}
-                        >
-                          {cashier.is_active 
-                            ? <UserX className="h-4 w-4 text-destructive" />
-                            : <UserCheck className="h-4 w-4 text-green-600" />}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleActiveMutation.mutate({ 
+                              id: cashier.id, 
+                              isActive: !cashier.is_active 
+                            })}
+                            title={cashier.is_active 
+                              ? (language === 'bn' ? 'নিষ্ক্রিয় করুন' : 'Deactivate')
+                              : (language === 'bn' ? 'সক্রিয় করুন' : 'Activate')}
+                          >
+                            {cashier.is_active 
+                              ? <UserX className="h-4 w-4 text-destructive" />
+                              : <UserCheck className="h-4 w-4 text-green-600" />}
+                          </Button>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title={language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  {language === 'bn' ? 'ক্যাশিয়ার মুছে ফেলুন?' : 'Delete Cashier?'}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {language === 'bn' 
+                                    ? `আপনি কি "${cashier.full_name}" কে মুছে ফেলতে চান? এটি তার সমস্ত ডেটা মুছে ফেলবে এবং এই ক্রিয়াটি পূর্বাবস্থায় ফেরানো যাবে না।`
+                                    : `Are you sure you want to delete "${cashier.full_name}"? This will remove all their data and cannot be undone.`}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>
+                                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteCashierMutation.mutate({
+                                    cashierId: cashier.id,
+                                    userId: cashier.user_id
+                                  })}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteCashierMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  ) : null}
+                                  {language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
