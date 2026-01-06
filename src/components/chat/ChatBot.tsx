@@ -155,12 +155,17 @@ const ChatBot = () => {
                 )}
                 <div
                   className={cn(
-                    "max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap",
+                    "max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap relative",
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground rounded-br-md'
                       : 'bg-muted text-foreground rounded-bl-md'
                   )}
                 >
+                  {message.role === 'assistant' && (
+                    <span className="absolute -top-2 left-2 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider bg-gradient-to-r from-primary to-primary/70 text-primary-foreground rounded-full shadow-sm">
+                      AI
+                    </span>
+                  )}
                   {message.content}
                 </div>
                 {message.role === 'user' && (
