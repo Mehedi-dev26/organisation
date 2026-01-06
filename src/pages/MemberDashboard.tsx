@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Loader2, CreditCard, Bell, User, LogOut, Calendar, AlertCircle, CheckCircle, Key, Eye, EyeOff, Printer } from 'lucide-react';
+import { Loader2, CreditCard, Bell, User, LogOut, Calendar, AlertCircle, CheckCircle, Key, Eye, EyeOff, Printer, TrendingUp, Wallet, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ import { bn, enUS } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useReactToPrint } from 'react-to-print';
 import TransactionVoucher from '@/components/admin/TransactionVoucher';
+import MemberMobileNav from '@/components/member/MemberMobileNav';
 
 interface MemberData {
   id: string;
@@ -267,22 +268,34 @@ const MemberDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
-      {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 pb-20 md:pb-0">
+      {/* Header - Enhanced */}
+      <header className="bg-gradient-to-r from-primary/90 to-primary sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10">
+            <div className="flex items-center gap-4">
+              <Avatar className="w-12 h-12 ring-2 ring-white/30 ring-offset-2 ring-offset-primary/50">
                 <AvatarImage src={memberData.photo_url || undefined} />
-                <AvatarFallback>{memberData.full_name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="bg-white/20 text-white font-bold text-lg">{memberData.full_name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="font-bold text-lg">{memberData.full_name}</h1>
-                <p className="text-sm text-muted-foreground font-mono">{memberData.member_id}</p>
+                <h1 className="font-bold text-lg text-white">{memberData.full_name}</h1>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
+                    {memberData.member_id}
+                  </Badge>
+                  <Badge className="bg-white/20 text-white border-0 capitalize text-xs">
+                    {memberData.member_type}
+                  </Badge>
+                </div>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="hidden md:flex text-white hover:bg-white/20 hover:text-white"
+            >
               <LogOut className="w-4 h-4 mr-2" />
               {language === 'bn' ? 'লগআউট' : 'Logout'}
             </Button>
@@ -290,74 +303,79 @@ const MemberDashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-6">
-        {/* Welcome Section */}
-        <div className="text-center py-4">
-          <h2 className="text-2xl md:text-3xl font-heading font-bold text-primary">
-            {language === 'bn' ? 'সদস্য প্যানেলে স্বাগতম' : 'Welcome to Member Panel'}
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Welcome Section - Enhanced */}
+        <div id="dashboard" className="text-center py-6 space-y-3">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium">
+            <Shield className="w-4 h-4" />
+            {language === 'bn' ? 'সদস্য প্যানেল' : 'Member Panel'}
+          </div>
+          <h2 className="text-2xl md:text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            {language === 'bn' ? 'স্বাগতম,' : 'Welcome,'} {memberData.full_name.split(' ')[0]}!
           </h2>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground max-w-md mx-auto">
             {language === 'bn' ? 'সময়ের বাতিঘর সমাজ কল্যাণ সমিতি' : 'Samoyer Batighor Social Welfare Association'}
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-500/20 rounded-full">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+        {/* Stats Cards - Enhanced */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-green-500/20 rounded-xl">
+                  <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {language === 'bn' ? 'পরিশোধিত' : 'Paid'}
                   </p>
-                  <p className="text-2xl font-bold text-green-600">৳{paidDues}</p>
+                  <p className="text-xl md:text-2xl font-bold text-green-600">৳{paidDues.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className={`bg-gradient-to-br ${unpaidDues > 0 ? 'from-red-500/10 to-red-600/5 border-red-500/20' : 'from-gray-500/10 to-gray-600/5 border-gray-500/20'}`}>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-full ${unpaidDues > 0 ? 'bg-red-500/20' : 'bg-gray-500/20'}`}>
-                  <CreditCard className={`w-6 h-6 ${unpaidDues > 0 ? 'text-red-600' : 'text-gray-600'}`} />
+          <Card className={`bg-gradient-to-br hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${unpaidDues > 0 ? 'from-red-500/10 to-red-600/5 border-red-500/20' : 'from-gray-500/10 to-gray-600/5 border-gray-500/20'}`}>
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${unpaidDues > 0 ? 'bg-red-500/20' : 'bg-gray-500/20'}`}>
+                  <Wallet className={`w-5 h-5 md:w-6 md:h-6 ${unpaidDues > 0 ? 'text-red-600' : 'text-gray-600'}`} />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {language === 'bn' ? 'বকেয়া' : 'Pending'}
                   </p>
-                  <p className={`text-2xl font-bold ${unpaidDues > 0 ? 'text-red-600' : 'text-gray-600'}`}>৳{unpaidDues}</p>
+                  <p className={`text-xl md:text-2xl font-bold ${unpaidDues > 0 ? 'text-red-600' : 'text-gray-600'}`}>৳{unpaidDues.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/20 rounded-full">
-                  <User className="w-6 h-6 text-primary" />
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] col-span-2 md:col-span-1">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/20 rounded-xl">
+                  <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
-                    {language === 'bn' ? 'সদস্য প্রকার' : 'Member Type'}
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    {language === 'bn' ? 'মোট চাঁদা' : 'Total Dues'}
                   </p>
-                  <p className="text-lg font-bold capitalize">{memberData.member_type}</p>
+                  <p className="text-xl md:text-2xl font-bold text-primary">৳{totalDues.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Dues Section */}
-          <Card>
-            <CardHeader>
+        <div id="dues" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="overflow-hidden border-0 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
+                <div className="p-2 bg-primary/20 rounded-lg">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
                 {language === 'bn' ? 'মাসিক চাঁদা' : 'Monthly Dues'}
               </CardTitle>
               <CardDescription>
@@ -435,11 +453,12 @@ const MemberDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* News & Notices Section */}
-          <Card>
-            <CardHeader>
+          <Card className="overflow-hidden border-0 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-amber-500/5 to-amber-500/10 border-b">
               <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5" />
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <Bell className="w-5 h-5 text-amber-600" />
+                </div>
                 {language === 'bn' ? 'সংবাদ ও নোটিশ' : 'News & Notices'}
               </CardTitle>
               <CardDescription>
@@ -456,10 +475,10 @@ const MemberDashboard = () => {
                   {language === 'bn' ? 'কোন সংবাদ নেই' : 'No news available'}
                 </p>
               ) : (
-                <div className="space-y-4 max-h-80 overflow-y-auto">
-                  {newsData.map((news) => (
-                    <div key={news.id} className="p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors">
-                      <h4 className="font-semibold mb-1">
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                  {newsData.map((news, index) => (
+                    <div key={news.id} className="p-4 rounded-xl border bg-card hover:bg-muted/30 transition-all duration-200 hover:shadow-sm group">
+                      <h4 className="font-semibold mb-1 group-hover:text-primary transition-colors">
                         {language === 'bn' ? news.title_bn : (news.title_en || news.title_bn)}
                       </h4>
                       <p className="text-sm text-muted-foreground line-clamp-2">
@@ -480,57 +499,59 @@ const MemberDashboard = () => {
           </Card>
         </div>
 
-        {/* Member Profile Card */}
-        <Card>
-          <CardHeader>
+        <Card id="profile" className="overflow-hidden border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-500/5 to-blue-500/10 border-b">
             <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
               {language === 'bn' ? 'আমার তথ্য' : 'My Profile'}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">{language === 'bn' ? 'সদস্য আইডি' : 'Member ID'}</p>
-                <p className="font-mono font-medium">{memberData.member_id}</p>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
+                <p className="text-xs md:text-sm text-muted-foreground">{language === 'bn' ? 'সদস্য আইডি' : 'Member ID'}</p>
+                <p className="font-mono font-semibold text-sm md:text-base">{memberData.member_id}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">{language === 'bn' ? 'ইমেইল' : 'Email'}</p>
-                <p className="font-medium">{memberData.email || '-'}</p>
+              <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
+                <p className="text-xs md:text-sm text-muted-foreground">{language === 'bn' ? 'ইমেইল' : 'Email'}</p>
+                <p className="font-medium text-sm md:text-base truncate">{memberData.email || '-'}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">{language === 'bn' ? 'ফোন' : 'Phone'}</p>
-                <p className="font-medium">{memberData.phone || '-'}</p>
+              <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
+                <p className="text-xs md:text-sm text-muted-foreground">{language === 'bn' ? 'ফোন' : 'Phone'}</p>
+                <p className="font-medium text-sm md:text-base">{memberData.phone || '-'}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">{language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}</p>
-                <p className="font-medium">{memberData.blood_group || '-'}</p>
+              <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
+                <p className="text-xs md:text-sm text-muted-foreground">{language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}</p>
+                <p className="font-bold text-lg text-red-600">{memberData.blood_group || '-'}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">{language === 'bn' ? 'পেশা' : 'Occupation'}</p>
-                <p className="font-medium">{memberData.occupation || '-'}</p>
+              <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
+                <p className="text-xs md:text-sm text-muted-foreground">{language === 'bn' ? 'পেশা' : 'Occupation'}</p>
+                <p className="font-medium text-sm md:text-base">{memberData.occupation || '-'}</p>
               </div>
-              <div className="space-y-1 md:col-span-2 lg:col-span-3">
-                <p className="text-sm text-muted-foreground">{language === 'bn' ? 'ঠিকানা' : 'Address'}</p>
-                <p className="font-medium">{memberData.address || '-'}</p>
+              <div className="space-y-1 p-3 bg-muted/30 rounded-lg col-span-2 lg:col-span-3">
+                <p className="text-xs md:text-sm text-muted-foreground">{language === 'bn' ? 'ঠিকানা' : 'Address'}</p>
+                <p className="font-medium text-sm md:text-base">{memberData.address || '-'}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Password Change Section */}
-        <Card>
-          <CardHeader>
+        <Card id="password" className="overflow-hidden border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-purple-500/5 to-purple-500/10 border-b">
             <CardTitle className="flex items-center gap-2">
-              <Key className="w-5 h-5" />
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <Key className="w-5 h-5 text-purple-600" />
+              </div>
               {language === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Change Password'}
             </CardTitle>
             <CardDescription>
               {language === 'bn' ? 'আপনার লগইন পাসওয়ার্ড পরিবর্তন করুন' : 'Change your login password'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               <div className="space-y-2">
                 <Label>{language === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New Password'}</Label>
                 <div className="relative">
@@ -601,9 +622,12 @@ const MemberDashboard = () => {
       </Dialog>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground border-t mt-8">
+      <footer className="py-6 text-center text-sm text-muted-foreground border-t mt-8 mb-16 md:mb-0">
         <p>© {new Date().getFullYear()} {language === 'bn' ? 'সময়ের বাতিঘর সমাজ কল্যাণ সমিতি' : 'Samoyer Batighor Social Welfare Association'}</p>
       </footer>
+
+      {/* Mobile Bottom Navigation */}
+      <MemberMobileNav />
     </div>
   );
 };
