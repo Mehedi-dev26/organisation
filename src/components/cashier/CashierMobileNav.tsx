@@ -1,12 +1,15 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { LayoutDashboard, Wallet, Receipt, History } from 'lucide-react';
+import { LayoutDashboard, Wallet, Receipt, History, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const CashierMobileNav = () => {
   const { language } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     { 
@@ -40,6 +43,16 @@ const CashierMobileNav = () => {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success(language === 'bn' ? 'সফলভাবে লগআউট হয়েছে' : 'Logged out successfully');
+      navigate('/');
+    } catch (error) {
+      toast.error(language === 'bn' ? 'লগআউট করতে সমস্যা হয়েছে' : 'Error logging out');
+    }
   };
 
   return (
@@ -76,6 +89,17 @@ const CashierMobileNav = () => {
             </NavLink>
           );
         })}
+        
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200 text-red-500 hover:text-red-600 hover:bg-red-50"
+        >
+          <LogOut className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-medium truncate max-w-full">
+            {language === 'bn' ? 'লগআউট' : 'Logout'}
+          </span>
+        </button>
       </div>
     </nav>
   );
