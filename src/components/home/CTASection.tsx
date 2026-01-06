@@ -33,9 +33,9 @@ const CTASection = () => {
               </Link>
             </Button>
             <Button variant="heroOutline" size="lg" asChild>
-              <Link to="/contact">
+              <a href="tel:+8801750224722">
                 {t('nav.contact')}
-              </Link>
+              </a>
             </Button>
           </div>
         </div>
