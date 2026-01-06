@@ -6,19 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, Shield, Users, Wallet, ArrowLeft, Home } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginType, setLoginType] = useState<'admin' | 'member' | 'cashier'>('member');
   
-  const { signIn, signUp, user, isAdmin, isMember, isCashier, loading } = useAuth();
+  const { signIn, user, isAdmin, isMember, isCashier, loading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -102,43 +100,6 @@ const Auth = () => {
     setIsLoading(false);
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    if (password.length < 6) {
-      toast({
-        title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: language === 'bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' : 'Password must be at least 6 characters',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    const { error } = await signUp(email, password, fullName);
-
-    if (error) {
-      let errorMessage = error.message;
-      if (error.message.includes('already registered')) {
-        errorMessage = language === 'bn' ? 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে' : 'An account with this email already exists';
-      }
-      toast({
-        title: language === 'bn' ? 'রেজিস্ট্রেশন ব্যর্থ' : 'Registration Failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: language === 'bn' ? 'সফল!' : 'Success!',
-        description: language === 'bn' ? 'অ্যাকাউন্ট তৈরি হয়েছে' : 'Account created successfully',
-      });
-      navigate('/admin');
-    }
-
-    setIsLoading(false);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
       {/* Back Button - Fixed Position */}
@@ -206,135 +167,61 @@ const Auth = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">{language === 'bn' ? 'লগইন' : 'Login'}</TabsTrigger>
-              {loginType === 'admin' && (
-                <TabsTrigger value="register">{language === 'bn' ? 'রেজিস্টার' : 'Register'}</TabsTrigger>
-              )}
-              {loginType === 'member' && (
-                <TabsTrigger value="register" disabled className="opacity-50">
-                  {language === 'bn' ? 'রেজিস্টার' : 'Register'}
-                </TabsTrigger>
-              )}
-            </TabsList>
-
-            <TabsContent value="login">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">{language === 'bn' ? 'ইমেইল' : 'Email'}</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</Label>
-                  <div className="relative">
-                    <Input
-                      id="login-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {loginType === 'member' 
-                    ? (language === 'bn' ? 'সদস্য লগইন' : 'Member Login')
-                    : loginType === 'cashier'
-                    ? (language === 'bn' ? 'ক্যাশিয়ার লগইন' : 'Cashier Login')
-                    : (language === 'bn' ? 'অ্যাডমিন লগইন' : 'Admin Login')}
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">{language === 'bn' ? 'ইমেইল' : 'Email'}</Label>
+              <Input
+                id="login-email"
+                type="email"
+                placeholder="email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</Label>
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
-                
-                {loginType === 'member' && (
-                  <p className="text-xs text-center text-muted-foreground mt-4">
-                    {language === 'bn' 
-                      ? 'সদস্য অ্যাকাউন্ট অ্যাডমিন দ্বারা তৈরি করা হয়। নতুন সদস্য হতে অ্যাডমিনের সাথে যোগাযোগ করুন।' 
-                      : 'Member accounts are created by admins. Contact admin to become a member.'}
-                  </p>
-                )}
-                {loginType === 'cashier' && (
-                  <p className="text-xs text-center text-muted-foreground mt-4">
-                    {language === 'bn' 
-                      ? 'ক্যাশিয়ার অ্যাকাউন্ট অ্যাডমিন দ্বারা তৈরি করা হয়।' 
-                      : 'Cashier accounts are created by admins.'}
-                  </p>
-                )}
-              </form>
-            </TabsContent>
-
-            {loginType === 'admin' && (
-              <TabsContent value="register">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name">{language === 'bn' ? 'পুরো নাম' : 'Full Name'}</Label>
-                    <Input
-                      id="register-name"
-                      type="text"
-                      placeholder={language === 'bn' ? 'আপনার নাম' : 'Your Name'}
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">{language === 'bn' ? 'ইমেইল' : 'Email'}</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="email@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</Label>
-                    <div className="relative">
-                      <Input
-                        id="register-password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {language === 'bn' ? 'রেজিস্টার' : 'Register'}
-                  </Button>
-                </form>
-              </TabsContent>
-            )}
-          </Tabs>
+              </div>
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loginType === 'member' 
+                ? (language === 'bn' ? 'সদস্য লগইন' : 'Member Login')
+                : loginType === 'cashier'
+                ? (language === 'bn' ? 'ক্যাশিয়ার লগইন' : 'Cashier Login')
+                : (language === 'bn' ? 'অ্যাডমিন লগইন' : 'Admin Login')}
+            </Button>
+            
+            <p className="text-xs text-center text-muted-foreground mt-4">
+              {loginType === 'member' && (language === 'bn' 
+                ? 'সদস্য অ্যাকাউন্ট অ্যাডমিন দ্বারা তৈরি করা হয়। নতুন সদস্য হতে অ্যাডমিনের সাথে যোগাযোগ করুন।' 
+                : 'Member accounts are created by admins. Contact admin to become a member.')}
+              {loginType === 'cashier' && (language === 'bn' 
+                ? 'ক্যাশিয়ার অ্যাকাউন্ট অ্যাডমিন দ্বারা তৈরি করা হয়।' 
+                : 'Cashier accounts are created by admins.')}
+              {loginType === 'admin' && (language === 'bn' 
+                ? 'অ্যাডমিন অ্যাকাউন্ট সিস্টেম দ্বারা তৈরি করা হয়।' 
+                : 'Admin accounts are created by the system.')}
+            </p>
+          </form>
         </CardContent>
       </Card>
     </div>
