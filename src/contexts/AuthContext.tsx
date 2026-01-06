@@ -9,6 +9,7 @@ interface AuthContextType {
   isMember: boolean;
   isCashier: boolean;
   loading: boolean;
+  rolesLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any; isAdmin: boolean; isMember: boolean; isCashier: boolean }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -23,17 +24,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isMember, setIsMember] = useState(false);
   const [isCashier, setIsCashier] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(true);
 
   const checkRoles = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
-    
-    const roles = data?.map(r => r.role) || [];
-    setIsAdmin(roles.includes('admin'));
-    setIsMember(roles.includes('member'));
-    setIsCashier(roles.includes('cashier'));
+    setRolesLoading(true);
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      const roles = data?.map(r => r.role) || [];
+      setIsAdmin(roles.includes('admin'));
+      setIsMember(roles.includes('member'));
+      setIsCashier(roles.includes('cashier'));
+    } finally {
+      setRolesLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -51,18 +58,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setIsAdmin(false);
           setIsMember(false);
           setIsCashier(false);
+          setRolesLoading(false);
         }
         setLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkRoles(session.user.id);
+        await checkRoles(session.user.id);
+      } else {
+        setRolesLoading(false);
       }
       setLoading(false);
     });
@@ -119,10 +129,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAdmin(false);
     setIsMember(false);
     setIsCashier(false);
+    setRolesLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isMember, isCashier, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isMember, isCashier, loading, rolesLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
