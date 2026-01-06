@@ -16,13 +16,14 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginType, setLoginType] = useState<'admin' | 'member' | 'cashier'>('member');
   
-  const { signIn, user, isAdmin, isMember, isCashier, loading } = useAuth();
+  const { signIn, user, isAdmin, isMember, isCashier, loading, rolesLoading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user && !loading) {
+    // Only redirect after both loading and rolesLoading are complete
+    if (!loading && !rolesLoading && user) {
       // Redirect based on role
       if (isAdmin) {
         navigate('/admin');
@@ -30,11 +31,10 @@ const Auth = () => {
         navigate('/cashier');
       } else if (isMember) {
         navigate('/member-dashboard');
-      } else {
-        navigate('/');
       }
+      // If user exists but has no recognized role, don't redirect - stay on auth page
     }
-  }, [user, isAdmin, isMember, isCashier, loading, navigate]);
+  }, [user, isAdmin, isMember, isCashier, loading, rolesLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
