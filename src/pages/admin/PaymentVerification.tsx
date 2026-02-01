@@ -171,6 +171,26 @@ const PaymentVerification = () => {
         description_en: `Approved ${payment.month_year} dues for ${payment.members?.full_name}`,
         metadata: { transaction_id: payment.transaction_id, amount: payment.amount },
       });
+
+      // Send email notification to member
+      if (payment.members?.email) {
+        try {
+          await supabase.functions.invoke('send-payment-notification', {
+            body: {
+              email: payment.members.email,
+              memberName: payment.members.full_name,
+              monthYear: payment.month_year,
+              amount: payment.amount,
+              status: 'approved',
+              paymentMethod: payment.payment_method,
+              transactionId: payment.transaction_id,
+            },
+          });
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+          // Don't throw - email failure shouldn't block the approval
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
@@ -221,6 +241,26 @@ const PaymentVerification = () => {
         description_en: `Rejected ${payment.month_year} dues for ${payment.members?.full_name}`,
         metadata: { transaction_id: payment.transaction_id, reason },
       });
+
+      // Send email notification to member
+      if (payment.members?.email) {
+        try {
+          await supabase.functions.invoke('send-payment-notification', {
+            body: {
+              email: payment.members.email,
+              memberName: payment.members.full_name,
+              monthYear: payment.month_year,
+              amount: payment.amount,
+              status: 'rejected',
+              rejectionReason: reason,
+              transactionId: payment.transaction_id,
+            },
+          });
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+          // Don't throw - email failure shouldn't block the rejection
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
