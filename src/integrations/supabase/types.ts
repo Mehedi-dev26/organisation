@@ -259,6 +259,7 @@ export type Database = {
           member_id: string
           month_year: string
           paid_date: string | null
+          payment_method: string | null
           payment_status: string | null
           rejection_reason: string | null
           submitted_at: string | null
@@ -275,6 +276,7 @@ export type Database = {
           member_id: string
           month_year: string
           paid_date?: string | null
+          payment_method?: string | null
           payment_status?: string | null
           rejection_reason?: string | null
           submitted_at?: string | null
@@ -291,6 +293,7 @@ export type Database = {
           member_id?: string
           month_year?: string
           paid_date?: string | null
+          payment_method?: string | null
           payment_status?: string | null
           rejection_reason?: string | null
           submitted_at?: string | null
