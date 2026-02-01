@@ -15,6 +15,7 @@ import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import MemberRegistration from "./pages/MemberRegistration";
 import MemberDashboard from "./pages/MemberDashboard";
+import PayDues from "./pages/member/PayDues";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -28,11 +29,13 @@ import DuesManagement from "./pages/admin/DuesManagement";
 import GalleryManagement from "./pages/admin/GalleryManagement";
 import YearlyAccounts from "./pages/admin/YearlyAccounts";
 import CashierManagement from "./pages/admin/CashierManagement";
+import PaymentVerification from "./pages/admin/PaymentVerification";
 import CashierLayout from "./components/cashier/CashierLayout";
 import CashierDashboard from "./pages/cashier/CashierDashboard";
 import CashierFinance from "./pages/cashier/CashierFinance";
 import CashierDues from "./pages/cashier/CashierDues";
 import CashierYearlyAccounts from "./pages/cashier/CashierYearlyAccounts";
+import CashierPaymentVerification from "./pages/cashier/CashierPaymentVerification";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +57,7 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/member-registration" element={<MemberRegistration />} />
               <Route path="/member-dashboard" element={<MemberDashboard />} />
+              <Route path="/member-dashboard/pay-dues" element={<PayDues />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Dashboard />} />
@@ -64,6 +68,7 @@ const App = () => (
                 <Route path="gallery" element={<GalleryManagement />} />
                 <Route path="finance" element={<FinanceManagement />} />
               <Route path="dues" element={<DuesManagement />} />
+              <Route path="payment-verification" element={<PaymentVerification />} />
               <Route path="yearly-accounts" element={<YearlyAccounts />} />
               <Route path="cashiers" element={<CashierManagement />} />
               <Route path="settings" element={<AdminSettings />} />
@@ -72,6 +77,7 @@ const App = () => (
               <Route index element={<CashierDashboard />} />
               <Route path="finance" element={<CashierFinance />} />
               <Route path="dues" element={<CashierDues />} />
+              <Route path="payment-verification" element={<CashierPaymentVerification />} />
               <Route path="yearly-accounts" element={<CashierYearlyAccounts />} />
             </Route>
               <Route path="*" element={<NotFound />} />

@@ -29,7 +29,8 @@ import {
   Receipt,
   ImageIcon,
   History,
-  UserCog2
+  UserCog2,
+  CheckSquare
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -79,6 +80,11 @@ const AdminSidebar = () => {
       title: language === 'bn' ? 'বকেয়া চাঁদা' : 'Dues', 
       url: '/admin/dues', 
       icon: Receipt 
+    },
+    { 
+      title: language === 'bn' ? 'পেমেন্ট যাচাই' : 'Payment Verification', 
+      url: '/admin/payment-verification', 
+      icon: CheckSquare 
     },
     { 
       title: language === 'bn' ? 'বিগত বছরের হিসাব' : 'Yearly Accounts', 
