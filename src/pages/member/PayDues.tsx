@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, 
@@ -21,7 +21,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Send
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
@@ -60,8 +61,8 @@ const PayDues = () => {
   const queryClient = useQueryClient();
   
   const [selectedDue, setSelectedDue] = useState<DueWithStatus | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [transactionId, setTransactionId] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Real-time subscription
@@ -130,9 +131,9 @@ const PayDues = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['member-dues-pay'] });
-      setIsDialogOpen(false);
       setTransactionId('');
       setSelectedDue(null);
+      setSelectedPaymentMethod('');
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description: language === 'bn' 
@@ -159,13 +160,22 @@ const PayDues = () => {
     });
   };
 
-  const handlePayNow = (due: DueWithStatus) => {
+  const handleSelectDue = (due: DueWithStatus) => {
     setSelectedDue(due);
     setTransactionId('');
-    setIsDialogOpen(true);
+    setSelectedPaymentMethod('');
   };
 
   const handleSubmitPayment = () => {
+    if (!selectedPaymentMethod) {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: language === 'bn' ? 'পেমেন্ট মাধ্যম নির্বাচন করুন' : 'Please select a payment method',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!transactionId.trim()) {
       toast({
         title: language === 'bn' ? 'ত্রুটি' : 'Error',
@@ -185,26 +195,41 @@ const PayDues = () => {
       case 'bkash':
       case 'nagad':
       case 'rocket':
-        return <Smartphone className="w-6 h-6" />;
+        return <Smartphone className="w-5 h-5" />;
       case 'bank':
-        return <Building2 className="w-6 h-6" />;
+        return <Building2 className="w-5 h-5" />;
       default:
-        return <CreditCard className="w-6 h-6" />;
+        return <CreditCard className="w-5 h-5" />;
     }
   };
 
   const getMethodColor = (type: string) => {
     switch (type) {
       case 'bkash':
-        return 'bg-pink-500/10 text-pink-600 border-pink-500/20';
+        return 'border-pink-500 bg-pink-500/10 text-pink-600';
       case 'nagad':
-        return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+        return 'border-orange-500 bg-orange-500/10 text-orange-600';
       case 'rocket':
-        return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
+        return 'border-purple-500 bg-purple-500/10 text-purple-600';
       case 'bank':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
+        return 'border-blue-500 bg-blue-500/10 text-blue-600';
       default:
-        return 'bg-gray-500/10 text-gray-600 border-gray-500/20';
+        return 'border-gray-500 bg-gray-500/10 text-gray-600';
+    }
+  };
+
+  const getMethodBgColor = (type: string) => {
+    switch (type) {
+      case 'bkash':
+        return 'bg-gradient-to-br from-pink-500 to-pink-600';
+      case 'nagad':
+        return 'bg-gradient-to-br from-orange-500 to-orange-600';
+      case 'rocket':
+        return 'bg-gradient-to-br from-purple-500 to-purple-600';
+      case 'bank':
+        return 'bg-gradient-to-br from-blue-500 to-blue-600';
+      default:
+        return 'bg-gradient-to-br from-gray-500 to-gray-600';
     }
   };
 
@@ -243,8 +268,10 @@ const PayDues = () => {
     }
   };
 
-  const unpaidDues = duesData?.filter(d => !d.is_paid) || [];
+  const selectedMethod = paymentMethods?.find(m => m.method_type === selectedPaymentMethod);
+  const unpaidDues = duesData?.filter(d => !d.is_paid && d.payment_status !== 'submitted') || [];
   const submittedDues = duesData?.filter(d => d.payment_status === 'submitted') || [];
+  const paidDues = duesData?.filter(d => d.is_paid) || [];
 
   if (methodsLoading || duesLoading) {
     return (
@@ -281,95 +308,17 @@ const PayDues = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Payment Methods */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
-            <CardTitle className="flex items-center gap-2">
-              <div className="p-2 bg-primary/20 rounded-lg">
-                <CreditCard className="w-5 h-5 text-primary" />
-              </div>
-              {language === 'bn' ? 'পেমেন্ট মাধ্যম' : 'Payment Methods'}
-            </CardTitle>
-            <CardDescription>
-              {language === 'bn' 
-                ? 'নিচের যেকোনো মাধ্যমে টাকা পাঠান এবং ট্রানজেকশন আইডি সংরক্ষণ করুন' 
-                : 'Send money using any of the methods below and save the Transaction ID'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {paymentMethods?.map((method) => (
-                <div 
-                  key={method.id}
-                  className={`p-4 rounded-xl border-2 ${getMethodColor(method.method_type)}`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${getMethodColor(method.method_type)}`}>
-                        {getMethodIcon(method.method_type)}
-                      </div>
-                      <div>
-                        <h3 className="font-bold capitalize text-lg">{method.method_type}</h3>
-                        <p className="text-sm text-muted-foreground">{method.account_name}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between bg-background/50 rounded-lg p-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">
-                        {method.method_type === 'bank' 
-                          ? (language === 'bn' ? 'অ্যাকাউন্ট নম্বর' : 'Account Number')
-                          : (language === 'bn' ? 'মোবাইল নম্বর' : 'Mobile Number')
-                        }
-                      </p>
-                      <p className="font-mono font-bold text-lg">{method.account_number}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyNumber(method.account_number, method.id)}
-                      className="h-9"
-                    >
-                      {copiedId === method.id ? (
-                        <Check className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-
-                  {method.branch_name && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {language === 'bn' ? 'শাখা:' : 'Branch:'} {method.branch_name}
-                    </p>
-                  )}
-                  
-                  <p className="text-xs text-muted-foreground mt-3 italic">
-                    {language === 'bn' ? method.instructions_bn : method.instructions_en}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pending Verifications */}
+        {/* Pending Verifications Alert */}
         {submittedDues.length > 0 && (
           <Card className="border-yellow-500/30 bg-yellow-50/50 dark:bg-yellow-950/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-yellow-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-yellow-700 text-base">
                 <Clock className="w-5 h-5" />
                 {language === 'bn' ? 'অনুমোদনের অপেক্ষায়' : 'Awaiting Approval'}
               </CardTitle>
-              <CardDescription>
-                {language === 'bn' 
-                  ? 'এই পেমেন্টগুলো যাচাইয়ের জন্য অপেক্ষমাণ' 
-                  : 'These payments are pending verification'}
-              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="pt-0">
+              <div className="space-y-2">
                 {submittedDues.map((due) => (
                   <div 
                     key={due.id}
@@ -377,8 +326,8 @@ const PayDues = () => {
                   >
                     <div>
                       <p className="font-medium">{due.month_year}</p>
-                      <p className="text-sm text-muted-foreground">
-                        TxnID: {due.transaction_id}
+                      <p className="text-xs text-muted-foreground">
+                        TxnID: <span className="font-mono">{due.transaction_id}</span>
                       </p>
                     </div>
                     <div className="text-right">
@@ -392,35 +341,27 @@ const PayDues = () => {
           </Card>
         )}
 
-        {/* Unpaid Dues */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-red-500/5 to-red-500/10 border-b">
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="w-5 h-5" />
-              {language === 'bn' ? 'বকেয়া চাঁদা' : 'Unpaid Dues'}
-            </CardTitle>
-            <CardDescription>
-              {language === 'bn' 
-                ? 'পরিশোধ করতে "এখনই পরিশোধ করুন" বাটনে ক্লিক করুন' 
-                : 'Click "Pay Now" to submit your payment'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4">
-            {unpaidDues.filter(d => d.payment_status !== 'submitted').length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                <p className="font-medium">
-                  {language === 'bn' ? 'কোন বকেয়া চাঁদা নেই!' : 'No unpaid dues!'}
-                </p>
-              </div>
-            ) : (
+        {/* Select Due to Pay */}
+        {unpaidDues.length > 0 && !selectedDue && (
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-red-500/5 to-red-500/10 border-b">
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-5 h-5" />
+                {language === 'bn' ? 'বকেয়া চাঁদা নির্বাচন করুন' : 'Select Due to Pay'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'bn' 
+                  ? 'যে মাসের চাঁদা পরিশোধ করতে চান সেটি নির্বাচন করুন' 
+                  : 'Select the month you want to pay for'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4">
               <div className="space-y-3">
-                {unpaidDues
-                  .filter(d => d.payment_status !== 'submitted')
-                  .map((due) => (
+                {unpaidDues.map((due) => (
                   <div 
                     key={due.id}
-                    className="flex items-center justify-between p-4 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                    className="flex items-center justify-between p-4 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800 cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => handleSelectDue(due)}
                   >
                     <div>
                       <p className="font-medium">{due.month_year}</p>
@@ -435,109 +376,255 @@ const PayDues = () => {
                         <p className="font-bold text-lg">৳{due.amount}</p>
                         {getStatusBadge(due)}
                       </div>
-                      <Button 
-                        onClick={() => handlePayNow(due)}
-                        className="bg-gradient-to-r from-primary to-primary/80"
-                      >
-                        {language === 'bn' ? 'পরিশোধ করুন' : 'Pay Now'}
+                      <Button className="bg-gradient-to-r from-primary to-primary/80">
+                        {language === 'bn' ? 'নির্বাচন করুন' : 'Select'}
                       </Button>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* All Dues History */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle>{language === 'bn' ? 'চাঁদার ইতিহাস' : 'Payment History'}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {duesData?.map((due) => (
-                <div 
-                  key={due.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
+        {/* No Unpaid Dues */}
+        {unpaidDues.length === 0 && !selectedDue && (
+          <Card className="border-0 shadow-lg">
+            <CardContent className="py-12">
+              <div className="text-center text-muted-foreground">
+                <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                <p className="font-medium text-lg">
+                  {language === 'bn' ? 'কোন বকেয়া চাঁদা নেই!' : 'No unpaid dues!'}
+                </p>
+                <p className="text-sm mt-2">
+                  {language === 'bn' ? 'আপনার সকল চাঁদা পরিশোধিত বা অনুমোদনের অপেক্ষায়' : 'All your dues are paid or pending approval'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payment Form - Shows when a due is selected */}
+        {selectedDue && (
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white">
+                    {language === 'bn' ? 'পেমেন্ট তথ্য জমা দিন' : 'Submit Payment'}
+                  </CardTitle>
+                  <CardDescription className="text-white/80">
+                    {language === 'bn' ? 'মাস:' : 'Month:'} {selectedDue.month_year}
+                  </CardDescription>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-white/80">{language === 'bn' ? 'পরিমাণ' : 'Amount'}</p>
+                  <p className="text-2xl font-bold">৳{selectedDue.amount}</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              {/* Step 1: Select Payment Method */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">১</div>
+                  <Label className="text-lg font-semibold">
+                    {language === 'bn' ? 'পেমেন্ট মাধ্যম নির্বাচন করুন' : 'Select Payment Method'}
+                  </Label>
+                </div>
+                
+                <RadioGroup
+                  value={selectedPaymentMethod}
+                  onValueChange={setSelectedPaymentMethod}
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{due.month_year}</span>
-                    {due.transaction_id && (
-                      <span className="text-xs text-muted-foreground font-mono">
-                        ({due.transaction_id})
-                      </span>
-                    )}
-                  </div>
+                  {paymentMethods?.map((method) => (
+                    <div key={method.id}>
+                      <RadioGroupItem
+                        value={method.method_type}
+                        id={method.method_type}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={method.method_type}
+                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all
+                          ${selectedPaymentMethod === method.method_type 
+                            ? `${getMethodColor(method.method_type)} border-2 ring-2 ring-offset-2 ring-current` 
+                            : 'border-muted bg-card hover:bg-muted/50'
+                          }`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white mb-2 ${getMethodBgColor(method.method_type)}`}>
+                          {getMethodIcon(method.method_type)}
+                        </div>
+                        <span className="font-semibold capitalize">{method.method_type}</span>
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* Step 2: Show Payment Details */}
+              {selectedMethod && (
+                <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold">৳{due.amount}</span>
-                    {getStatusBadge(due)}
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">২</div>
+                    <Label className="text-lg font-semibold">
+                      {language === 'bn' ? 'টাকা পাঠান' : 'Send Money'}
+                    </Label>
+                  </div>
+
+                  <div className={`p-5 rounded-xl border-2 ${getMethodColor(selectedMethod.method_type)}`}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${getMethodBgColor(selectedMethod.method_type)}`}>
+                        {getMethodIcon(selectedMethod.method_type)}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg capitalize">{selectedMethod.method_type}</h3>
+                        <p className="text-sm text-muted-foreground">{selectedMethod.account_name}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-background/80 rounded-lg p-4 mb-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {selectedMethod.method_type === 'bank' 
+                            ? (language === 'bn' ? 'অ্যাকাউন্ট নম্বর' : 'Account Number')
+                            : (language === 'bn' ? 'মোবাইল নম্বর' : 'Mobile Number')
+                          }
+                        </p>
+                        <p className="font-mono font-bold text-xl">{selectedMethod.account_number}</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopyNumber(selectedMethod.account_number, selectedMethod.id)}
+                        className="h-10"
+                      >
+                        {copiedId === selectedMethod.id ? (
+                          <>
+                            <Check className="w-4 h-4 mr-1 text-green-600" />
+                            {language === 'bn' ? 'কপি হয়েছে' : 'Copied'}
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 mr-1" />
+                            {language === 'bn' ? 'কপি' : 'Copy'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {selectedMethod.branch_name && (
+                      <p className="text-sm mb-2">
+                        <span className="text-muted-foreground">{language === 'bn' ? 'শাখা:' : 'Branch:'}</span> {selectedMethod.branch_name}
+                      </p>
+                    )}
+
+                    {selectedMethod.routing_number && (
+                      <p className="text-sm mb-2">
+                        <span className="text-muted-foreground">{language === 'bn' ? 'রাউটিং নম্বর:' : 'Routing:'}</span> {selectedMethod.routing_number}
+                      </p>
+                    )}
+
+                    <div className="mt-4 p-3 bg-background/50 rounded-lg border border-dashed">
+                      <p className="text-sm italic text-muted-foreground">
+                        💡 {language === 'bn' ? selectedMethod.instructions_bn : selectedMethod.instructions_en}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              )}
+
+              {/* Step 3: Enter Transaction ID */}
+              {selectedMethod && (
+                <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">৩</div>
+                    <Label className="text-lg font-semibold">
+                      {language === 'bn' ? 'ট্রানজেকশন আইডি দিন' : 'Enter Transaction ID'}
+                    </Label>
+                  </div>
+
+                  <div className="bg-muted/50 p-5 rounded-xl border">
+                    <Label htmlFor="transaction-id" className="text-sm text-muted-foreground mb-2 block">
+                      {language === 'bn' 
+                        ? 'টাকা পাঠানোর পর প্রাপ্ত ট্রানজেকশন আইডি লিখুন' 
+                        : 'Enter the Transaction ID received after sending money'}
+                    </Label>
+                    <Input
+                      id="transaction-id"
+                      placeholder={language === 'bn' ? 'উদাহরণ: TXN123456789' : 'Example: TXN123456789'}
+                      value={transactionId}
+                      onChange={(e) => setTransactionId(e.target.value)}
+                      className="text-lg font-mono h-12"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedDue(null);
+                    setSelectedPaymentMethod('');
+                    setTransactionId('');
+                  }}
+                >
+                  {language === 'bn' ? 'বাতিল করুন' : 'Cancel'}
+                </Button>
+                <Button
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white h-12 text-lg"
+                  onClick={handleSubmitPayment}
+                  disabled={!selectedPaymentMethod || !transactionId.trim() || submitPaymentMutation.isPending}
+                >
+                  {submitPaymentMutation.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  ) : (
+                    <Send className="w-5 h-5 mr-2" />
+                  )}
+                  {language === 'bn' ? 'জমা দিন' : 'Submit'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payment History */}
+        {paidDues.length > 0 && (
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                {language === 'bn' ? 'পরিশোধিত চাঁদা' : 'Paid Dues'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {paidDues.slice(0, 10).map((due) => (
+                  <div 
+                    key={due.id}
+                    className="flex items-center justify-between p-3 bg-green-50/50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800"
+                  >
+                    <div>
+                      <p className="font-medium">{due.month_year}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {due.paid_date && new Date(due.paid_date).toLocaleDateString('bn-BD')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">৳{due.amount}</p>
+                      {getStatusBadge(due)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
-
-      {/* Payment Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {language === 'bn' ? 'পেমেন্ট তথ্য জমা দিন' : 'Submit Payment Information'}
-            </DialogTitle>
-            <DialogDescription>
-              {language === 'bn' 
-                ? `${selectedDue?.month_year} মাসের ৳${selectedDue?.amount} চাঁদার জন্য`
-                : `For ${selectedDue?.month_year} dues of ৳${selectedDue?.amount}`}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <p className="text-sm text-muted-foreground mb-2">
-                {language === 'bn' 
-                  ? '১. উপরের যেকোনো মাধ্যমে টাকা পাঠান'
-                  : '1. Send money using any method above'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {language === 'bn' 
-                  ? '২. প্রাপ্ত ট্রানজেকশন আইডি নিচে লিখুন'
-                  : '2. Enter the received Transaction ID below'}
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="txn-id">
-                {language === 'bn' ? 'ট্রানজেকশন আইডি' : 'Transaction ID'}
-              </Label>
-              <Input
-                id="txn-id"
-                placeholder={language === 'bn' ? 'যেমন: TXN123456789' : 'e.g., TXN123456789'}
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-                className="font-mono"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              {language === 'bn' ? 'বাতিল' : 'Cancel'}
-            </Button>
-            <Button 
-              onClick={handleSubmitPayment}
-              disabled={submitPaymentMutation.isPending}
-            >
-              {submitPaymentMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
-              {language === 'bn' ? 'জমা দিন' : 'Submit'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
