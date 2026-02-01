@@ -21,7 +21,8 @@ import {
   Home,
   Wallet,
   Receipt,
-  History
+  History,
+  CheckSquare
 } from 'lucide-react';
 
 const CashierSidebar = () => {
@@ -46,6 +47,11 @@ const CashierSidebar = () => {
       title: language === 'bn' ? 'বকেয়া চাঁদা' : 'Dues', 
       url: '/cashier/dues', 
       icon: Receipt 
+    },
+    { 
+      title: language === 'bn' ? 'পেমেন্ট যাচাই' : 'Payment Verification', 
+      url: '/cashier/payment-verification', 
+      icon: CheckSquare 
     },
     { 
       title: language === 'bn' ? 'বিগত বছরের হিসাব' : 'Yearly Accounts', 

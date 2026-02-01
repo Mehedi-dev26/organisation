@@ -259,8 +259,13 @@ export type Database = {
           member_id: string
           month_year: string
           paid_date: string | null
+          payment_status: string | null
+          rejection_reason: string | null
+          submitted_at: string | null
           transaction_id: string | null
           updated_at: string
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           amount: number
@@ -270,8 +275,13 @@ export type Database = {
           member_id: string
           month_year: string
           paid_date?: string | null
+          payment_status?: string | null
+          rejection_reason?: string | null
+          submitted_at?: string | null
           transaction_id?: string | null
           updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           amount?: number
@@ -281,8 +291,13 @@ export type Database = {
           member_id?: string
           month_year?: string
           paid_date?: string | null
+          payment_status?: string | null
+          rejection_reason?: string | null
+          submitted_at?: string | null
           transaction_id?: string | null
           updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -393,6 +408,51 @@ export type Database = {
           published_at?: string | null
           title_bn?: string
           title_en?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          account_name: string
+          account_number: string
+          branch_name: string | null
+          created_at: string | null
+          id: string
+          instructions_bn: string | null
+          instructions_en: string | null
+          is_active: boolean | null
+          method_type: string
+          routing_number: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          branch_name?: string | null
+          created_at?: string | null
+          id?: string
+          instructions_bn?: string | null
+          instructions_en?: string | null
+          is_active?: boolean | null
+          method_type: string
+          routing_number?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          branch_name?: string | null
+          created_at?: string | null
+          id?: string
+          instructions_bn?: string | null
+          instructions_en?: string | null
+          is_active?: boolean | null
+          method_type?: string
+          routing_number?: string | null
+          sort_order?: number | null
           updated_at?: string | null
         }
         Relationships: []

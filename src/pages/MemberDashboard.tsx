@@ -433,20 +433,29 @@ const MemberDashboard = () => {
 
               {unpaidMonths.length > 0 && (
                 <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-800 dark:text-amber-200">
-                        {language === 'bn' 
-                          ? `আপনার ${unpaidMonths.length}টি মাসের চাঁদা বকেয়া আছে` 
-                          : `You have ${unpaidMonths.length} month(s) of unpaid dues`}
-                      </p>
-                      <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-                        {language === 'bn' 
-                          ? 'অনুগ্রহ করে যত তাড়াতাড়ি সম্ভব পরিশোধ করুন' 
-                          : 'Please pay as soon as possible'}
-                      </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-amber-800 dark:text-amber-200">
+                          {language === 'bn' 
+                            ? `আপনার ${unpaidMonths.length}টি মাসের চাঁদা বকেয়া আছে` 
+                            : `You have ${unpaidMonths.length} month(s) of unpaid dues`}
+                        </p>
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                          {language === 'bn' 
+                            ? 'অনুগ্রহ করে যত তাড়াতাড়ি সম্ভব পরিশোধ করুন' 
+                            : 'Please pay as soon as possible'}
+                        </p>
+                      </div>
                     </div>
+                    <Button 
+                      onClick={() => navigate('/member-dashboard/pay-dues')}
+                      className="bg-gradient-to-r from-primary to-primary/80 shrink-0"
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      {language === 'bn' ? 'এখনই পরিশোধ করুন' : 'Pay Now'}
+                    </Button>
                   </div>
                 </div>
               )}
