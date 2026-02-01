@@ -377,6 +377,70 @@ const FinanceManagement = () => {
   // Delete transaction mutation
   const deleteMutation = useMutation({
     mutationFn: async (transaction: Transaction) => {
+      // If it's a member_fee transaction, reset the related member_dues records
+      if (transaction.type === 'member_fee' && transaction.member_id) {
+        // Find all dues records linked to this transaction
+        const { data: linkedDues, error: duesQueryError } = await supabase
+          .from('member_dues')
+          .select('id, month_year')
+          .eq('member_id', transaction.member_id)
+          .or(`transaction_id.eq.${transaction.id},transaction_id.eq.${transaction.payment_reference}`);
+        
+        if (duesQueryError) {
+          console.error('Error finding linked dues:', duesQueryError);
+        }
+
+        if (linkedDues && linkedDues.length > 0) {
+          // Reset each linked dues record to unpaid
+          for (const due of linkedDues) {
+            const { error: updateError } = await supabase
+              .from('member_dues')
+              .update({
+                is_paid: false,
+                paid_date: null,
+                transaction_id: null,
+                payment_status: 'unpaid',
+                payment_method: null,
+                verified_by: null,
+                verified_at: null,
+                submitted_at: null,
+              })
+              .eq('id', due.id);
+            
+            if (updateError) {
+              console.error('Error resetting member_dues:', updateError);
+            }
+          }
+        }
+
+        // Also check by month_year if transaction has month_year
+        if (transaction.month_year) {
+          const monthYears = transaction.month_year.split(',').map(m => m.trim());
+          for (const monthYear of monthYears) {
+            const { error: updateError } = await supabase
+              .from('member_dues')
+              .update({
+                is_paid: false,
+                paid_date: null,
+                transaction_id: null,
+                payment_status: 'unpaid',
+                payment_method: null,
+                verified_by: null,
+                verified_at: null,
+                submitted_at: null,
+              })
+              .eq('member_id', transaction.member_id)
+              .eq('month_year', monthYear)
+              .eq('is_paid', true);
+            
+            if (updateError) {
+              console.error('Error resetting member_dues by month_year:', updateError);
+            }
+          }
+        }
+      }
+
+      // Delete the transaction
       const { error } = await supabase.from('transactions').delete().eq('id', transaction.id);
       if (error) throw error;
 
@@ -395,22 +459,26 @@ const FinanceManagement = () => {
         'delete',
         'transaction',
         transaction.id,
-        `${label.bn}: ৳${transaction.amount} মুছে ফেলা হয়েছে`,
-        `Deleted ${label.en}: ৳${transaction.amount}`,
+        `${label.bn}: ৳${transaction.amount} মুছে ফেলা হয়েছে${transaction.type === 'member_fee' ? ' (বকেয়া রিসেট করা হয়েছে)' : ''}`,
+        `Deleted ${label.en}: ৳${transaction.amount}${transaction.type === 'member_fee' ? ' (dues reset to unpaid)' : ''}`,
         { 
           type: transaction.type, 
           amount: transaction.amount,
           member_name: transaction.members?.full_name || null,
-          payment_reference: transaction.payment_reference
+          payment_reference: transaction.payment_reference,
+          month_year: transaction.month_year
         }
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['member-dues'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['cashier-unpaid-dues'] });
       toast({
         title: language === 'bn' ? 'মুছে ফেলা হয়েছে' : 'Deleted',
-        description: language === 'bn' ? 'লেনদেন মুছে ফেলা হয়েছে' : 'Transaction deleted',
+        description: language === 'bn' ? 'লেনদেন মুছে ফেলা হয়েছে এবং বকেয়া আপডেট হয়েছে' : 'Transaction deleted and dues updated',
       });
     },
   });
