@@ -402,7 +402,7 @@ const PaymentVerification = () => {
                           payment.payment_method === 'bank' ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/30' :
                           'border-gray-500 text-gray-600'
                         }>
-                          {paymentMethodLabels[payment.payment_method || 'mobile_banking']?.[language] || payment.payment_method || 'N/A'}
+                          {payment.payment_method ? (paymentMethodLabels[payment.payment_method]?.[language] || payment.payment_method) : (language === 'bn' ? 'উল্লেখ নেই' : 'N/A')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -495,7 +495,7 @@ const PaymentVerification = () => {
                           payment.payment_method === 'bank' ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/30' :
                           'border-gray-500 text-gray-600'
                         }>
-                          {paymentMethodLabels[payment.payment_method || 'mobile_banking']?.[language] || payment.payment_method || 'N/A'}
+                          {payment.payment_method ? (paymentMethodLabels[payment.payment_method]?.[language] || payment.payment_method) : (language === 'bn' ? 'উল্লেখ নেই' : 'N/A')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -564,7 +564,7 @@ const PaymentVerification = () => {
                     selectedPayment.payment_method === 'bank' ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/30' :
                     'border-gray-500 text-gray-600'
                   }>
-                    {paymentMethodLabels[selectedPayment.payment_method || 'mobile_banking']?.[language] || selectedPayment.payment_method || 'N/A'}
+                    {selectedPayment.payment_method ? (paymentMethodLabels[selectedPayment.payment_method]?.[language] || selectedPayment.payment_method) : (language === 'bn' ? 'উল্লেখ নেই' : 'N/A')}
                   </Badge>
                 </div>
                 <div className="flex justify-between">
