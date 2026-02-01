@@ -387,6 +387,9 @@ const PaymentVerification = () => {
                         <div>
                           <p className="font-medium">{payment.members?.full_name}</p>
                           <p className="text-xs text-muted-foreground">{payment.members?.member_id}</p>
+                          {payment.members?.phone && (
+                            <p className="text-xs text-primary font-medium">{payment.members.phone}</p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{payment.month_year}</TableCell>
@@ -477,6 +480,9 @@ const PaymentVerification = () => {
                         <div>
                           <p className="font-medium">{payment.members?.full_name}</p>
                           <p className="text-xs text-muted-foreground">{payment.members?.member_id}</p>
+                          {payment.members?.phone && (
+                            <p className="text-xs text-primary font-medium">{payment.members.phone}</p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{payment.month_year}</TableCell>
@@ -534,7 +540,12 @@ const PaymentVerification = () => {
               <div className="p-4 bg-muted rounded-lg space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{language === 'bn' ? 'সদস্য:' : 'Member:'}</span>
-                  <span className="font-medium">{selectedPayment.members?.full_name}</span>
+                  <div className="text-right">
+                    <span className="font-medium">{selectedPayment.members?.full_name}</span>
+                    {selectedPayment.members?.phone && (
+                      <p className="text-xs text-primary font-medium">{selectedPayment.members.phone}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{language === 'bn' ? 'মাস:' : 'Month:'}</span>
