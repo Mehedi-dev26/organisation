@@ -32,6 +32,7 @@ interface PendingPayment {
   amount: number;
   is_paid: boolean;
   transaction_id: string | null;
+  payment_method: string | null;
   payment_status: string;
   submitted_at: string | null;
   rejection_reason: string | null;
@@ -43,6 +44,16 @@ interface PendingPayment {
     phone: string | null;
   } | null;
 }
+
+// Payment method labels for display
+const paymentMethodLabels: Record<string, { bn: string; en: string }> = {
+  bkash: { bn: 'বিকাশ', en: 'bKash' },
+  nagad: { bn: 'নগদ', en: 'Nagad' },
+  rocket: { bn: 'রকেট', en: 'Rocket' },
+  bank: { bn: 'ব্যাংক', en: 'Bank' },
+  cash: { bn: 'নগদ টাকা', en: 'Cash' },
+  mobile_banking: { bn: 'মোবাইল ব্যাংকিং', en: 'Mobile Banking' },
+};
 
 const PaymentVerification = () => {
   const { language } = useLanguage();
@@ -123,7 +134,7 @@ const PaymentVerification = () => {
           member_id: payment.member_id,
           month_year: payment.month_year,
           transaction_date: new Date().toISOString().split('T')[0],
-          payment_method: 'mobile_banking',
+          payment_method: payment.payment_method || 'mobile_banking',
           payment_reference: payment.transaction_id,
           description_bn: `${payment.month_year} মাসের চাঁদা`,
           description_en: `Monthly dues for ${payment.month_year}`,
@@ -363,6 +374,7 @@ const PaymentVerification = () => {
                     <TableHead>{language === 'bn' ? 'সদস্য' : 'Member'}</TableHead>
                     <TableHead>{language === 'bn' ? 'মাস' : 'Month'}</TableHead>
                     <TableHead>{language === 'bn' ? 'পরিমাণ' : 'Amount'}</TableHead>
+                    <TableHead>{language === 'bn' ? 'পেমেন্ট মাধ্যম' : 'Payment Method'}</TableHead>
                     <TableHead>{language === 'bn' ? 'ট্রানজেকশন আইডি' : 'Transaction ID'}</TableHead>
                     <TableHead>{language === 'bn' ? 'জমার তারিখ' : 'Submitted'}</TableHead>
                     <TableHead className="text-right">{language === 'bn' ? 'অ্যাকশন' : 'Actions'}</TableHead>
@@ -379,6 +391,17 @@ const PaymentVerification = () => {
                       </TableCell>
                       <TableCell>{payment.month_year}</TableCell>
                       <TableCell className="font-bold">৳{payment.amount}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          payment.payment_method === 'bkash' ? 'border-pink-500 text-pink-600 bg-pink-50 dark:bg-pink-950/30' :
+                          payment.payment_method === 'nagad' ? 'border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-950/30' :
+                          payment.payment_method === 'rocket' ? 'border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/30' :
+                          payment.payment_method === 'bank' ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/30' :
+                          'border-gray-500 text-gray-600'
+                        }>
+                          {paymentMethodLabels[payment.payment_method || 'mobile_banking']?.[language] || payment.payment_method || 'N/A'}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <code className="bg-muted px-2 py-1 rounded text-sm">
                           {payment.transaction_id}
@@ -443,6 +466,7 @@ const PaymentVerification = () => {
                     <TableHead>{language === 'bn' ? 'সদস্য' : 'Member'}</TableHead>
                     <TableHead>{language === 'bn' ? 'মাস' : 'Month'}</TableHead>
                     <TableHead>{language === 'bn' ? 'পরিমাণ' : 'Amount'}</TableHead>
+                    <TableHead>{language === 'bn' ? 'পেমেন্ট মাধ্যম' : 'Payment Method'}</TableHead>
                     <TableHead>{language === 'bn' ? 'স্ট্যাটাস' : 'Status'}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -457,6 +481,17 @@ const PaymentVerification = () => {
                       </TableCell>
                       <TableCell>{payment.month_year}</TableCell>
                       <TableCell className="font-bold">৳{payment.amount}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          payment.payment_method === 'bkash' ? 'border-pink-500 text-pink-600 bg-pink-50 dark:bg-pink-950/30' :
+                          payment.payment_method === 'nagad' ? 'border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-950/30' :
+                          payment.payment_method === 'rocket' ? 'border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/30' :
+                          payment.payment_method === 'bank' ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/30' :
+                          'border-gray-500 text-gray-600'
+                        }>
+                          {paymentMethodLabels[payment.payment_method || 'mobile_banking']?.[language] || payment.payment_method || 'N/A'}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         {payment.payment_status === 'approved' ? (
                           <Badge className="bg-green-500/20 text-green-700">
@@ -508,6 +543,18 @@ const PaymentVerification = () => {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{language === 'bn' ? 'পরিমাণ:' : 'Amount:'}</span>
                   <span className="font-bold text-lg">৳{selectedPayment.amount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{language === 'bn' ? 'পেমেন্ট মাধ্যম:' : 'Payment Method:'}</span>
+                  <Badge variant="outline" className={
+                    selectedPayment.payment_method === 'bkash' ? 'border-pink-500 text-pink-600 bg-pink-50 dark:bg-pink-950/30' :
+                    selectedPayment.payment_method === 'nagad' ? 'border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-950/30' :
+                    selectedPayment.payment_method === 'rocket' ? 'border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/30' :
+                    selectedPayment.payment_method === 'bank' ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/30' :
+                    'border-gray-500 text-gray-600'
+                  }>
+                    {paymentMethodLabels[selectedPayment.payment_method || 'mobile_banking']?.[language] || selectedPayment.payment_method || 'N/A'}
+                  </Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{language === 'bn' ? 'ট্রানজেকশন আইডি:' : 'Transaction ID:'}</span>

@@ -117,11 +117,12 @@ const PayDues = () => {
 
   // Submit payment mutation
   const submitPaymentMutation = useMutation({
-    mutationFn: async ({ dueId, txnId }: { dueId: string; txnId: string }) => {
+    mutationFn: async ({ dueId, txnId, paymentMethod }: { dueId: string; txnId: string; paymentMethod: string }) => {
       const { error } = await supabase
         .from('member_dues')
         .update({
           transaction_id: txnId,
+          payment_method: paymentMethod,
           payment_status: 'submitted',
           submitted_at: new Date().toISOString(),
         })
@@ -186,7 +187,11 @@ const PayDues = () => {
     }
 
     if (selectedDue) {
-      submitPaymentMutation.mutate({ dueId: selectedDue.id, txnId: transactionId.trim() });
+      submitPaymentMutation.mutate({ 
+        dueId: selectedDue.id, 
+        txnId: transactionId.trim(), 
+        paymentMethod: selectedPaymentMethod 
+      });
     }
   };
 
