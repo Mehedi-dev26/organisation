@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.pirapay-webhook]
 verify_jwt = false
+
+[functions.test-piprapay]
+verify_jwt = false
