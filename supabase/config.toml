@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.chat]
 verify_jwt = false
+
+[functions.pirapay-initiate]
+verify_jwt = false
+
+[functions.pirapay-webhook]
+verify_jwt = false

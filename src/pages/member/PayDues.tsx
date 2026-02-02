@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,9 +22,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Send
+  Send,
+  Zap
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface PaymentMethod {
@@ -57,6 +58,7 @@ const PayDues = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -64,6 +66,20 @@ const PayDues = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [transactionId, setTransactionId] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [paymentMode, setPaymentMode] = useState<'manual' | 'piprapay'>('piprapay');
+  const [isProcessingPipraPay, setIsProcessingPipraPay] = useState(false);
+
+  // Check for payment status in URL
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'cancelled') {
+      toast({
+        title: language === 'bn' ? 'পেমেন্ট বাতিল' : 'Payment Cancelled',
+        description: language === 'bn' ? 'পেমেন্ট বাতিল করা হয়েছে' : 'Payment was cancelled',
+        variant: 'destructive',
+      });
+    }
+  }, [searchParams, language, toast]);
 
   // Real-time subscription
   useRealtimeSubscription({ table: 'member_dues', queryKey: ['member-dues-pay'] });
@@ -165,6 +181,48 @@ const PayDues = () => {
     setSelectedDue(due);
     setTransactionId('');
     setSelectedPaymentMethod('');
+    setPaymentMode('piprapay');
+  };
+
+  // PipraPay payment handler
+  const handlePipraPay = async () => {
+    if (!selectedDue || !memberData) return;
+    
+    setIsProcessingPipraPay(true);
+    try {
+      const response = await supabase.functions.invoke('pirapay-initiate', {
+        body: {
+          due_id: selectedDue.id,
+          member_id: memberData.id,
+          amount: selectedDue.amount,
+          month_year: selectedDue.month_year,
+          member_name: memberData.full_name,
+          member_email: user?.email || '',
+          member_phone: '',
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const data = response.data;
+      if (data.success && data.payment_url) {
+        // Redirect to PipraPay payment page
+        window.location.href = data.payment_url;
+      } else {
+        throw new Error(data.error || 'Failed to initiate payment');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Payment initiation failed';
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingPipraPay(false);
+    }
   };
 
   const handleSubmitPayment = () => {
@@ -274,8 +332,8 @@ const PayDues = () => {
   };
 
   const selectedMethod = paymentMethods?.find(m => m.method_type === selectedPaymentMethod);
-  const unpaidDues = duesData?.filter(d => !d.is_paid && d.payment_status !== 'submitted') || [];
-  const submittedDues = duesData?.filter(d => d.payment_status === 'submitted') || [];
+  const unpaidDues = duesData?.filter(d => !d.is_paid && d.payment_status !== 'submitted' && d.payment_status !== 'piprapay_pending') || [];
+  const submittedDues = duesData?.filter(d => d.payment_status === 'submitted' || d.payment_status === 'piprapay_pending') || [];
   const paidDues = duesData?.filter(d => d.is_paid) || [];
 
   if (methodsLoading || duesLoading) {
@@ -416,7 +474,7 @@ const PayDues = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-white">
-                    {language === 'bn' ? 'পেমেন্ট তথ্য জমা দিন' : 'Submit Payment'}
+                    {language === 'bn' ? 'পেমেন্ট করুন' : 'Make Payment'}
                   </CardTitle>
                   <CardDescription className="text-white/80">
                     {language === 'bn' ? 'মাস:' : 'Month:'} {selectedDue.month_year}
@@ -429,50 +487,144 @@ const PayDues = () => {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              {/* Step 1: Select Payment Method */}
+              {/* Payment Mode Selection */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">১</div>
                   <Label className="text-lg font-semibold">
-                    {language === 'bn' ? 'পেমেন্ট মাধ্যম নির্বাচন করুন' : 'Select Payment Method'}
+                    {language === 'bn' ? 'পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Select Payment Mode'}
                   </Label>
                 </div>
                 
-                <RadioGroup
-                  value={selectedPaymentMethod}
-                  onValueChange={setSelectedPaymentMethod}
-                  className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-                >
-                  {paymentMethods?.map((method) => (
-                    <div key={method.id}>
-                      <RadioGroupItem
-                        value={method.method_type}
-                        id={method.method_type}
-                        className="peer sr-only"
-                      />
-                      <Label
-                        htmlFor={method.method_type}
-                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all
-                          ${selectedPaymentMethod === method.method_type 
-                            ? `${getMethodColor(method.method_type)} border-2 ring-2 ring-offset-2 ring-current` 
-                            : 'border-muted bg-card hover:bg-muted/50'
-                          }`}
-                      >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white mb-2 ${getMethodBgColor(method.method_type)}`}>
-                          {getMethodIcon(method.method_type)}
-                        </div>
-                        <span className="font-semibold capitalize">{method.method_type}</span>
-                      </Label>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* PipraPay Option */}
+                  <div
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      paymentMode === 'piprapay'
+                        ? 'border-green-500 bg-green-500/10 ring-2 ring-offset-2 ring-green-500'
+                        : 'border-muted bg-card hover:bg-muted/50'
+                    }`}
+                    onClick={() => setPaymentMode('piprapay')}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white mb-2">
+                        <Zap className="w-6 h-6" />
+                      </div>
+                      <span className="font-semibold text-green-700">
+                        {language === 'bn' ? 'অটো পেমেন্ট' : 'Auto Payment'}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1">
+                        {language === 'bn' ? 'বিকাশ/নগদ দিয়ে সরাসরি' : 'Direct via bKash/Nagad'}
+                      </span>
                     </div>
-                  ))}
-                </RadioGroup>
+                  </div>
+
+                  {/* Manual Option */}
+                  <div
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      paymentMode === 'manual'
+                        ? 'border-blue-500 bg-blue-500/10 ring-2 ring-offset-2 ring-blue-500'
+                        : 'border-muted bg-card hover:bg-muted/50'
+                    }`}
+                    onClick={() => setPaymentMode('manual')}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white mb-2">
+                        <CreditCard className="w-6 h-6" />
+                      </div>
+                      <span className="font-semibold text-blue-700">
+                        {language === 'bn' ? 'ম্যানুয়াল পেমেন্ট' : 'Manual Payment'}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1">
+                        {language === 'bn' ? 'ট্রানজেকশন আইডি জমা দিন' : 'Submit Transaction ID'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Step 2: Show Payment Details */}
-              {selectedMethod && (
+              {/* PipraPay Quick Payment */}
+              {paymentMode === 'piprapay' && (
+                <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="bg-green-50 dark:bg-green-950/30 p-5 rounded-xl border border-green-200 dark:border-green-800">
+                    <div className="flex items-start gap-4">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white flex-shrink-0">
+                        <Zap className="w-8 h-8" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg text-green-700 mb-2">
+                          {language === 'bn' ? 'দ্রুত ও স্বয়ংক্রিয় পেমেন্ট' : 'Quick & Automatic Payment'}
+                        </h3>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>✓ {language === 'bn' ? 'বিকাশ/নগদ দিয়ে সরাসরি পরিশোধ করুন' : 'Pay directly via bKash/Nagad'}</li>
+                          <li>✓ {language === 'bn' ? 'পেমেন্ট সফল হলে স্বয়ংক্রিয়ভাবে আপডেট হবে' : 'Auto-updates on successful payment'}</li>
+                          <li>✓ {language === 'bn' ? 'কোন ম্যানুয়াল যাচাই প্রয়োজন নেই' : 'No manual verification needed'}</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full h-14 text-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                    onClick={handlePipraPay}
+                    disabled={isProcessingPipraPay}
+                  >
+                    {isProcessingPipraPay ? (
+                      <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                    ) : (
+                      <Zap className="w-6 h-6 mr-2" />
+                    )}
+                    {language === 'bn' ? `৳${selectedDue.amount} পরিশোধ করুন` : `Pay ৳${selectedDue.amount}`}
+                  </Button>
+                </div>
+              )}
+
+              {/* Manual Payment - Step 1: Select Payment Method */}
+              {paymentMode === 'manual' && (
                 <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">২</div>
+                    <Label className="text-lg font-semibold">
+                      {language === 'bn' ? 'পেমেন্ট মাধ্যম নির্বাচন করুন' : 'Select Payment Method'}
+                    </Label>
+                  </div>
+                  
+                  <RadioGroup
+                    value={selectedPaymentMethod}
+                    onValueChange={setSelectedPaymentMethod}
+                    className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+                  >
+                    {paymentMethods?.map((method) => (
+                      <div key={method.id}>
+                        <RadioGroupItem
+                          value={method.method_type}
+                          id={method.method_type}
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor={method.method_type}
+                          className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all
+                            ${selectedPaymentMethod === method.method_type 
+                              ? `${getMethodColor(method.method_type)} border-2 ring-2 ring-offset-2 ring-current` 
+                              : 'border-muted bg-card hover:bg-muted/50'
+                            }`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white mb-2 ${getMethodBgColor(method.method_type)}`}>
+                            {getMethodIcon(method.method_type)}
+                          </div>
+                          <span className="font-semibold capitalize">{method.method_type}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Step 2: Show Payment Details - Manual Mode */}
+              {paymentMode === 'manual' && selectedMethod && (
+                <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">৩</div>
                     <Label className="text-lg font-semibold">
                       {language === 'bn' ? 'টাকা পাঠান' : 'Send Money'}
                     </Label>
@@ -540,11 +692,11 @@ const PayDues = () => {
                 </div>
               )}
 
-              {/* Step 3: Enter Transaction ID */}
-              {selectedMethod && (
+              {/* Step 4: Enter Transaction ID - Manual Mode */}
+              {paymentMode === 'manual' && selectedMethod && (
                 <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">৩</div>
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">৪</div>
                     <Label className="text-lg font-semibold">
                       {language === 'bn' ? 'ট্রানজেকশন আইডি দিন' : 'Enter Transaction ID'}
                     </Label>
@@ -567,32 +719,50 @@ const PayDues = () => {
                 </div>
               )}
 
-              {/* Submit Button */}
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setSelectedDue(null);
-                    setSelectedPaymentMethod('');
-                    setTransactionId('');
-                  }}
-                >
-                  {language === 'bn' ? 'বাতিল করুন' : 'Cancel'}
-                </Button>
-                <Button
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white h-12 text-lg"
-                  onClick={handleSubmitPayment}
-                  disabled={!selectedPaymentMethod || !transactionId.trim() || submitPaymentMutation.isPending}
-                >
-                  {submitPaymentMutation.isPending ? (
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  ) : (
-                    <Send className="w-5 h-5 mr-2" />
-                  )}
-                  {language === 'bn' ? 'জমা দিন' : 'Submit'}
-                </Button>
-              </div>
+              {/* Submit Button - Only for Manual Mode */}
+              {paymentMode === 'manual' && (
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedDue(null);
+                      setSelectedPaymentMethod('');
+                      setTransactionId('');
+                    }}
+                  >
+                    {language === 'bn' ? 'বাতিল করুন' : 'Cancel'}
+                  </Button>
+                  <Button
+                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white h-12 text-lg"
+                    onClick={handleSubmitPayment}
+                    disabled={!selectedPaymentMethod || !transactionId.trim() || submitPaymentMutation.isPending}
+                  >
+                    {submitPaymentMutation.isPending ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <Send className="w-5 h-5 mr-2" />
+                    )}
+                    {language === 'bn' ? 'জমা দিন' : 'Submit'}
+                  </Button>
+                </div>
+              )}
+
+              {/* Cancel Button - For PipraPay Mode */}
+              {paymentMode === 'piprapay' && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setSelectedDue(null);
+                      setSelectedPaymentMethod('');
+                      setTransactionId('');
+                    }}
+                  >
+                    {language === 'bn' ? 'বাতিল করুন' : 'Cancel'}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
