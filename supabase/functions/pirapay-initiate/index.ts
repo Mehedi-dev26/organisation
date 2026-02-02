@@ -16,13 +16,43 @@ interface InitiateRequest {
   member_phone?: string;
 }
 
+type PipraPayResponse = {
+  success?: boolean;
+  status?: boolean;
+  message?: string;
+  payment_url?: string;
+  charge_id?: string;
+  pp_id?: string;
+  [key: string]: unknown;
+};
+
+function maskKey(key: string) {
+  if (!key) return "";
+  if (key.length <= 8) return "***";
+  return `${key.slice(0, 4)}***${key.slice(-4)}`;
+}
+
+function isPipraPaySuccess(data: PipraPayResponse) {
+  const okFlag = data.success === true || data.status === true;
+  return okFlag && typeof data.payment_url === "string" && data.payment_url.length > 0;
+}
+
+async function parseJsonSafe(response: Response): Promise<{ json: unknown; raw: string }> {
+  const raw = await response.text();
+  try {
+    return { json: JSON.parse(raw), raw };
+  } catch {
+    return { json: { raw }, raw };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const PIPRAPAY_API_KEY = Deno.env.get('PIPRAPAY_API_KEY');
+    const PIPRAPAY_API_KEY = (Deno.env.get('PIPRAPAY_API_KEY') ?? '').trim();
     const PIPRAPAY_BASE_URL = 'https://pay.aktoyworld.shop/api';
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -51,39 +81,100 @@ serve(async (req) => {
     const successUrl = `${baseUrl}/member-dashboard?payment=success`;
     const cancelUrl = `${baseUrl}/member/pay-dues?payment=cancelled`;
 
-    // Create charge in PipraPay - try with api_key in body instead of Bearer header
-    const requestBody = {
-      api_key: PIPRAPAY_API_KEY,
-      amount: amount,
+    // Create charge in PipraPay
+    // We don't have official docs for this self-hosted instance, so we try several common auth styles.
+    const baseChargePayload = {
+      amount,
       customer_name: member_name,
-      customer_email: member_email || '',
-      customer_phone: member_phone || '',
+      customer_email: member_email || "",
+      customer_phone: member_phone || "",
       redirect_url: successUrl,
       cancel_url: cancelUrl,
       webhook_url: webhookUrl,
-      reference: reference,
-      metadata: JSON.stringify({
-        due_id: due_id,
-        member_id: member_id,
-        month_year: month_year,
-      }),
+      reference,
+      metadata: {
+        due_id,
+        member_id,
+        month_year,
+      },
     };
 
-    console.log('Sending request to PipraPay:', JSON.stringify({ ...requestBody, api_key: '***HIDDEN***' }));
-
-    const pirapayResponse = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const attempts: Array<{ name: string; headers: Record<string, string>; body: Record<string, unknown> }> = [
+      {
+        name: "body.api_key",
+        headers: { "Content-Type": "application/json" },
+        body: { ...baseChargePayload, api_key: PIPRAPAY_API_KEY },
       },
-      body: JSON.stringify(requestBody),
-    });
+      {
+        name: "header.Authorization.Bearer",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${PIPRAPAY_API_KEY}`,
+        },
+        body: { ...baseChargePayload },
+      },
+      {
+        name: "header.x-api-key",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": PIPRAPAY_API_KEY,
+        },
+        body: { ...baseChargePayload },
+      },
+      {
+        name: "header.api-key",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": PIPRAPAY_API_KEY,
+        },
+        body: { ...baseChargePayload },
+      },
+      {
+        name: "header.X-API-KEY",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": PIPRAPAY_API_KEY,
+        },
+        body: { ...baseChargePayload },
+      },
+    ];
 
-    const pirapayData = await pirapayResponse.json();
+    console.log(
+      `PipraPay create-charge attempts=${attempts.length}, api_key(masked)=${maskKey(PIPRAPAY_API_KEY)}, endpoint=${PIPRAPAY_BASE_URL}/create-charge`,
+    );
 
-    if (!pirapayResponse.ok || !pirapayData.success) {
-      console.error('PipraPay error:', pirapayData);
-      throw new Error(pirapayData.message || 'Failed to create PipraPay charge');
+    let pirapayData: PipraPayResponse | null = null;
+    let lastRaw = "";
+    let lastStatus = 0;
+    let lastAttemptName = "";
+
+    for (const attempt of attempts) {
+      lastAttemptName = attempt.name;
+      const pirapayResponse = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
+        method: "POST",
+        headers: attempt.headers,
+        body: JSON.stringify(attempt.body),
+      });
+
+      lastStatus = pirapayResponse.status;
+      const parsed = await parseJsonSafe(pirapayResponse);
+      lastRaw = parsed.raw;
+      pirapayData = (parsed.json ?? {}) as PipraPayResponse;
+
+      const message = typeof pirapayData.message === "string" ? pirapayData.message : "";
+      console.log(
+        `[${attempt.name}] status=${pirapayResponse.status} ok=${pirapayResponse.ok} successFlag=${pirapayData.success ?? pirapayData.status ?? "n/a"} message=${message}`,
+      );
+
+      if (pirapayResponse.ok && isPipraPaySuccess(pirapayData)) {
+        break;
+      }
+    }
+
+    if (!pirapayData || !isPipraPaySuccess(pirapayData)) {
+      const msg = (pirapayData && typeof pirapayData.message === "string" && pirapayData.message) || "Failed to create PipraPay charge";
+      console.error("PipraPay error (final):", { lastAttemptName, lastStatus, msg, lastRawPreview: lastRaw.slice(0, 400) });
+      throw new Error(`${msg} (attempt=${lastAttemptName}, http=${lastStatus})`);
     }
 
     // Update member_dues with pending status and PipraPay reference
@@ -91,7 +182,7 @@ serve(async (req) => {
       .from('member_dues')
       .update({
         payment_status: 'piprapay_pending',
-        transaction_id: pirapayData.charge_id || reference,
+        transaction_id: (pirapayData.charge_id as string) || (pirapayData.pp_id as string) || reference,
         payment_method: 'piprapay',
         submitted_at: new Date().toISOString(),
       })
