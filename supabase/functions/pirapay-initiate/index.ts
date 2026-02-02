@@ -51,28 +51,32 @@ serve(async (req) => {
     const successUrl = `${baseUrl}/member-dashboard?payment=success`;
     const cancelUrl = `${baseUrl}/member/pay-dues?payment=cancelled`;
 
-    // Create charge in PipraPay
+    // Create charge in PipraPay - try with api_key in body instead of Bearer header
+    const requestBody = {
+      api_key: PIPRAPAY_API_KEY,
+      amount: amount,
+      customer_name: member_name,
+      customer_email: member_email || '',
+      customer_phone: member_phone || '',
+      redirect_url: successUrl,
+      cancel_url: cancelUrl,
+      webhook_url: webhookUrl,
+      reference: reference,
+      metadata: JSON.stringify({
+        due_id: due_id,
+        member_id: member_id,
+        month_year: month_year,
+      }),
+    };
+
+    console.log('Sending request to PipraPay:', JSON.stringify({ ...requestBody, api_key: '***HIDDEN***' }));
+
     const pirapayResponse = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${PIPRAPAY_API_KEY}`,
       },
-      body: JSON.stringify({
-        amount: amount,
-        customer_name: member_name,
-        customer_email: member_email || '',
-        customer_phone: member_phone || '',
-        redirect_url: successUrl,
-        cancel_url: cancelUrl,
-        webhook_url: webhookUrl,
-        reference: reference,
-        metadata: {
-          due_id: due_id,
-          member_id: member_id,
-          month_year: month_year,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const pirapayData = await pirapayResponse.json();
