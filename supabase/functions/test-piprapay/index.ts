@@ -21,90 +21,49 @@ serve(async (req) => {
 
   const testResults: Array<{method: string; status: number; body: string}> = [];
 
-  // Test different API formats
+  // Test payload according to official PipraPay documentation
   const testPayload = {
-    amount: 10,
-    customer_name: "Test",
-    customer_email: "test@test.com",
-    customer_phone: "01700000000",
+    full_name: "Test User",
+    email_mobile: "test@test.com",
+    amount: "10",
+    metadata: { test: "true" },
     redirect_url: "https://example.com/success",
+    return_type: "POST",
     cancel_url: "https://example.com/cancel",
     webhook_url: "https://example.com/webhook",
-    reference: "TEST-123",
+    currency: "BDT",
   };
 
-  // Method 1: api_key in body
+  // Method 1: mh-piprapay-api-key header (OFFICIAL - per documentation)
   try {
     const res1 = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...testPayload, api_key: PIPRAPAY_API_KEY }),
+      headers: { 
+        'Content-Type': 'application/json',
+        'mh-piprapay-api-key': PIPRAPAY_API_KEY,
+      },
+      body: JSON.stringify(testPayload),
     });
     const body1 = await res1.text();
-    testResults.push({ method: 'body.api_key', status: res1.status, body: body1.substring(0, 500) });
+    testResults.push({ method: 'mh-piprapay-api-key (OFFICIAL)', status: res1.status, body: body1.substring(0, 500) });
   } catch (e) {
-    testResults.push({ method: 'body.api_key', status: 0, body: String(e) });
+    testResults.push({ method: 'mh-piprapay-api-key (OFFICIAL)', status: 0, body: String(e) });
   }
 
-  // Method 2: Bearer token
+  // Method 2: Mh-Piprapay-Api-Key (case variant)
   try {
     const res2 = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${PIPRAPAY_API_KEY}`,
+        'Mh-Piprapay-Api-Key': PIPRAPAY_API_KEY,
       },
       body: JSON.stringify(testPayload),
     });
     const body2 = await res2.text();
-    testResults.push({ method: 'Bearer', status: res2.status, body: body2.substring(0, 500) });
+    testResults.push({ method: 'Mh-Piprapay-Api-Key', status: res2.status, body: body2.substring(0, 500) });
   } catch (e) {
-    testResults.push({ method: 'Bearer', status: 0, body: String(e) });
-  }
-
-  // Method 3: x-api-key header
-  try {
-    const res3 = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-api-key': PIPRAPAY_API_KEY,
-      },
-      body: JSON.stringify(testPayload),
-    });
-    const body3 = await res3.text();
-    testResults.push({ method: 'x-api-key', status: res3.status, body: body3.substring(0, 500) });
-  } catch (e) {
-    testResults.push({ method: 'x-api-key', status: 0, body: String(e) });
-  }
-
-  // Method 4: API-KEY header (uppercase)
-  try {
-    const res4 = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'API-KEY': PIPRAPAY_API_KEY,
-      },
-      body: JSON.stringify(testPayload),
-    });
-    const body4 = await res4.text();
-    testResults.push({ method: 'API-KEY', status: res4.status, body: body4.substring(0, 500) });
-  } catch (e) {
-    testResults.push({ method: 'API-KEY', status: 0, body: String(e) });
-  }
-
-  // Method 5: secret_key in body (alternative field name)
-  try {
-    const res5 = await fetch(`${PIPRAPAY_BASE_URL}/create-charge`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...testPayload, secret_key: PIPRAPAY_API_KEY }),
-    });
-    const body5 = await res5.text();
-    testResults.push({ method: 'body.secret_key', status: res5.status, body: body5.substring(0, 500) });
-  } catch (e) {
-    testResults.push({ method: 'body.secret_key', status: 0, body: String(e) });
+    testResults.push({ method: 'Mh-Piprapay-Api-Key', status: 0, body: String(e) });
   }
 
   console.log('Test results:', JSON.stringify(testResults, null, 2));
