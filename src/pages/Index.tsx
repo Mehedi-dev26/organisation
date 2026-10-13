@@ -15,8 +15,8 @@ const Index = () => {
       <AboutPreview />
       <CommitteePreview />
       <ProgramsPreview />
-      <NewsPreview />
       <CTASection />
+      <NewsPreview />
     </MainLayout>
   );
 };

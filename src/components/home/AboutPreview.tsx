@@ -11,9 +11,39 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const AboutPreview = () => {
   const { language } = useLanguage();
+
+  const { data: aboutSettings, isLoading } = useQuery({
+    queryKey: ['site-settings-about'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'about_section')
+        .single();
+      if (error || !data) return null;
+      return data.value;
+    },
+  });
+
+  const title = (aboutSettings && (language === 'bn' ? aboutSettings.title_bn : aboutSettings.title_en))
+    || (language === 'bn' ? 'আমাদের সম্পর্কে ও সাংগঠনিক পরিচয়' : 'About Us & Organizational Profile');
+
+  const description = (aboutSettings && (language === 'bn' ? aboutSettings.description_bn : aboutSettings.description_en))
+    || (language === 'bn'
+        ? 'সমাজের পিছিয়ে পড়া অসহায় মানুষের কল্যাণে, জরুরি রক্তদান ও সামাজিক উন্নয়নে নিবেদিত একটি স্বেচ্ছাসেবী পরিবার।'
+        : 'A dedicated volunteer family committed to the welfare of underprivileged people, emergency blood donation, and social development.');
+
+  const missionText = (aboutSettings && (language === 'bn' ? aboutSettings.mission_bn : aboutSettings.mission_en))
+    || (language === 'bn' ? 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় সর্বদা অঙ্গীকারবদ্ধ' : 'Unity is Strength, Service is Religion');
+
+  const imageMain = aboutSettings?.image_main || '/images/about1.jpg';
+  const imageSecondary = aboutSettings?.image_secondary || '/images/about2.jpg';
+  const statsBadge = aboutSettings?.stats || (language === 'bn' ? '৫+ বছর' : '5+ Years');
 
   const keyPoints = [
     {
@@ -56,7 +86,7 @@ const AboutPreview = () => {
       <div className="absolute top-1/2 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
-        {/* Centered Section Header (Matching Executive Committee style & reference alignment) */}
+        {/* Centered Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-bold border border-emerald-200 dark:border-emerald-800 mb-3 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
@@ -64,30 +94,34 @@ const AboutPreview = () => {
           </div>
           
           <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-foreground tracking-tight">
-            {language === 'bn' ? 'আমাদের সম্পর্কে ও সাংগঠনিক পরিচয়' : 'About Us & Organizational Profile'}
+            {title}
           </h2>
 
           <p className="mt-3.5 text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-            {language === 'bn' 
-              ? 'সমাজের পিছিয়ে পড়া অসহায় মানুষের কল্যাণে, জরুরি রক্তদান ও সামাজিক উন্নয়নে নিবেদিত একটি স্বেচ্ছাসেবী পরিবার।'
-              : 'A dedicated volunteer family committed to the welfare of underprivileged people, emergency blood donation, and social development.'}
+            {description}
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
           
-          {/* Left Column: Multi-Image Mosaic / Collage (Inspired by Helpline Hello Naogaon style) */}
+          {/* Left Column: Multi-Image Mosaic */}
           <div className="lg:col-span-6 relative">
             <div className="relative mx-auto max-w-md lg:max-w-none">
               
               {/* Main Primary Image */}
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 aspect-[4/3] group">
-                <img
-                  src="/images/about1.jpg"
-                  alt="সময়ের বাতিঘর স্বেচ্ছাসেবকবৃন্দ"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  loading="lazy"
-                />
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 aspect-[4/3] group bg-slate-100">
+                {isLoading ? (
+                  <div className="w-full h-full bg-slate-200 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                  </div>
+                ) : (
+                  <img
+                    src={imageMain}
+                    alt={title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    loading="lazy"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
                 
                 <div className="absolute bottom-4 left-4 right-4 text-white">
@@ -102,16 +136,22 @@ const AboutPreview = () => {
               </div>
 
               {/* Overlapping Secondary Image (Offset Bottom-Right) */}
-              <div className="absolute -bottom-8 -right-4 sm:-right-8 w-48 sm:w-60 md:w-64 rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 aspect-square z-20 group">
-                <img
-                  src="/images/about2.jpg"
-                  alt="শিক্ষা সহায়তা কার্যক্রম"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  loading="lazy"
-                />
+              <div className="absolute -bottom-8 -right-4 sm:-right-8 w-48 sm:w-60 md:w-64 rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 aspect-square z-20 group bg-slate-100">
+                {isLoading ? (
+                  <div className="w-full h-full bg-slate-200 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                  </div>
+                ) : (
+                  <img
+                    src={imageSecondary}
+                    alt="কার্যক্রম"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                 <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white text-[11px] font-bold">
-                  <span>{language === 'bn' ? 'শিক্ষা উপকরণ বিতরণ' : 'Educational Aid'}</span>
+                  <span>{language === 'bn' ? 'শিক্ষা ও মানবিক সহায়তা' : 'Aid & Welfare'}</span>
                 </div>
               </div>
 
@@ -122,7 +162,7 @@ const AboutPreview = () => {
                 </div>
                 <div>
                   <div className="text-xl sm:text-2xl font-black leading-none text-white">
-                    {language === 'bn' ? '৫+ বছর' : '5+ Years'}
+                    {statsBadge}
                   </div>
                   <div className="text-[11px] sm:text-xs text-emerald-100 font-medium mt-0.5">
                     {language === 'bn' ? 'মানবসেবায় অবিচল' : 'Dedicated Service'}
@@ -137,16 +177,12 @@ const AboutPreview = () => {
           <div className="lg:col-span-6 space-y-6">
             {/* Mission Statement Sub-heading */}
             <h3 className="font-heading text-xl sm:text-2xl md:text-3xl font-extrabold text-foreground tracking-tight leading-[1.25]">
-              {language === 'bn' 
-                ? 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় সর্বদা অঙ্গীকারবদ্ধ' 
-                : 'Unity is Strength, Service is Religion'}
+              {missionText}
             </h3>
 
             {/* Paragraph Description */}
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-              {language === 'bn'
-                ? '“সময়ের বাতিঘর” একটি অরাজনৈতিক, অলাভজনক ও সামাজিক স্বেচ্ছাসেবী কল্যাণমূলক সংগঠন। সমাজের পিছিয়ে পড়া অসহায় মানুষদের পাশে দাঁড়ানো, জরুরি চিকিৎসায় রক্তদানের ব্যবস্থা করা এবং অসচ্ছল শিক্ষার্থীদের সহায়তার মহান ব্রত নিয়ে একদল নিবেদিত তরুণদের উদ্যোগে আমাদের এই পথচলা।'
-                : '“Samoyer Batighor” is a non-profit, non-political community welfare organization dedicated to standing by underprivileged people, providing emergency blood donation support, and empowering children through educational aid.'}
+              {description}
             </p>
 
             {/* 4 Feature Key Points */}

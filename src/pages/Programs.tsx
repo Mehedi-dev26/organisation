@@ -32,15 +32,15 @@ const Programs = () => {
   const bkashNumber = '01711050841';
   const nagadNumber = '01711050841';
 
-  // Fetch events from Supabase to merge if any exist
-  const { data: dbEvents } = useQuery({
+  // Fetch events from Supabase
+  const { data: dbEvents, isLoading } = useQuery({
     queryKey: ['public-events-list'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('is_published', true)
-        .order('event_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.warn('Error fetching events:', error);
@@ -51,23 +51,22 @@ const Programs = () => {
   });
 
   // Map db events to ProgramItem format
-  const mappedDbEvents: ProgramItem[] = (dbEvents || []).map((ev) => ({
-    id: ev.id,
-    title_bn: ev.title_bn,
-    title_en: ev.title_en || ev.title_bn,
-    description_bn: ev.description_bn || '',
-    description_en: ev.description_en || ev.description_bn || '',
-    status: new Date(ev.event_date) >= new Date() ? 'ongoing' : 'completed',
-    status_bn: new Date(ev.event_date) >= new Date() ? 'চলমান' : 'সম্পন্ন',
-    image_url: ev.image_url || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80',
-    date: ev.event_date,
-  }));
-
-  // Combine default rich programs with any DB events (avoid duplicates)
-  const allPrograms: ProgramItem[] = [
-    ...defaultPrograms,
-    ...mappedDbEvents.filter((e) => !defaultPrograms.some((dp) => dp.title_bn === e.title_bn)),
-  ];
+  const allPrograms: ProgramItem[] = (dbEvents && dbEvents.length > 0)
+    ? dbEvents.map((ev) => ({
+        id: ev.id,
+        title_bn: ev.title_bn,
+        title_en: ev.title_en || ev.title_bn,
+        description_bn: ev.description_bn || '',
+        description_en: ev.description_en || ev.description_bn || '',
+        status: (ev.status === 'completed' || (ev.event_date && new Date(ev.event_date) < new Date())) ? 'completed' : 'ongoing',
+        status_bn: (ev.status === 'completed' || (ev.event_date && new Date(ev.event_date) < new Date())) ? 'সম্পন্ন' : 'চলমান',
+        image_url: ev.image_url || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80',
+        target_amount: ev.target_amount ? Number(ev.target_amount) : undefined,
+        raised_amount: ev.raised_amount ? Number(ev.raised_amount) : undefined,
+        category_bn: ev.category_bn || undefined,
+        date: ev.event_date || undefined,
+      }))
+    : defaultPrograms;
 
   const filteredPrograms = allPrograms.filter((prog) => {
     if (activeFilter === 'all') return true;
@@ -170,7 +169,44 @@ const Programs = () => {
 
           {/* Programs Grid: 3 columns on desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            {filteredPrograms.map((prog) => {
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative h-[240px] sm:h-[250px] bg-slate-200 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                    </div>
+                    <div className="p-5 space-y-3">
+                      <div className="h-4 bg-slate-200 rounded-md w-28 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                      </div>
+                      <div className="h-5 bg-slate-200 rounded-md w-4/5 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                      </div>
+                      <div className="h-3.5 bg-slate-100 rounded-md w-full relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                      </div>
+                      <div className="h-3.5 bg-slate-100 rounded-md w-2/3 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                      </div>
+                      <div className="h-2 bg-slate-200 rounded-full w-full mt-4" />
+                    </div>
+                  </div>
+                  <div className="p-5 pt-0 flex gap-2">
+                    <div className="h-10 bg-slate-200 rounded-xl flex-1 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                    </div>
+                    <div className="h-10 bg-slate-200 rounded-xl flex-1 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              filteredPrograms.map((prog) => {
               const isOngoing = prog.status === 'ongoing';
               const percent = prog.target_amount && prog.raised_amount 
                 ? Math.min(100, Math.round((prog.raised_amount / prog.target_amount) * 100))
@@ -260,7 +296,7 @@ const Programs = () => {
                   </div>
                 </div>
               );
-            })}
+            }))}
           </div>
         </div>
       </div>

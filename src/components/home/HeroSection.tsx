@@ -54,31 +54,58 @@ const HeroSection = () => {
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  // Fetch dynamic banners from Supabase database if uploaded by Admin
+  // Fetch dynamic banner from Supabase database (site_settings or gallery_images)
   const { data: dbBanners } = useQuery({
     queryKey: ['hero-banners'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Check site_settings table first
+      const { data: settingData } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'hero_banner')
+        .maybeSingle();
+
+      const settingBanner = settingData?.value as any;
+
+      // 2. Also check gallery_images category=banner
+      const { data: galleryData } = await supabase
         .from('gallery_images')
         .select('*')
         .eq('category', 'banner')
         .eq('is_published', true)
         .order('sort_order', { ascending: true });
 
-      if (error || !data || data.length === 0) {
-        return null;
+      const list: BannerSlide[] = [];
+
+      if (settingBanner) {
+        list.push({
+          id: 'site-setting-hero',
+          image: settingBanner.image_url || '/images/banner1.jpg',
+          tagBn: settingBanner.tagline_bn || 'মানবসেবায় নিবেদিত সামাজিক সংগঠন',
+          tagEn: settingBanner.tagline_en || 'Non-profit Social Welfare Organization',
+          titleBn: settingBanner.title_bn || 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় নিবেদিত',
+          titleEn: settingBanner.title_en || 'Unity is Strength, Service is Religion',
+          subtitleBn: settingBanner.subtitle_bn || 'সমাজের পিছিয়ে পড়া মানুষের পাশে দাঁড়ানো, অসহায়দের মুখে হাসি ফোটানো এবং একটি আত্মনির্ভর সমাজ গড়ার অঙ্গীকার।',
+          subtitleEn: settingBanner.subtitle_en || 'Dedicated to empowering the underprivileged and standing by vulnerable families.',
+        });
       }
 
-      return data.map((item): BannerSlide => ({
-        id: item.id,
-        image: item.image_url,
-        tagBn: item.title_bn || 'জনকল্যাণমূলক সামাজিক উদ্যোগ',
-        tagEn: item.title_en || 'Community Welfare Initiative',
-        titleBn: item.title_bn || 'সময়ের বাতিঘর — একতাই শক্তি',
-        titleEn: item.title_en || 'Samoyer Batighor',
-        subtitleBn: item.description_bn || 'মানবসেবায় নিবেদিত একদল স্বপ্নবাজ তরুণ ও সামাজিক নেতৃত্ব।',
-        subtitleEn: item.description_en || 'Dedicated to social welfare and community empowerment.',
-      }));
+      if (galleryData && galleryData.length > 0) {
+        galleryData.forEach((item) => {
+          list.push({
+            id: item.id,
+            image: item.image_url,
+            tagBn: item.title_bn || 'জনকল্যাণমূলক সামাজিক উদ্যোগ',
+            tagEn: item.title_en || 'Community Welfare Initiative',
+            titleBn: item.title_bn || 'সময়ের বাতিঘর — একতাই শক্তি',
+            titleEn: item.title_en || 'Samoyer Batighor',
+            subtitleBn: item.description_bn || 'মানবসেবায় নিবেদিত একদল স্বপ্নবাজ তরুণ ও সামাজিক নেতৃত্ব।',
+            subtitleEn: item.description_en || 'Dedicated to social welfare and community empowerment.',
+          });
+        });
+      }
+
+      return list.length > 0 ? list : null;
     },
   });
 
@@ -166,54 +193,30 @@ const HeroSection = () => {
                   {language === 'bn' ? slide.subtitleBn : slide.subtitleEn}
                 </p>
 
-                {/* Unified Compact Aligned Buttons: সদস্য আবেদন, চাঁদা অনুদান, ইভেন্ট ও কার্যক্রম, রক্তদাতা */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
+                {/* Unified Compact Aligned Buttons: সদস্য আবেদন & চাঁদা / অনুদান */}
+                <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
                   
                   {/* ১. সদস্য আবেদন করুন */}
                   <Button 
                     size="sm" 
-                    className="h-9 px-3.5 sm:px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-md transition-all hover:scale-105"
+                    className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg transition-all hover:scale-105 inline-flex items-center gap-2"
                     asChild
                   >
                     <Link to="/member-registration">
-                      <Users className="w-3.5 h-3.5 mr-1.5" />
-                      <span>{language === 'bn' ? 'সদস্য আবেদন' : 'Apply Member'}</span>
+                      <Users className="w-4 h-4" />
+                      <span>{language === 'bn' ? 'সদস্য আবেদন' : 'Apply for Membership'}</span>
                     </Link>
                   </Button>
 
                   {/* ২. চাঁদা / অনুদান */}
                   <Button 
                     size="sm" 
-                    className="h-9 px-3.5 sm:px-4 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-md transition-all hover:scale-105"
+                    className="h-10 px-5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg transition-all hover:scale-105 inline-flex items-center gap-2"
                     asChild
                   >
-                    <Link to="/member/pay-dues">
-                      <HeartHandshake className="w-3.5 h-3.5 mr-1.5" />
-                      <span>{language === 'bn' ? 'চাঁদা / অনুদান' : 'Dues / Donate'}</span>
-                    </Link>
-                  </Button>
-
-                  {/* ৩. ইভেন্ট ও কার্যক্রম */}
-                  <Button 
-                    size="sm" 
-                    className="h-9 px-3.5 sm:px-4 bg-white/95 hover:bg-white text-slate-800 font-bold text-xs sm:text-sm rounded-lg shadow-md transition-all hover:scale-105"
-                    asChild
-                  >
-                    <Link to="/news">
-                      <CalendarCheck className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
-                      <span>{language === 'bn' ? 'ইভেন্ট ও কার্যক্রম' : 'Events & News'}</span>
-                    </Link>
-                  </Button>
-
-                  {/* ৪. জরুরি রক্তদাতা ডাটাবেস */}
-                  <Button 
-                    size="sm" 
-                    className="h-9 px-3.5 sm:px-4 bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-lg shadow-md transition-all hover:scale-105"
-                    asChild
-                  >
-                    <Link to="/blood-donors">
-                      <Droplet className="w-3.5 h-3.5 mr-1.5 fill-white" />
-                      <span>{language === 'bn' ? 'রক্তদাতা ডাটাবেস' : 'Blood Donors'}</span>
+                    <Link to="/member-dashboard/pay-dues">
+                      <HeartHandshake className="w-4 h-4" />
+                      <span>{language === 'bn' ? 'চাঁদা / অনুদান' : 'Pay Dues / Donate'}</span>
                     </Link>
                   </Button>
 

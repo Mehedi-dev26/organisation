@@ -562,34 +562,34 @@ const BloodDonors: React.FC = () => {
                           {idx + 1}
                         </td>
                         <td className="px-4 py-4">
-                          <div className="font-extrabold text-slate-900 group-hover:text-red-700 transition-colors text-sm">
+                          <div className="font-extrabold text-slate-900 group-hover:text-red-700 transition-colors text-base leading-snug">
                             {donor.full_name}
                           </div>
                           {donor.member_id ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-2 py-0.5 rounded-md mt-1">
-                              <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                              {language === 'bn' ? `সদস্য আইডি: ${donor.member_id}` : `Member ID: ${donor.member_id}`}
-                            </span>
+                            <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-2 py-0.5 rounded-md mt-1 whitespace-nowrap">
+                              <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span>{language === 'bn' ? `সদস্য আইডি: ${donor.member_id}` : `Member ID: ${donor.member_id}`}</span>
+                            </div>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
+                            <div className="text-[11px] text-slate-500 font-medium mt-0.5 whitespace-nowrap">
                               {language === 'bn' ? 'স্বেচ্ছাসেবী রক্তদাতা' : 'Volunteer Donor'}
-                            </span>
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center justify-center bg-red-600 text-white font-black text-sm px-3 py-1.5 rounded-lg shadow-sm">
+                          <span className="inline-flex items-center justify-center bg-red-600 text-white font-black text-sm px-3.5 py-1.5 rounded-lg shadow-sm">
                             <Droplet className="w-3.5 h-3.5 mr-1 fill-white" />
                             {donor.blood_group}
                           </span>
                         </td>
-                        <td className="px-4 py-4 font-mono font-bold">
+                        <td className="px-4 py-4 font-mono font-bold text-sm">
                           {donor.is_public_details ? (
                             <a
                               href={`tel:${donor.phone}`}
-                              className="text-slate-900 hover:text-emerald-700 hover:underline inline-flex items-center gap-1 font-bold"
+                              className="text-slate-900 hover:text-emerald-700 hover:underline inline-flex items-center gap-1 font-bold text-sm"
                             >
-                              <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                              {donor.phone}
+                              <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span>{donor.phone}</span>
                             </a>
                           ) : (
                             <span className="text-slate-400 text-xs italic font-medium">
@@ -598,8 +598,8 @@ const BloodDonors: React.FC = () => {
                           )}
                         </td>
                         <td className="px-4 py-4">
-                          <div className="text-xs font-semibold text-slate-800 flex items-start gap-1 max-w-xs">
-                            <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                          <div className="text-sm font-semibold text-slate-800 flex items-start gap-1.5 max-w-sm">
+                            <MapPin className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                             <span>
                               {donor.address ? `${donor.address}, ` : ''}
                               {donor.upazila ? `${donor.upazila}, ` : ''}
@@ -607,7 +607,7 @@ const BloodDonors: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-xs font-bold text-slate-800">
+                        <td className="px-4 py-4 text-sm font-bold text-slate-800">
                           {formatBengaliDate(donor.last_donated)}
                         </td>
                         <td className="px-4 py-4 text-center">
@@ -670,10 +670,10 @@ const BloodDonors: React.FC = () => {
                           {donor.full_name}
                         </div>
                         {donor.member_id && (
-                          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-2 py-0.5 rounded-md mt-0.5">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                            {language === 'bn' ? `আইডি: ${donor.member_id}` : `ID: ${donor.member_id}`}
-                          </span>
+                          <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-2 py-0.5 rounded-md mt-0.5 whitespace-nowrap">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                            <span>{language === 'bn' ? `আইডি: ${donor.member_id}` : `ID: ${donor.member_id}`}</span>
+                          </div>
                         )}
                       </div>
                       <span className="bg-red-600 text-white font-black text-sm px-3 py-1.5 rounded-lg shadow-sm shrink-0">
@@ -681,9 +681,9 @@ const BloodDonors: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-slate-800 mb-3 font-semibold">
+                    <div className="space-y-1.5 text-sm text-slate-800 mb-3 font-medium">
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                        <MapPin className="w-4 h-4 text-red-600 shrink-0" />
                         <span>
                           {donor.address ? `${donor.address}, ` : ''}
                           {donor.upazila ? `${donor.upazila}, ` : ''}
@@ -691,7 +691,7 @@ const BloodDonors: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
                         <span>
                           {language === 'bn' ? 'সর্বশেষ রক্তদান: ' : 'Last Donated: '}
                           <strong className="text-slate-900 font-bold">

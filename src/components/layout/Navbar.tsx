@@ -159,17 +159,6 @@ const Navbar = () => {
 
             {/* Right Action Buttons */}
             <div className="flex items-center gap-2 sm:gap-2.5">
-              {/* Quick Donation / Dues Pay Button */}
-              <Button 
-                variant="default"
-                size="sm" 
-                className="bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-semibold shadow-md shadow-rose-500/20 text-xs sm:text-sm px-2.5 sm:px-3.5 h-8 sm:h-9"
-                onClick={() => navigate('/member/pay-dues')}
-              >
-                <Heart className="w-3.5 h-3.5 mr-1 sm:mr-1.5 fill-white text-white animate-pulse" />
-                <span>{language === 'bn' ? 'চাঁদা / অনুদান' : 'Donate / Pay'}</span>
-              </Button>
-
               {/* Member Registration (Desktop) */}
               <Button 
                 variant="outline" 

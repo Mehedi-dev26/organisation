@@ -28,6 +28,10 @@ interface Event {
   image_url: string | null;
   is_published: boolean | null;
   created_at: string | null;
+  target_amount?: number | null;
+  raised_amount?: number | null;
+  category_bn?: string | null;
+  status?: string | null;
 }
 
 const EventsManagement = () => {
@@ -48,7 +52,11 @@ const EventsManagement = () => {
     location_bn: '',
     location_en: '',
     image_url: '',
-    is_published: false,
+    is_published: true,
+    target_amount: '',
+    raised_amount: '',
+    category_bn: '',
+    status: 'ongoing',
   });
 
   // Enable realtime subscription
@@ -124,7 +132,11 @@ const EventsManagement = () => {
       location_bn: '',
       location_en: '',
       image_url: '',
-      is_published: false,
+      is_published: true,
+      target_amount: '',
+      raised_amount: '',
+      category_bn: '',
+      status: 'ongoing',
     });
     setEditingEvent(null);
     setIsDialogOpen(false);
@@ -141,17 +153,26 @@ const EventsManagement = () => {
       location_bn: event.location_bn || '',
       location_en: event.location_en || '',
       image_url: event.image_url || '',
-      is_published: event.is_published || false,
+      is_published: event.is_published ?? true,
+      target_amount: event.target_amount ? String(event.target_amount) : '',
+      raised_amount: event.raised_amount ? String(event.raised_amount) : '',
+      category_bn: event.category_bn || '',
+      status: event.status || 'ongoing',
     });
     setIsDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      ...formData,
+      target_amount: formData.target_amount ? Number(formData.target_amount) : null,
+      raised_amount: formData.raised_amount ? Number(formData.raised_amount) : null,
+    };
     if (editingEvent) {
-      updateMutation.mutate({ id: editingEvent.id, data: formData });
+      updateMutation.mutate({ id: editingEvent.id, data: payload as any });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload as any);
     }
   };
 
@@ -246,6 +267,49 @@ const EventsManagement = () => {
                   rows={3}
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</Label>
+                  <Input
+                    value={formData.category_bn}
+                    onChange={(e) => setFormData({ ...formData, category_bn: e.target.value })}
+                    placeholder="যেমন: চিকিৎসা সহায়তা, শিক্ষা কর্মসূচি"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'কার্যক্রম অবস্থা' : 'Program Status'}</Label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  >
+                    <option value="ongoing">{language === 'bn' ? 'চলমান (Ongoing)' : 'Ongoing'}</option>
+                    <option value="completed">{language === 'bn' ? 'সম্পন্ন (Completed)' : 'Completed'}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'লক্ষ্যমাত্রা (টাকা)' : 'Target Amount (BDT)'}</Label>
+                  <Input
+                    type="number"
+                    value={formData.target_amount}
+                    onChange={(e) => setFormData({ ...formData, target_amount: e.target.value })}
+                    placeholder="50000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'সংগৃহীত অনুদান (টাকা)' : 'Raised Amount (BDT)'}</Label>
+                  <Input
+                    type="number"
+                    value={formData.raised_amount}
+                    onChange={(e) => setFormData({ ...formData, raised_amount: e.target.value })}
+                    placeholder="25000"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>{language === 'bn' ? 'ছবি URL' : 'Image URL'}</Label>
                 <Input
@@ -315,8 +379,27 @@ const EventsManagement = () => {
                 ) : (
                   filteredEvents?.map((event) => (
                     <TableRow key={event.id}>
-                      <TableCell className="font-medium max-w-xs truncate">
-                        {language === 'bn' ? event.title_bn : (event.title_en || event.title_bn)}
+                      <TableCell className="font-medium max-w-xs">
+                        <div className="font-bold text-sm text-foreground truncate">
+                          {language === 'bn' ? event.title_bn : (event.title_en || event.title_bn)}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {event.category_bn && (
+                            <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold">
+                              {event.category_bn}
+                            </span>
+                          )}
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                            event.status === 'completed' ? 'bg-slate-100 text-slate-700' : 'bg-emerald-600 text-white'
+                          }`}>
+                            {event.status === 'completed' ? 'সম্পন্ন' : 'চলমান'}
+                          </span>
+                          {event.target_amount ? (
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              লক্ষ্য: ৳{event.target_amount} (সংগ্রহ: ৳{event.raised_amount || 0})
+                            </span>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

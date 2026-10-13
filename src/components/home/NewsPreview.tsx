@@ -96,8 +96,45 @@ const NewsPreview = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mb-12">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/90 p-4 shadow-sm flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex gap-3.5 items-start">
+                    <div className="w-28 h-24 sm:w-32 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-slate-200 relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-slate-200 rounded w-full relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                      </div>
+                      <div className="h-4 bg-slate-200 rounded w-3/4 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                      </div>
+                      <div className="h-3 bg-slate-100 rounded w-20 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-1.5">
+                    <div className="h-3 bg-slate-100 rounded w-full relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                    </div>
+                    <div className="h-3 bg-slate-100 rounded w-4/5 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                  <div className="h-3 bg-slate-200 rounded w-16 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mb-12">
