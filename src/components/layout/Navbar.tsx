@@ -114,29 +114,23 @@ const Navbar = () => {
       </div>
 
       {/* 2. Main Navigation Bar (Slimmer and Sticky on top) */}
-      <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-card/95 backdrop-blur-md border-b border-border shadow-sm">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex items-center justify-between h-13 md:h-15 py-1.5 md:py-2">
-            {/* Logo & Brand Identity */}
-            <Link to="/" className="flex items-center gap-2 md:gap-3 group">
-              <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-emerald-600 via-primary to-teal-500 p-0.5 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={logo} 
-                    alt="সময়ের বাতিঘর" 
-                    className="w-7 h-7 md:w-9 md:h-9 object-contain"
-                  />
+      <header className="sticky top-0 z-50 w-full bg-white dark:bg-card backdrop-blur-md border-b border-border shadow-xs">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+          <div className="flex items-center justify-between h-14 md:h-16 py-1">
+            {/* Logo & Brand Identity (Matching Helpline Hello Naogaon style) */}
+            <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
+              <img 
+                src={logo} 
+                alt="সময়ের বাতিঘর" 
+                className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain flex-shrink-0"
+              />
+              <div className="leading-tight">
+                <div className="font-bold text-base sm:text-lg md:text-[1.3rem] text-[#006a4e] dark:text-emerald-400 tracking-tight leading-none">
+                  {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
                 </div>
-              </div>
-              <div className="block">
-                <div className="flex items-center gap-1">
-                  <h1 className="font-heading text-sm sm:text-base md:text-lg font-bold text-foreground leading-tight tracking-tight">
-                    {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
-                  </h1>
+                <div className="text-[11px] sm:text-xs font-semibold text-[#006a4e] dark:text-emerald-400/90 mt-1">
+                  {language === 'bn' ? 'একটি স্বেচ্ছাসেবী সামাজিক সংগঠন' : 'A voluntary welfare organization'}
                 </div>
-                <p className="text-[9px] sm:text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                  {language === 'bn' ? 'একতাই শক্তি, সেবাই ধর্ম' : 'Unity is Strength, Service is Religion'}
-                </p>
               </div>
             </Link>
 

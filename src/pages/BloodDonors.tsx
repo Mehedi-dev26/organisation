@@ -283,21 +283,19 @@ const BloodDonors: React.FC = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Navbar />
 
-      {/* Page Header Banner (Exact style & gradient from reference) */}
+      {/* Page Header Banner (Exact style, icon inline, and spacing from reference) */}
       <section
-        className="text-white py-10 md:py-14 relative overflow-hidden shadow-md"
+        className="text-white py-5 md:py-7 mb-6 relative overflow-hidden shadow-xs"
         style={{
           background: 'linear-gradient(135deg, #8a0303 0%, #c0392b 100%)',
         }}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 max-w-4xl">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-md mb-3 shadow-inner border border-white/20">
-            <HandHoldingDropletIcon className="w-9 h-9 text-amber-300" />
-          </div>
-          <h1 className="text-2xl md:text-4xl font-black tracking-tight mb-2">
-            {language === 'bn' ? 'জরুরি রক্তদাতা ডাটাবেস' : 'Emergency Blood Donor Database'}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-2 flex items-center justify-center gap-2.5">
+            <HandHoldingDropletIcon className="w-7 h-7 sm:w-8 sm:h-8 text-white inline-block flex-shrink-0" />
+            <span>{language === 'bn' ? 'জরুরি রক্তদাতা ডাটাবেস' : 'Emergency Blood Donor Database'}</span>
           </h1>
-          <p className="text-white/90 text-sm md:text-base mb-6 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-white/80 text-sm md:text-base mb-4 max-w-2xl mx-auto leading-relaxed font-medium">
             {language === 'bn'
               ? 'মুমূর্ষু রোগীর প্রয়োজনে স্বেচ্ছাসেবী রক্তদাতাদের সরাসরি তালিকা ও সার্বক্ষণিক সহায়তা'
               : 'Direct verified directory of voluntary blood donors & 24/7 emergency support for patients.'}
@@ -305,14 +303,14 @@ const BloodDonors: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button
               onClick={() => setIsPromptOpen(true)}
-              className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-6 py-5 rounded-full shadow-lg transition-transform hover:scale-105"
+              className="bg-[#ffc107] hover:bg-[#e0a800] text-slate-950 font-bold px-5 py-2 rounded-full shadow-xs text-sm"
             >
-              <PlusCircle className="w-5 h-5 mr-2" />
+              <PlusCircle className="w-4 h-4 mr-2" />
               {language === 'bn' ? 'রক্তদাতা হিসেবে নাম লিখান' : 'Register as Blood Donor'}
             </Button>
             <a
               href="tel:01916314315"
-              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white font-semibold px-5 py-2.5 rounded-full backdrop-blur-sm border border-white/20 text-sm transition-all"
+              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white font-semibold px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 text-sm transition-all"
             >
               <PhoneCall className="w-4 h-4 text-amber-300" />
               <span>{language === 'bn' ? 'জরুরি হেল্পলাইন: 01916314315' : 'Helpline: 01916314315'}</span>
@@ -321,8 +319,8 @@ const BloodDonors: React.FC = () => {
         </div>
       </section>
 
-      {/* Main Content Area */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 max-w-7xl">
+      {/* Main Content Area (With comfortable max-w-6xl desktop gutters matching reference) */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 pb-12 flex-1 max-w-6xl">
         {/* Search & Filter Card (Top border red accent matching reference) */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-red-600 p-4 md:p-6 mb-8 transition-all">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -614,16 +612,16 @@ const BloodDonors: React.FC = () => {
                         </td>
                         <td className="px-4 py-4 text-center">
                           {eligibility.isReady ? (
-                            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full shadow-2xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-2xs whitespace-nowrap">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           ) : (
                             <span
-                              className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-1.5 rounded-full shadow-2xs"
+                              className="inline-flex items-center gap-1.5 bg-[#ffc107] text-slate-950 text-xs font-bold px-3 py-1.5 rounded-full shadow-2xs whitespace-nowrap"
                               title={`৩ মাস পূর্ণ হতে আর ${eligibility.remainingDays} দিন বাকি`}
                             >
-                              <Hourglass className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                              <Hourglass className="w-3.5 h-3.5 text-slate-900" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           )}
@@ -631,7 +629,7 @@ const BloodDonors: React.FC = () => {
                         <td className="px-4 py-4 text-right">
                           <a
                             href={`tel:${donor.phone}`}
-                            className="inline-flex items-center gap-1.5 bg-white hover:bg-emerald-600 text-emerald-700 hover:text-white border-2 border-emerald-600 font-bold text-xs px-3.5 py-1.5 rounded-lg transition-all shadow-xs group/call"
+                            className="inline-flex items-center gap-1.5 bg-white hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-600 font-bold text-xs px-3.5 py-1.5 rounded-md transition-all shadow-xs group/call whitespace-nowrap"
                           >
                             <PhoneCall className="w-3.5 h-3.5 text-emerald-600 group-hover/call:text-white transition-colors" />
                             <span>{language === 'bn' ? 'কল করুন' : 'Call'}</span>
@@ -704,13 +702,13 @@ const BloodDonors: React.FC = () => {
                       <div className="pt-1 flex items-center justify-between">
                         <div>
                           {eligibility.isReady ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold px-2.5 py-1 rounded-full">
-                              <Hourglass className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="inline-flex items-center gap-1.5 bg-[#ffc107] text-slate-950 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
+                              <Hourglass className="w-3.5 h-3.5 text-slate-900" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           )}
@@ -728,7 +726,7 @@ const BloodDonors: React.FC = () => {
                       </a>
                       <a
                         href={`tel:${donor.phone}`}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-lg inline-flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
+                        className="bg-white hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-600 font-bold text-xs px-3.5 py-1.5 rounded-md inline-flex items-center gap-1.5 shadow-2xs transition-colors"
                       >
                         <PhoneCall className="w-3.5 h-3.5" />
                         {language === 'bn' ? 'কল করুন' : 'Call'}
