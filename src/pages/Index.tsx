@@ -1,4 +1,5 @@
 import MainLayout from '@/components/layout/MainLayout';
+import NoticeMarquee from '@/components/home/NoticeMarquee';
 import HeroSection from '@/components/home/HeroSection';
 import StatsSection from '@/components/home/StatsSection';
 import AboutPreview from '@/components/home/AboutPreview';
@@ -9,6 +10,7 @@ import CTASection from '@/components/home/CTASection';
 const Index = () => {
   return (
     <MainLayout>
+      <NoticeMarquee />
       <HeroSection />
       <StatsSection />
       <AboutPreview />

@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      blood_donors: {
+        Row: {
+          address: string | null
+          blood_group: string
+          created_at: string
+          district: string | null
+          division: string | null
+          full_name: string
+          id: string
+          is_member: boolean
+          is_public_details: boolean
+          last_donated: string | null
+          member_id: string | null
+          notes: string | null
+          phone: string
+          status: string
+          upazila: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          blood_group: string
+          created_at?: string
+          district?: string | null
+          division?: string | null
+          full_name: string
+          id?: string
+          is_member?: boolean
+          is_public_details?: boolean
+          last_donated?: string | null
+          member_id?: string | null
+          notes?: string | null
+          phone: string
+          status?: string
+          upazila?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          blood_group?: string
+          created_at?: string
+          district?: string | null
+          division?: string | null
+          full_name?: string
+          id?: string
+          is_member?: boolean
+          is_public_details?: boolean
+          last_donated?: string | null
+          member_id?: string | null
+          notes?: string | null
+          phone?: string
+          status?: string
+          upazila?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           action_type: string

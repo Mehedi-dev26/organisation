@@ -30,6 +30,8 @@ import GalleryManagement from "./pages/admin/GalleryManagement";
 import YearlyAccounts from "./pages/admin/YearlyAccounts";
 import CashierManagement from "./pages/admin/CashierManagement";
 import PaymentVerification from "./pages/admin/PaymentVerification";
+import BloodDonors from "./pages/BloodDonors";
+import BloodDonorsManagement from "./pages/admin/BloodDonorsManagement";
 import CashierLayout from "./components/cashier/CashierLayout";
 import CashierDashboard from "./pages/cashier/CashierDashboard";
 import CashierFinance from "./pages/cashier/CashierFinance";
@@ -55,6 +57,8 @@ const App = () => (
               <Route path="/news" element={<News />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/blood-donors" element={<BloodDonors />} />
+              <Route path="/blood" element={<BloodDonors />} />
               <Route path="/member-registration" element={<MemberRegistration />} />
               <Route path="/member-dashboard" element={<MemberDashboard />} />
               <Route path="/member-dashboard/pay-dues" element={<PayDues />} />
@@ -62,6 +66,7 @@ const App = () => (
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="members" element={<MembersManagement />} />
+                <Route path="blood-donors" element={<BloodDonorsManagement />} />
                 <Route path="news" element={<NewsManagement />} />
                 <Route path="events" element={<EventsManagement />} />
                 <Route path="committee" element={<CommitteeManagement />} />

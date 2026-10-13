@@ -14,10 +14,14 @@ const translations: Record<string, Record<Language, string>> = {
   'nav.about': { bn: 'আমাদের সম্পর্কে', en: 'About Us' },
   'nav.members': { bn: 'সদস্যবৃন্দ', en: 'Members' },
   'nav.committee': { bn: 'কমিটি', en: 'Committee' },
+  'nav.blood_donors': { bn: 'রক্তদান', en: 'Blood Donors' },
+  'nav.events': { bn: 'ইভেন্ট ও কার্যক্রম', en: 'Events' },
   'nav.news': { bn: 'সংবাদ', en: 'News' },
   'nav.gallery': { bn: 'গ্যালারি', en: 'Gallery' },
   'nav.contact': { bn: 'যোগাযোগ', en: 'Contact' },
   'nav.login': { bn: 'লগইন', en: 'Login' },
+  'nav.donate': { bn: 'দান করুন', en: 'Donate' },
+  'nav.register': { bn: 'সদস্য আবেদন', en: 'Register' },
   
   // Hero
   'hero.title': { bn: 'সময়ের বাতিঘর', en: 'Samoyer Batighor' },

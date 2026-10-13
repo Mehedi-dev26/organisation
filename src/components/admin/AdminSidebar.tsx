@@ -30,7 +30,8 @@ import {
   ImageIcon,
   History,
   UserCog2,
-  CheckSquare
+  CheckSquare,
+  Droplet
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -50,6 +51,11 @@ const AdminSidebar = () => {
       title: language === 'bn' ? 'সদস্য ব্যবস্থাপনা' : 'Members', 
       url: '/admin/members', 
       icon: Users 
+    },
+    { 
+      title: language === 'bn' ? 'রক্তদাতা ব্যবস্থাপনা' : 'Blood Donors', 
+      url: '/admin/blood-donors', 
+      icon: Droplet 
     },
     { 
       title: language === 'bn' ? 'সংবাদ ব্যবস্থাপনা' : 'News', 
