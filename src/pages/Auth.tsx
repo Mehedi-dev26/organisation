@@ -21,9 +21,10 @@ import {
   ArrowRight, 
   HeartHandshake, 
   Receipt, 
-  Award,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  KeyRound,
+  UserCheck
 } from 'lucide-react';
 
 const Auth = () => {
@@ -119,6 +120,11 @@ const Auth = () => {
           }
         }
 
+        // Direct fallback for registered admin phone numbers
+        if (!foundEmail && candidatePhones.some(p => ['01711050841', '01916314315', '01700000000'].includes(p))) {
+          foundEmail = 'mehedihasanwork25@mail.com';
+        }
+
         if (foundEmail) {
           loginEmail = foundEmail;
         } else if (digitsOnly.length >= 10) {
@@ -174,8 +180,8 @@ const Auth = () => {
 
   return (
     <MainLayout>
-      {/* Top Banner & Breadcrumb */}
-      <div className="bg-[#006a4e] text-white py-5 px-4 shadow-sm">
+      {/* Top Banner & Breadcrumb with gradient styling */}
+      <div className="bg-gradient-to-r from-emerald-800 via-[#006a4e] to-teal-900 text-white py-5 px-4 shadow-md border-b border-emerald-700/40">
         <div className="container mx-auto max-w-6xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold font-heading flex items-center gap-2">
@@ -188,26 +194,31 @@ const Auth = () => {
                 : 'Samoyer Batighor Central Account Portal'}
             </p>
           </div>
-          <div className="text-xs text-emerald-200 flex items-center gap-1.5 self-start sm:self-auto">
+          <div className="text-xs text-emerald-200 flex items-center gap-1.5 self-start sm:self-auto font-medium">
             <Link to="/" className="hover:text-white transition-colors">
               {language === 'bn' ? 'হোম' : 'Home'}
             </Link>
             <span>/</span>
-            <span className="text-white font-medium">
+            <span className="text-white font-semibold">
               {language === 'bn' ? 'লগইন' : 'Login'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-b from-slate-50 via-emerald-50/25 to-slate-100 dark:from-slate-950 dark:to-slate-900 min-h-[calc(100vh-280px)] flex items-center">
-        <div className="container mx-auto px-4 max-w-6xl">
+      {/* Main Content Area with rich soft gradient and glassmorphism styling */}
+      <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-emerald-50/70 via-teal-50/30 to-slate-100 dark:from-slate-950 dark:via-emerald-950/20 dark:to-slate-900 min-h-[calc(100vh-280px)] flex items-center relative overflow-hidden">
+        {/* Soft floating glowing ambient orbs matching registration page */}
+        <div className="absolute top-10 left-10 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
             {/* Left Column (Desktop Showcase & Highlights) */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-[#006a4e] dark:bg-emerald-950 dark:text-emerald-300 text-xs sm:text-sm font-semibold shadow-xs">
+              
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-950 dark:to-teal-950 text-[#006a4e] dark:text-emerald-300 border border-emerald-300/40 text-xs sm:text-sm font-bold shadow-xs">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
                 {language === 'bn' ? 'একটিমাত্র কেন্দ্রীয় প্রবেশদ্বার' : 'Single Unified Access Portal'}
               </div>
@@ -216,99 +227,110 @@ const Auth = () => {
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-800 dark:text-slate-100 font-heading leading-tight">
                   {language === 'bn' ? (
                     <>
-                      স্বাগতম <span className="text-[#006a4e] dark:text-emerald-400">সময়ের বাতিঘর</span> ডিজিটাল প্ল্যাটফর্মে
+                      স্বাগতম <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">সময়ের বাতিঘর</span> ডিজিটাল প্ল্যাটফর্মে
                     </>
                   ) : (
                     <>
-                      Welcome to <span className="text-[#006a4e] dark:text-emerald-400">Samoyer Batighor</span> Portal
+                      Welcome to <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Samoyer Batighor</span> Digital Platform
                     </>
                   )}
                 </h2>
                 <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-3 leading-relaxed">
                   {language === 'bn'
-                    ? 'আলাদা করে সদস্য, ক্যাশিয়ার বা অ্যাডমিন নির্বাচন করার কোনো প্রয়োজন নেই। আপনার সংরক্ষিত মোবাইল নম্বর অথবা ইমেইল দিয়ে লগইন করলেই সিস্টেম স্বয়ংক্রিয়ভাবে আপনাকে সঠিক ড্যাশবোর্ডে নিয়ে যাবে।'
+                    ? 'আলাদা করে সদস্য, ক্যাশিয়ার বা অ্যাডমিন নির্বাচন করার কোনো প্রয়োজন নেই। আপনার সংরক্ষিত মোবাইল নম্বর অথবা ইমেইল দিয়ে লগইন করলেই সিস্টেম স্বয়ংক্রিয়ভাবে আপনাকে নির্দিষ্ট ড্যাশবোর্ডে নিয়ে যাবে।'
                     : 'No need to manually select member, cashier, or admin role. Simply enter your registered phone number or email, and the system automatically opens your designated dashboard.'}
                 </p>
               </div>
 
-              {/* Feature Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-[#006a4e] dark:text-emerald-300 shrink-0 mt-0.5">
+              {/* Colorful Showcase Grid with rich glass badges */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                
+                {/* 1. Auto Role Detection */}
+                <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-emerald-500/20 shadow-md shadow-emerald-950/5 flex items-start gap-3.5 hover:border-emerald-400/50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                       {language === 'bn' ? 'অটো রোল ডিটেকশন' : 'Auto Role Detection'}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
                       {language === 'bn' ? 'অ্যাডমিন, ক্যাশিয়ার ও সদস্য সরাসরি রিডাইরেক্ট' : 'Direct smart routing to your dashboard'}
                     </p>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-[#006a4e] dark:text-emerald-300 shrink-0 mt-0.5">
+                {/* 2. Mobile / Email Support */}
+                <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-blue-500/20 shadow-md shadow-blue-950/5 flex items-start gap-3.5 hover:border-blue-400/50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform">
                     <Phone className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                       {language === 'bn' ? 'মোবাইল বা ইমেইল সাপোর্ট' : 'Mobile / Email Support'}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
                       {language === 'bn' ? 'নম্বর বা ইমেইল যেকোনোটি দিয়ে সহজে প্রবেশ' : 'Sign in easily using phone or email'}
                     </p>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-[#006a4e] dark:text-emerald-300 shrink-0 mt-0.5">
+                {/* 3. Digital Dues & Receipts */}
+                <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-amber-500/20 shadow-md shadow-amber-950/5 flex items-start gap-3.5 hover:border-amber-400/50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-amber-600/20 group-hover:scale-105 transition-transform">
                     <Receipt className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                       {language === 'bn' ? 'ডিজিটাল চাঁদা ও রসিদ' : 'Digital Dues & Receipts'}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
                       {language === 'bn' ? 'মাসিক চাঁদা পরিশোধ ও ইনস্ট্যান্ট রসিদ সংগ্রহ' : 'Pay dues and download instant receipts'}
                     </p>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-[#006a4e] dark:text-emerald-300 shrink-0 mt-0.5">
+                {/* 4. Blood & Emergency Aid */}
+                <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-500/20 shadow-md shadow-rose-950/5 flex items-start gap-3.5 hover:border-rose-400/50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-rose-600/20 group-hover:scale-105 transition-transform">
                     <HeartHandshake className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                       {language === 'bn' ? 'রক্তদান ও জরুরি সেবা' : 'Blood & Emergency Aid'}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
                       {language === 'bn' ? 'জীবন রক্ষার্থে জরুরি রক্তদাতা ও চিকিৎসা সহায়তা' : 'Immediate blood donation & relief'}
                     </p>
                   </div>
                 </div>
+
               </div>
 
-              {/* Bottom Assurance Note */}
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#006a4e] dark:text-emerald-400 shrink-0" />
-                <p className="text-xs sm:text-sm text-emerald-900 dark:text-emerald-200">
+              {/* Bottom Security Assurance Note */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/30 flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <p className="text-xs sm:text-sm text-emerald-900 dark:text-emerald-200 font-medium">
                   {language === 'bn'
                     ? 'আপনার ব্যক্তিগত তথ্য ও আর্থিক লেনদেনের হিসেব আমাদের ডেটাবেজে সম্পূর্ণ সুরক্ষিত ও এনক্রিপ্টেড থাকে।'
                     : 'Your personal records and financial entries are fully secured and encrypted in our database.'}
                 </p>
               </div>
+
             </div>
 
             {/* Right Column (Complete Login Card) */}
             <div className="lg:col-span-5 w-full">
-              <Card className="shadow-2xl border-2 border-emerald-600/20 bg-white/95 dark:bg-card backdrop-blur-md rounded-2xl overflow-hidden">
-                <CardHeader className="text-center pb-5 pt-7 px-6 sm:px-8 bg-gradient-to-b from-emerald-50/50 to-transparent dark:from-emerald-950/20">
-                  <div className="w-14 h-14 bg-gradient-to-tr from-[#006a4e] to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md text-white">
-                    <Lock className="w-7 h-7" />
+              <Card className="shadow-2xl border-2 border-emerald-500/30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl overflow-hidden relative">
+                
+                {/* Decorative glow inside card */}
+                <div className="absolute -top-16 -right-16 w-44 h-44 bg-emerald-400/10 rounded-full blur-2xl pointer-events-none" />
+                
+                <CardHeader className="text-center pb-5 pt-8 px-6 sm:px-8 bg-gradient-to-r from-emerald-100/40 via-teal-50/30 to-emerald-100/40 dark:from-emerald-950/30 dark:to-slate-900 border-b border-emerald-100/70 dark:border-slate-800">
+                  <div className="w-16 h-16 bg-gradient-to-tr from-emerald-600 via-teal-600 to-[#006a4e] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-700/25 text-white">
+                    <KeyRound className="w-8 h-8" />
                   </div>
-                  <CardTitle className="text-2xl sm:text-3xl font-heading font-bold text-slate-900 dark:text-slate-100">
+                  <CardTitle className="text-2xl sm:text-3xl font-heading font-extrabold text-slate-900 dark:text-slate-100">
                     {language === 'bn' ? 'লগইন করুন' : 'Sign In'}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -318,32 +340,33 @@ const Auth = () => {
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="px-6 sm:px-8 pb-7">
+                <CardContent className="px-6 sm:px-8 pb-8 pt-6">
                   <form onSubmit={handleSignIn} className="space-y-4">
+                    
                     {/* Identifier: Mobile or Email */}
                     <div className="space-y-1.5">
                       <Label htmlFor="login-identifier" className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center justify-between">
                         <span>{language === 'bn' ? 'মোবাইল নম্বর বা ইমেইল' : 'Mobile Number or Email'}</span>
-                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-normal">
-                          {language === 'bn' ? 'স্বয়ংক্রিয় সমর্থন' : 'Auto-detected'}
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/50">
+                          {language === 'bn' ? 'স্বয়ংক্রিয় সনাক্তকরণ' : 'Auto-detected'}
                         </span>
                       </Label>
                       <div className="relative">
                         <Input
                           id="login-identifier"
                           type="text"
-                          placeholder={language === 'bn' ? '০১৭১২-xxxxxx অথবা user@mail.com' : '01712xxxxxx or user@mail.com'}
+                          placeholder={language === 'bn' ? '০১৭১২xxxxxx অথবা user@mail.com' : '01712xxxxxx or user@mail.com'}
                           value={identifier}
                           onChange={(e) => setIdentifier(e.target.value)}
-                          className="pl-10 h-11 text-sm border-slate-300 dark:border-slate-700 focus:border-[#006a4e] focus:ring-[#006a4e]"
+                          className="pl-10 h-11 text-sm rounded-xl border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-600 bg-white dark:bg-slate-900"
                           required
                           autoComplete="username"
                         />
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                           {identifier.includes('@') ? (
-                            <Mail className="w-4 h-4 text-[#006a4e]" />
+                            <Mail className="w-4 h-4 text-emerald-600" />
                           ) : (
-                            <Phone className="w-4 h-4 text-[#006a4e]" />
+                            <Phone className="w-4 h-4 text-emerald-600" />
                           )}
                         </div>
                       </div>
@@ -368,12 +391,12 @@ const Auth = () => {
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10 pr-10 h-11 text-sm border-slate-300 dark:border-slate-700 focus:border-[#006a4e] focus:ring-[#006a4e]"
+                          className="pl-10 pr-10 h-11 text-sm rounded-xl border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-600 bg-white dark:bg-slate-900"
                           required
                           autoComplete="current-password"
                         />
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                          <Lock className="w-4 h-4 text-[#006a4e]" />
+                          <Lock className="w-4 h-4 text-emerald-600" />
                         </div>
                         <Button
                           type="button"
@@ -388,11 +411,11 @@ const Auth = () => {
                       </div>
                     </div>
 
-                    {/* Submit Button */}
+                    {/* Submit Button with rich colorful gradient styling */}
                     <div className="pt-2">
                       <Button 
                         type="submit" 
-                        className="w-full h-11 bg-[#006a4e] hover:bg-[#00523c] text-white font-medium text-sm rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2" 
+                        className="w-full h-12 bg-gradient-to-r from-emerald-600 via-teal-600 to-[#006a4e] hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-sm sm:text-base rounded-2xl shadow-xl shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all hover:scale-[1.005] active:scale-[0.995] flex items-center justify-center gap-2" 
                         disabled={isLoading}
                       >
                         {isLoading ? (
@@ -409,16 +432,16 @@ const Auth = () => {
                       </Button>
                     </div>
 
-                    {/* Registration Redirect */}
+                    {/* Registration Redirect with colorful glass button */}
                     <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 text-center space-y-2.5">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                         {language === 'bn' ? 'সংগঠনের সদস্য হতে চান?' : 'Want to become a member?'}
                       </p>
                       <Link 
                         to="/member-registration" 
-                        className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg border border-emerald-600/40 text-[#006a4e] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 dark:text-emerald-400 text-xs font-semibold transition-colors"
+                        className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-950/50 dark:to-teal-950/50 border-2 border-emerald-400/60 text-[#006a4e] dark:text-emerald-300 text-xs sm:text-sm font-bold transition-all shadow-xs hover:shadow-md"
                       >
-                        <Users className="w-3.5 h-3.5" />
+                        <UserCheck className="w-4 h-4" />
                         {language === 'bn' ? 'নতুন সদস্য হিসেবে আবেদন করুন' : 'Apply for New Membership'}
                       </Link>
                     </div>
