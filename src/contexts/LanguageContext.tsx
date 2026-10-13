@@ -15,7 +15,7 @@ const translations: Record<string, Record<Language, string>> = {
   'nav.members': { bn: 'সদস্যবৃন্দ', en: 'Members' },
   'nav.committee': { bn: 'কমিটি', en: 'Committee' },
   'nav.blood_donors': { bn: 'রক্তদান', en: 'Blood Donors' },
-  'nav.events': { bn: 'ইভেন্ট ও কার্যক্রম', en: 'Events' },
+  'nav.events': { bn: 'কার্যক্রম', en: 'Programs' },
   'nav.news': { bn: 'সংবাদ', en: 'News' },
   'nav.gallery': { bn: 'গ্যালারি', en: 'Gallery' },
   'nav.contact': { bn: 'যোগাযোগ', en: 'Contact' },
@@ -62,7 +62,7 @@ const translations: Record<string, Record<Language, string>> = {
   'committee.member': { bn: 'কার্যনির্বাহী সদস্য', en: 'Executive Member' },
   
   // News
-  'news.title': { bn: 'সর্বশেষ সংবাদ', en: 'Latest News' },
+  'news.title': { bn: 'সাম্প্রতিক সংবাদ', en: 'Recent News' },
   'news.readMore': { bn: 'বিস্তারিত পড়ুন', en: 'Read More' },
   
   // Contact

@@ -3,6 +3,7 @@ import HeroSection from '@/components/home/HeroSection';
 import StatsSection from '@/components/home/StatsSection';
 import AboutPreview from '@/components/home/AboutPreview';
 import CommitteePreview from '@/components/home/CommitteePreview';
+import ProgramsPreview from '@/components/home/ProgramsPreview';
 import NewsPreview from '@/components/home/NewsPreview';
 import CTASection from '@/components/home/CTASection';
 
@@ -13,6 +14,7 @@ const Index = () => {
       <StatsSection />
       <AboutPreview />
       <CommitteePreview />
+      <ProgramsPreview />
       <NewsPreview />
       <CTASection />
     </MainLayout>

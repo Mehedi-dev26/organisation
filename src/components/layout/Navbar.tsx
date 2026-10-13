@@ -33,7 +33,7 @@ const Navbar = () => {
     { href: '/committee', label: 'nav.committee' },
     { href: '/members', label: 'nav.members' },
     { href: '/blood-donors', label: 'nav.blood_donors', isBlood: true },
-    { href: '/events', label: 'nav.events' },
+    { href: '/programs', label: 'nav.events' },
     { href: '/news', label: 'nav.news' },
     { href: '/gallery', label: 'nav.gallery' },
     { href: '/contact', label: 'nav.contact' },

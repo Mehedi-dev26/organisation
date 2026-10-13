@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import Members from "./pages/Members";
 import Committee from "./pages/Committee";
+import Programs from "./pages/Programs";
 import News from "./pages/News";
 import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
@@ -54,6 +55,9 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/members" element={<Members />} />
               <Route path="/committee" element={<Committee />} />
+              <Route path="/programs" element={<Programs />} />
+              <Route path="/events" element={<Programs />} />
+              <Route path="/activities" element={<Programs />} />
               <Route path="/news" element={<News />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/contact" element={<Contact />} />
