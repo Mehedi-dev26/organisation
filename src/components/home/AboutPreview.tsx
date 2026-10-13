@@ -57,23 +57,17 @@ const AboutPreview = () => {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
         {/* Centered Section Header (Matching Executive Committee style & reference alignment) */}
-        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-bold border border-emerald-200 dark:border-emerald-800 mb-3 shadow-xs">
+        <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-bold border border-emerald-200 dark:border-emerald-800 mb-3 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-            <span>{language === 'bn' ? 'আমাদের পরিবার' : 'Our Family'}</span>
+            <span>{language === 'bn' ? 'সাংগঠনিক পরিচিতি' : 'Organizational Profile'}</span>
           </div>
           
           <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-foreground tracking-tight">
-            {language === 'bn' ? 'আমাদের সম্পর্কে — সাংগঠনিক পরিচয়' : 'About Us — Organizational Profile'}
+            {language === 'bn' ? 'আমাদের সম্পর্কে ও সাংগঠনিক পরিচয়' : 'About Us & Organizational Profile'}
           </h2>
-          
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <div className="w-12 h-1 bg-emerald-600 rounded-full" />
-            <div className="w-3 h-1 bg-amber-500 rounded-full" />
-            <div className="w-12 h-1 bg-emerald-600 rounded-full" />
-          </div>
 
-          <p className="mt-4 text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-3.5 text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
             {language === 'bn' 
               ? 'সমাজের পিছিয়ে পড়া অসহায় মানুষের কল্যাণে, জরুরি রক্তদান ও সামাজিক উন্নয়নে নিবেদিত একটি স্বেচ্ছাসেবী পরিবার।'
               : 'A dedicated volunteer family committed to the welfare of underprivileged people, emergency blood donation, and social development.'}
