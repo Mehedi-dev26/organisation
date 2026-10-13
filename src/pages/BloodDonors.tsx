@@ -39,6 +39,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
+import { getDonationEligibility, formatBengaliDate } from '@/lib/bloodUtils';
+
 export interface BloodDonor {
   id: string;
   full_name: string;
@@ -59,66 +61,6 @@ export interface BloodDonor {
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
-// Helper to calculate 90 days / 3-month eligibility
-export function getDonationEligibility(lastDonatedDateStr: string | null) {
-  if (!lastDonatedDateStr) {
-    return {
-      isReady: true,
-      remainingDays: 0,
-      labelBn: 'প্রস্তুত',
-      labelEn: 'Ready',
-    };
-  }
-
-  const lastDate = new Date(lastDonatedDateStr);
-  if (isNaN(lastDate.getTime())) {
-    return {
-      isReady: true,
-      remainingDays: 0,
-      labelBn: 'প্রস্তুত',
-      labelEn: 'Ready',
-    };
-  }
-
-  const now = new Date();
-  const diffTime = now.getTime() - lastDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const cooldownDays = 90; // 3 months
-
-  if (diffDays >= cooldownDays) {
-    return {
-      isReady: true,
-      remainingDays: 0,
-      labelBn: 'প্রস্তুত',
-      labelEn: 'Ready',
-    };
-  } else {
-    const remaining = cooldownDays - diffDays;
-    return {
-      isReady: false,
-      remainingDays: remaining,
-      labelBn: `বিশ্রামে (${remaining} দিন বাকি)`,
-      labelEn: `Resting (${remaining} days left)`,
-    };
-  }
-}
-
-// Format date in Bengali
-function formatBengaliDate(dateStr: string | null): string {
-  if (!dateStr) return 'তথ্য নেই';
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return 'তথ্য নেই';
-    const day = d.getDate();
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
-  } catch {
-    return 'তথ্য নেই';
-  }
-}
 
 const BloodDonors: React.FC = () => {
   const { language } = useLanguage();

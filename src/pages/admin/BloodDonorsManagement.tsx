@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { bangladeshGeoData } from '@/data/bangladeshGeoData';
-import { getDonationEligibility } from '@/pages/BloodDonors';
+import { getDonationEligibility } from '@/lib/bloodUtils';
 import {
   Droplet,
   Search,
