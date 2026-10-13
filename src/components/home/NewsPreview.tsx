@@ -34,7 +34,7 @@ const NewsPreview = () => {
 
   return (
     <section className="py-16 md:py-24 bg-background">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <div className="text-center mb-12 md:mb-16">
           <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             {t('news.title')}

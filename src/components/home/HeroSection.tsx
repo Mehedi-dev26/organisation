@@ -164,69 +164,41 @@ const HeroSection = () => {
               }}
             />
 
-            {/* Premium Multi-layer Dark & Emerald Gradient Overlay for High Contrast Text */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-900/50" />
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-slate-950/80 to-transparent" />
+            {/* Clean clear background - image fully visible as requested */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
             {/* Slide Text Content */}
-            <div className="container mx-auto px-4 h-full flex items-center relative z-20">
-              <div className="max-w-2xl lg:max-w-3xl text-left py-12">
+            <div className="container mx-auto px-4 max-w-7xl h-full flex items-center relative z-20">
+              <div className="max-w-xl md:max-w-2xl text-left py-10 bg-slate-950/40 backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-white/20 shadow-2xl">
                 {/* Floating Tag / Badge */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 text-xs sm:text-sm font-semibold mb-4 sm:mb-6 animate-fade-in shadow-sm">
-                  <Sparkles className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs sm:text-sm font-bold mb-3 sm:mb-4 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>{language === 'bn' ? slide.tagBn : slide.tagEn}</span>
                 </div>
 
                 {/* Main Heading */}
-                <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.15] mb-4 sm:mb-6 tracking-tight drop-shadow-md">
+                <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 sm:mb-4 tracking-tight drop-shadow-lg">
                   {language === 'bn' ? slide.titleBn : slide.titleEn}
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-sm sm:text-base md:text-lg text-slate-200/90 max-w-xl leading-relaxed mb-6 sm:mb-8 font-normal drop-shadow">
+                <p className="text-xs sm:text-sm md:text-base text-slate-100 max-w-lg leading-relaxed mb-5 sm:mb-6 font-medium drop-shadow">
                   {language === 'bn' ? slide.subtitleBn : slide.subtitleEn}
                 </p>
 
-                {/* Call to Actions */}
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                {/* Single prominent button */}
+                <div className="flex items-center gap-3">
                   <Button 
                     size="lg" 
-                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-lg shadow-emerald-700/30 border border-emerald-400/30 text-sm sm:text-base px-5 sm:px-6 h-11 sm:h-12"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-900/40 text-sm sm:text-base px-6 h-11 sm:h-12 rounded-xl transition-all hover:scale-105"
                     asChild
                   >
                     <Link to={slide.primaryLink}>
                       <Users className="w-4 h-4 mr-2" />
                       <span>{language === 'bn' ? slide.primaryTextBn : slide.primaryTextEn}</span>
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
-
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm font-semibold text-sm sm:text-base px-5 sm:px-6 h-11 sm:h-12"
-                    asChild
-                  >
-                    <Link to={slide.secondaryLink}>
-                      <span>{language === 'bn' ? slide.secondaryTextBn : slide.secondaryTextEn}</span>
-                    </Link>
-                  </Button>
-
-                  {/* 24/7 Hotline Badge on Hero */}
-                  <a
-                    href="tel:+8801700000000"
-                    className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-white text-xs sm:text-sm font-bold transition-all"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                      <PhoneCall className="w-4 h-4 animate-pulse" />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-emerald-300 font-medium leading-none">
-                        {language === 'bn' ? 'জরুরি কল' : 'Direct Call'}
-                      </span>
-                      <span className="text-white">+880 1700-000000</span>
-                    </div>
-                  </a>
                 </div>
               </div>
             </div>

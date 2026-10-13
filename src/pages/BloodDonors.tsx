@@ -15,6 +15,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Hourglass,
   UserCheck,
   PlusCircle,
   Filter,
@@ -40,6 +41,18 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 import { getDonationEligibility, formatBengaliDate } from '@/lib/bloodUtils';
+
+// Hand holding blood droplet SVG icon (Exact design requested from reference site)
+const HandHoldingDropletIcon: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+  <svg
+    viewBox="0 0 576 512"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M320.3 358.3c15.3-7.7 26.6-21.7 30.6-38.3l10.1-41.9c5.6-23.2-8.6-46.7-31.8-52.3s-46.7 8.6-52.3 31.8l-1.9 7.8c-12.7-7-27.2-11.4-42.8-12.4v-4.1c0-44.2-35.8-80-80-80s-80 35.8-80 80v4.1c-30.8 2-57.8 17.5-73.4 41.5-13.6 20.9-9.1 48.7 10.6 64.3 19.6 15.6 47.9 12.3 63.5-7.3 5.4-8.3 14.7-13.6 24.7-14.3v60.9c0 4.4 3.6 8 8 8h16c4.4 0 8-3.6 8-8v-60.9c10 .7 19.3 6 24.7 14.3 11 16.9 31.8 24.5 50.6 18.5zM232 208c0-30.9 25.1-56 56-56s56 25.1 56 56c0 14.8-5.8 28.3-15.3 38.2-10.4 10.8-24.8 17.8-40.7 17.8s-30.3-7-40.7-17.8c-9.5-9.9-15.3-23.4-15.3-38.2zM576 240c0-26.5-21.5-48-48-48h-41.6c-17 0-33.3 6.7-45.3 18.7l-47.5 47.5-62.1-15.5c-4.4-1.1-9-1.7-13.5-1.7h-72.3c27.1 14.7 46.7 41.2 52.3 72.8l3.1 17.2h81.4l58.9 44.2c6.2 4.7 13.8 7.2 21.6 7.2h67c26.5 0 48-21.5 48-48 0-7.3-1.6-14.2-4.6-20.4 15.5-7.8 26.6-23.7 26.6-42.3 0-6.1-1.2-11.9-3.3-17.3 12.8-7.9 21.3-22.1 21.3-38.3zM16 320c-8.8 0-16 7.2-16 16v96c0 8.8 7.2 16 16 16h64c8.8 0 16-7.2 16-16v-96c0-8.8-7.2-16-16-16H16z" />
+  </svg>
+);
 
 export interface BloodDonor {
   id: string;
@@ -277,15 +290,14 @@ const BloodDonors: React.FC = () => {
           background: 'linear-gradient(135deg, #8a0303 0%, #c0392b 100%)',
         }}
       >
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-        <div className="container mx-auto px-4 text-center relative z-10 max-w-4xl">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-md mb-3 shadow-inner">
-            <Droplet className="w-8 h-8 text-amber-300 fill-amber-300 animate-pulse" />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 max-w-4xl">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-md mb-3 shadow-inner border border-white/20">
+            <HandHoldingDropletIcon className="w-9 h-9 text-amber-300" />
           </div>
-          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight mb-2">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tight mb-2">
             {language === 'bn' ? 'জরুরি রক্তদাতা ডাটাবেস' : 'Emergency Blood Donor Database'}
           </h1>
-          <p className="text-white/80 text-sm md:text-base mb-6 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-white/90 text-sm md:text-base mb-6 max-w-2xl mx-auto leading-relaxed font-medium">
             {language === 'bn'
               ? 'মুমূর্ষু রোগীর প্রয়োজনে স্বেচ্ছাসেবী রক্তদাতাদের সরাসরি তালিকা ও সার্বক্ষণিক সহায়তা'
               : 'Direct verified directory of voluntary blood donors & 24/7 emergency support for patients.'}
@@ -310,7 +322,7 @@ const BloodDonors: React.FC = () => {
       </section>
 
       {/* Main Content Area */}
-      <main className="container mx-auto px-4 py-8 flex-1 max-w-7xl">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 max-w-7xl">
         {/* Search & Filter Card (Top border red accent matching reference) */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-red-600 p-4 md:p-6 mb-8 transition-all">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -482,29 +494,29 @@ const BloodDonors: React.FC = () => {
 
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-100/80 text-xs uppercase text-slate-500 font-semibold border-b border-slate-200">
+            <table className="w-full text-left text-sm text-slate-800">
+              <thead className="bg-slate-100 text-xs uppercase text-slate-700 font-bold border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3.5 w-12 text-center">#</th>
-                  <th className="px-4 py-3.5">
+                  <th className="px-4 py-3.5 w-12 text-center font-bold">#</th>
+                  <th className="px-4 py-3.5 font-bold">
                     {language === 'bn' ? 'রক্তদাতার নাম ও পরিচিতি' : 'Donor Name & Info'}
                   </th>
-                  <th className="px-4 py-3.5 text-center">
+                  <th className="px-4 py-3.5 text-center font-bold">
                     {language === 'bn' ? 'রক্তের গ্রুপ' : 'Group'}
                   </th>
-                  <th className="px-4 py-3.5">
+                  <th className="px-4 py-3.5 font-bold">
                     {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone'}
                   </th>
-                  <th className="px-4 py-3.5">
+                  <th className="px-4 py-3.5 font-bold">
                     {language === 'bn' ? 'ঠিকানা' : 'Address'}
                   </th>
-                  <th className="px-4 py-3.5">
+                  <th className="px-4 py-3.5 font-bold">
                     {language === 'bn' ? 'সর্বশেষ রক্তদান' : 'Last Donation'}
                   </th>
-                  <th className="px-4 py-3.5 text-center">
+                  <th className="px-4 py-3.5 text-center font-bold">
                     {language === 'bn' ? 'স্ট্যাটাস (৩ মাস)' : 'Status (3 Months)'}
                   </th>
-                  <th className="px-4 py-3.5 text-right">
+                  <th className="px-4 py-3.5 text-right font-bold">
                     {language === 'bn' ? 'যোগাযোগ' : 'Action'}
                   </th>
                 </tr>
@@ -514,17 +526,17 @@ const BloodDonors: React.FC = () => {
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-slate-400">
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <Droplet className="w-8 h-8 text-red-400 animate-bounce" />
-                        <span>{language === 'bn' ? 'ডাটা লোড হচ্ছে...' : 'Loading donors...'}</span>
+                        <Droplet className="w-8 h-8 text-red-500 animate-bounce" />
+                        <span className="font-bold text-slate-600">{language === 'bn' ? 'ডাটা লোড হচ্ছে...' : 'Loading donors...'}</span>
                       </div>
                     </td>
                   </tr>
                 ) : filteredDonors.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-500">
+                    <td colSpan={8} className="py-12 text-center text-slate-600">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Droplet className="w-10 h-10 text-slate-300" />
-                        <p className="font-semibold text-slate-600">
+                        <p className="font-bold text-slate-700">
                           {language === 'bn'
                             ? 'কোনো রক্তদাতা পাওয়া যায়নি'
                             : 'No blood donors found for this criteria'}
@@ -533,7 +545,7 @@ const BloodDonors: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={resetFilters}
-                          className="mt-2 text-xs"
+                          className="mt-2 text-xs font-bold"
                         >
                           {language === 'bn' ? 'সকল রক্তদাতা দেখুন' : 'View all donors'}
                         </Button>
@@ -548,20 +560,20 @@ const BloodDonors: React.FC = () => {
                         key={donor.id}
                         className="hover:bg-red-50/20 transition-colors group"
                       >
-                        <td className="px-4 py-4 text-center font-semibold text-slate-400 text-xs">
+                        <td className="px-4 py-4 text-center font-bold text-slate-500 text-xs">
                           {idx + 1}
                         </td>
                         <td className="px-4 py-4">
-                          <div className="font-bold text-slate-900 group-hover:text-red-700 transition-colors">
+                          <div className="font-extrabold text-slate-900 group-hover:text-red-700 transition-colors text-sm">
                             {donor.full_name}
                           </div>
                           {donor.member_id ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold px-2 py-0.5 rounded-md mt-1">
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-2 py-0.5 rounded-md mt-1">
                               <ShieldCheck className="w-3 h-3 text-emerald-600" />
                               {language === 'bn' ? `সদস্য আইডি: ${donor.member_id}` : `Member ID: ${donor.member_id}`}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 mt-0.5">
+                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
                               {language === 'bn' ? 'স্বেচ্ছাসেবী রক্তদাতা' : 'Volunteer Donor'}
                             </span>
                           )}
@@ -572,24 +584,24 @@ const BloodDonors: React.FC = () => {
                             {donor.blood_group}
                           </span>
                         </td>
-                        <td className="px-4 py-4 font-mono font-medium">
+                        <td className="px-4 py-4 font-mono font-bold">
                           {donor.is_public_details ? (
                             <a
                               href={`tel:${donor.phone}`}
-                              className="text-emerald-700 hover:text-emerald-800 hover:underline inline-flex items-center gap-1"
+                              className="text-slate-900 hover:text-emerald-700 hover:underline inline-flex items-center gap-1 font-bold"
                             >
                               <Phone className="w-3.5 h-3.5 text-emerald-600" />
                               {donor.phone}
                             </a>
                           ) : (
-                            <span className="text-slate-400 text-xs italic">
+                            <span className="text-slate-400 text-xs italic font-medium">
                               {language === 'bn' ? 'গোপন রাখা হয়েছে' : 'Private'}
                             </span>
                           )}
                         </td>
                         <td className="px-4 py-4">
-                          <div className="text-xs text-slate-700 flex items-start gap-1 max-w-xs">
-                            <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
+                          <div className="text-xs font-semibold text-slate-800 flex items-start gap-1 max-w-xs">
+                            <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
                             <span>
                               {donor.address ? `${donor.address}, ` : ''}
                               {donor.upazila ? `${donor.upazila}, ` : ''}
@@ -597,21 +609,21 @@ const BloodDonors: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-xs font-medium text-slate-600">
+                        <td className="px-4 py-4 text-xs font-bold text-slate-800">
                           {formatBengaliDate(donor.last_donated)}
                         </td>
                         <td className="px-4 py-4 text-center">
                           {eligibility.isReady ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full">
+                            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full shadow-2xs">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           ) : (
                             <span
-                              className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1.5 rounded-full"
+                              className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-1.5 rounded-full shadow-2xs"
                               title={`৩ মাস পূর্ণ হতে আর ${eligibility.remainingDays} দিন বাকি`}
                             >
-                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              <Hourglass className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           )}
@@ -619,10 +631,10 @@ const BloodDonors: React.FC = () => {
                         <td className="px-4 py-4 text-right">
                           <a
                             href={`tel:${donor.phone}`}
-                            className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
+                            className="inline-flex items-center gap-1.5 bg-white hover:bg-emerald-600 text-emerald-700 hover:text-white border-2 border-emerald-600 font-bold text-xs px-3.5 py-1.5 rounded-lg transition-all shadow-xs group/call"
                           >
-                            <PhoneCall className="w-3.5 h-3.5" />
-                            {language === 'bn' ? 'কল করুন' : 'Call'}
+                            <PhoneCall className="w-3.5 h-3.5 text-emerald-600 group-hover/call:text-white transition-colors" />
+                            <span>{language === 'bn' ? 'কল করুন' : 'Call'}</span>
                           </a>
                         </td>
                       </tr>
@@ -637,15 +649,15 @@ const BloodDonors: React.FC = () => {
           <div className="md:hidden divide-y divide-slate-100">
             {isLoading ? (
               <div className="p-8 text-center text-slate-400">
-                <Droplet className="w-8 h-8 text-red-400 mx-auto animate-bounce mb-2" />
-                <p>{language === 'bn' ? 'ডাটা লোড হচ্ছে...' : 'Loading donors...'}</p>
+                <Droplet className="w-8 h-8 text-red-500 mx-auto animate-bounce mb-2" />
+                <p className="font-bold text-slate-600">{language === 'bn' ? 'ডাটা লোড হচ্ছে...' : 'Loading donors...'}</p>
               </div>
             ) : filteredDonors.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">
-                <p className="font-semibold mb-2">
+              <div className="p-8 text-center text-slate-600">
+                <p className="font-bold text-slate-700 mb-2">
                   {language === 'bn' ? 'কোনো রক্তদাতা পাওয়া যায়নি' : 'No donors found'}
                 </p>
-                <Button variant="outline" size="sm" onClick={resetFilters}>
+                <Button variant="outline" size="sm" onClick={resetFilters} className="font-bold">
                   {language === 'bn' ? 'সকল রক্তদাতা দেখুন' : 'View all'}
                 </Button>
               </div>
@@ -656,11 +668,11 @@ const BloodDonors: React.FC = () => {
                   <div key={donor.id} className="p-4 bg-white hover:bg-slate-50">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
-                        <div className="font-bold text-slate-900 text-base">
+                        <div className="font-extrabold text-slate-900 text-base">
                           {donor.full_name}
                         </div>
                         {donor.member_id && (
-                          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold px-2 py-0.5 rounded-md mt-0.5">
+                          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-2 py-0.5 rounded-md mt-0.5">
                             <ShieldCheck className="w-3 h-3 text-emerald-600" />
                             {language === 'bn' ? `আইডি: ${donor.member_id}` : `ID: ${donor.member_id}`}
                           </span>
@@ -671,9 +683,9 @@ const BloodDonors: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-slate-600 mb-3">
+                    <div className="space-y-1.5 text-xs text-slate-800 mb-3 font-semibold">
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
                         <span>
                           {donor.address ? `${donor.address}, ` : ''}
                           {donor.upazila ? `${donor.upazila}, ` : ''}
@@ -681,10 +693,10 @@ const BloodDonors: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                         <span>
                           {language === 'bn' ? 'সর্বশেষ রক্তদান: ' : 'Last Donated: '}
-                          <strong className="text-slate-800">
+                          <strong className="text-slate-900 font-bold">
                             {formatBengaliDate(donor.last_donated)}
                           </strong>
                         </span>
@@ -692,13 +704,13 @@ const BloodDonors: React.FC = () => {
                       <div className="pt-1 flex items-center justify-between">
                         <div>
                           {eligibility.isReady ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-xs font-bold px-2.5 py-1 rounded-full">
-                              <Clock className="w-3 h-3 text-amber-600" />
+                            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                              <Hourglass className="w-3.5 h-3.5 text-amber-600" />
                               {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
                             </span>
                           )}
@@ -709,14 +721,14 @@ const BloodDonors: React.FC = () => {
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                       <a
                         href={`tel:${donor.phone}`}
-                        className="text-emerald-700 font-mono font-bold text-sm inline-flex items-center gap-1"
+                        className="text-slate-900 font-mono font-bold text-sm inline-flex items-center gap-1"
                       >
                         <Phone className="w-3.5 h-3.5 text-emerald-600" />
                         {donor.phone}
                       </a>
                       <a
                         href={`tel:${donor.phone}`}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-lg inline-flex items-center gap-1.5 shadow-sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-lg inline-flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
                       >
                         <PhoneCall className="w-3.5 h-3.5" />
                         {language === 'bn' ? 'কল করুন' : 'Call'}

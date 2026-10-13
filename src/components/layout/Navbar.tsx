@@ -44,18 +44,18 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full shadow-md">
-      {/* 1. Top Contact & Helpline Bar (Inspired by Helpline Hello Naogaon) */}
-      <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-xs py-1.5 px-4 border-b border-emerald-600/40">
-        <div className="container mx-auto flex flex-wrap items-center justify-between gap-2">
+    <>
+      {/* 1. Top Contact & Helpline Bar (Scrolls away naturally on scroll) */}
+      <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-xs py-1 px-4 border-b border-emerald-600/40">
+        <div className="container mx-auto px-4 max-w-7xl flex flex-wrap items-center justify-between gap-2">
           {/* Left contact info */}
           <div className="flex items-center flex-wrap gap-4 md:gap-6">
             <a 
-              href="tel:+8801700000000" 
+              href="tel:01916314315" 
               className="inline-flex items-center gap-1.5 font-medium hover:text-emerald-200 transition-colors"
             >
               <Phone className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
-              <span>{language === 'bn' ? 'জরুরি হেল্পলাইন:' : 'Helpline:'} +880 1700-000000</span>
+              <span>{language === 'bn' ? 'জরুরি হেল্পলাইন:' : 'Helpline:'} 01916314315</span>
             </a>
             
             <a 
@@ -113,28 +113,28 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* 2. Main Navigation Bar */}
-      <nav className="bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16 md:h-20">
+      {/* 2. Main Navigation Bar (Slimmer and Sticky on top) */}
+      <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-card/95 backdrop-blur-md border-b border-border shadow-sm">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="flex items-center justify-between h-13 md:h-15 py-1.5 md:py-2">
             {/* Logo & Brand Identity */}
-            <Link to="/" className="flex items-center gap-2.5 md:gap-3.5 group">
-              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-tr from-emerald-600 via-primary to-teal-500 p-0.5 shadow-md group-hover:scale-105 transition-transform duration-300">
+            <Link to="/" className="flex items-center gap-2 md:gap-3 group">
+              <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-emerald-600 via-primary to-teal-500 p-0.5 shadow-sm group-hover:scale-105 transition-transform duration-300">
                 <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
                   <img 
                     src={logo} 
                     alt="সময়ের বাতিঘর" 
-                    className="w-8 h-8 md:w-11 md:h-11 object-contain"
+                    className="w-7 h-7 md:w-9 md:h-9 object-contain"
                   />
                 </div>
               </div>
               <div className="block">
-                <div className="flex items-center gap-1.5">
-                  <h1 className="font-heading text-base sm:text-lg md:text-xl font-bold text-foreground leading-tight tracking-tight">
+                <div className="flex items-center gap-1">
+                  <h1 className="font-heading text-sm sm:text-base md:text-lg font-bold text-foreground leading-tight tracking-tight">
                     {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}
                   </h1>
                 </div>
-                <p className="text-[10px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <p className="text-[9px] sm:text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                   {language === 'bn' ? 'একতাই শক্তি, সেবাই ধর্ম' : 'Unity is Strength, Service is Religion'}
                 </p>
               </div>
@@ -271,18 +271,18 @@ const Navbar = () => {
                 </Button>
 
                 <a 
-                  href="tel:+8801700000000"
+                  href="tel:01916314315"
                   className="mt-1 w-full flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 py-2.5 rounded-lg text-sm font-bold"
                 >
                   <Phone className="w-4 h-4 text-emerald-600" />
-                  <span>{language === 'bn' ? 'জরুরি কল: +880 1700-000000' : 'Call Helpline: +880 1700-000000'}</span>
+                  <span>{language === 'bn' ? 'জরুরি কল: 01916314315' : 'Call Helpline: 01916314315'}</span>
                 </a>
               </div>
             </div>
           </div>
         )}
-      </nav>
-    </header>
+      </header>
+    </>
   );
 };
 

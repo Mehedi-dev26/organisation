@@ -55,7 +55,31 @@ const AboutPreview = () => {
       {/* Decorative background glow */}
       <div className="absolute top-1/2 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
+        {/* Centered Section Header (Matching Executive Committee style & reference alignment) */}
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-bold border border-emerald-200 dark:border-emerald-800 mb-3 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+            <span>{language === 'bn' ? 'আমাদের পরিবার' : 'Our Family'}</span>
+          </div>
+          
+          <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-foreground tracking-tight">
+            {language === 'bn' ? 'আমাদের সম্পর্কে — সাংগঠনিক পরিচয়' : 'About Us — Organizational Profile'}
+          </h2>
+          
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <div className="w-12 h-1 bg-emerald-600 rounded-full" />
+            <div className="w-3 h-1 bg-amber-500 rounded-full" />
+            <div className="w-12 h-1 bg-emerald-600 rounded-full" />
+          </div>
+
+          <p className="mt-4 text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+            {language === 'bn' 
+              ? 'সমাজের পিছিয়ে পড়া অসহায় মানুষের কল্যাণে, জরুরি রক্তদান ও সামাজিক উন্নয়নে নিবেদিত একটি স্বেচ্ছাসেবী পরিবার।'
+              : 'A dedicated volunteer family committed to the welfare of underprivileged people, emergency blood donation, and social development.'}
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
           
           {/* Left Column: Multi-Image Mosaic / Collage (Inspired by Helpline Hello Naogaon style) */}
@@ -117,18 +141,12 @@ const AboutPreview = () => {
 
           {/* Right Column: About Us Content & Pillars */}
           <div className="lg:col-span-6 space-y-6">
-            {/* Section Tag */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-bold border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{language === 'bn' ? 'আমাদের সম্পর্কে | সংগঠন পরিচিতি' : 'About Us | Our Story'}</span>
-            </div>
-
-            {/* Heading */}
-            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-[1.2]">
+            {/* Mission Statement Sub-heading */}
+            <h3 className="font-heading text-xl sm:text-2xl md:text-3xl font-extrabold text-foreground tracking-tight leading-[1.25]">
               {language === 'bn' 
-                ? 'একতাই শক্তি, সেবাই ধর্ম — মানবতার বাতিঘর' 
+                ? 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় সর্বদা অঙ্গীকারবদ্ধ' 
                 : 'Unity is Strength, Service is Religion'}
-            </h2>
+            </h3>
 
             {/* Paragraph Description */}
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
