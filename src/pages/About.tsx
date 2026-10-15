@@ -1,100 +1,433 @@
+import React from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Target, Eye, Heart, Award, Users, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { 
+  Eye, 
+  Target, 
+  Heart, 
+  Users, 
+  ShieldCheck, 
+  Clock, 
+  Sprout, 
+  ArrowRight 
+} from 'lucide-react';
+
+// Use the local assets copied from user reference
+import historyPhoto from '@/assets/about/about-history.jpg';
+import heroBgPhoto from '@/assets/about/about-hero-bg.png';
 
 const About = () => {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
 
-  const values = [
-    { icon: Heart, title: language === 'bn' ? 'সেবা' : 'Service', desc: language === 'bn' ? 'নিঃস্বার্থভাবে সমাজের সেবা করা' : 'Serving society selflessly' },
-    { icon: Users, title: language === 'bn' ? 'ঐক্য' : 'Unity', desc: language === 'bn' ? 'একতাবদ্ধ হয়ে কাজ করা' : 'Working together in unity' },
-    { icon: Award, title: language === 'bn' ? 'সততা' : 'Integrity', desc: language === 'bn' ? 'সৎ ও নৈতিক থাকা' : 'Staying honest and ethical' },
-    { icon: Clock, title: language === 'bn' ? 'নিষ্ঠা' : 'Dedication', desc: language === 'bn' ? 'লক্ষ্যে অবিচল থাকা' : 'Staying committed to goals' },
+  const valuesData = [
+    {
+      id: 'service',
+      titleBn: 'সেবা',
+      titleEn: 'Service',
+      descBn: 'বঞ্চিত মানুষের পাশে থাকা আমাদের অঙ্গীকার।',
+      descEn: 'Commitment to stand by underprivileged people.',
+      icon: Heart,
+      iconBg: 'bg-[#107A48]',
+      color: '#107A48',
+    },
+    {
+      id: 'unity',
+      titleBn: 'ঐক্য',
+      titleEn: 'Unity',
+      descBn: 'একতাবদ্ধ হয়ে কাজ করা আমাদের শক্তি।',
+      descEn: 'Working unitedly is our greatest strength.',
+      icon: Users,
+      iconBg: 'bg-[#2563EB]',
+      color: '#2563EB',
+    },
+    {
+      id: 'integrity',
+      titleBn: 'সততা',
+      titleEn: 'Integrity',
+      descBn: 'সততা ও নীতিতে অটল থাকা।',
+      descEn: 'Uncompromising honesty and ethical values.',
+      icon: ShieldCheck,
+      iconBg: 'bg-[#D97706]',
+      color: '#D97706',
+    },
+    {
+      id: 'dedication',
+      titleBn: 'নিষ্ঠা',
+      titleEn: 'Dedication',
+      descBn: 'মানুষের আস্থার যোগ্য হওয়া।',
+      descEn: 'Earning and maintaining people’s trust.',
+      icon: Clock,
+      iconBg: 'bg-[#8A3FD1]',
+      color: '#8A3FD1',
+    },
+    {
+      id: 'sustainability',
+      titleBn: 'টেকসই উন্নয়ন',
+      titleEn: 'Sustainability',
+      descBn: 'দীর্ঘমেয়াদি পরিবর্তনের জন্য কাজ করা।',
+      descEn: 'Working for lasting positive change.',
+      icon: Sprout,
+      iconBg: 'bg-[#0D9488]',
+      color: '#0D9488',
+    },
   ];
 
   return (
     <MainLayout>
-      {/* Hero */}
-      <section className="py-20 md:py-28 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-            {t('about.title')}
+      {/* =========================================================================
+          SECTION A: HERO SECTION WITH PANORAMA BG, LIGHTHOUSE & FLOATING LEAVES
+          ========================================================================= */}
+      <section 
+        className="relative pt-16 pb-24 md:pt-20 md:pb-28 text-center overflow-hidden"
+        style={{
+          background: `linear-gradient(180deg, rgba(8, 64, 36, 0.88) 0%, rgba(11, 107, 58, 0.82) 50%, rgba(7, 51, 29, 0.94) 100%), url(${heroBgPhoto}) center/cover no-repeat`,
+        }}
+      >
+        {/* Floating Green Leaves (Left) */}
+        <div className="absolute top-8 left-4 md:left-12 w-12 sm:w-16 pointer-events-none opacity-80 select-none">
+          <svg viewBox="0 0 48 48" fill="none" className="w-full h-full text-emerald-300">
+            <path d="M10 38C10 38 12 18 38 10C38 10 38 30 18 38C15 39 10 38 10 38Z" fill="currentColor" opacity="0.85" />
+            <path d="M10 38C20 28 30 20 38 10" stroke="#064E3B" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+
+        {/* Floating Green Leaves (Top Right) */}
+        <div className="absolute top-6 right-8 md:right-24 w-10 sm:w-14 pointer-events-none opacity-70 select-none">
+          <svg viewBox="0 0 48 48" fill="none" className="w-full h-full text-lime-400 rotate-45">
+            <path d="M10 38C10 38 12 18 38 10C38 10 38 30 18 38C15 39 10 38 10 38Z" fill="currentColor" opacity="0.9" />
+          </svg>
+        </div>
+
+        {/* Luminous Lighthouse Line-Art Illustration (Right Side) */}
+        <div className="hidden md:block absolute right-6 lg:right-16 top-1/2 -translate-y-1/2 pointer-events-none z-10 select-none">
+          <div className="relative w-28 sm:w-32 lg:w-36 h-36 sm:h-40 flex items-center justify-center">
+            <svg 
+              viewBox="0 0 100 130" 
+              fill="none" 
+              className="w-full h-full text-white/90 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+            >
+              {/* Radiating Light Rays */}
+              <line x1="50" y1="32" x2="10" y2="10" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
+              <line x1="50" y1="32" x2="0" y2="32" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
+              <line x1="50" y1="32" x2="10" y2="55" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
+              <line x1="50" y1="32" x2="90" y2="10" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
+              <line x1="50" y1="32" x2="100" y2="32" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
+              <line x1="50" y1="32" x2="90" y2="55" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
+
+              {/* Lighthouse Dome / Top Lantern */}
+              <path d="M42 20 Q50 10 58 20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              <rect x="40" y="20" width="20" height="15" rx="2" fill="rgba(253, 224, 71, 0.4)" stroke="white" strokeWidth="2" />
+              <line x1="50" y1="20" x2="50" y2="35" stroke="white" strokeWidth="1.5" />
+
+              {/* Balcony Railing */}
+              <line x1="36" y1="35" x2="64" y2="35" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+
+              {/* Tapered Tower Body */}
+              <path d="M41 35 L35 95 H65 L59 35 Z" fill="rgba(255, 255, 255, 0.15)" stroke="white" strokeWidth="2.5" />
+              
+              {/* Horizontal Stripes */}
+              <line x1="38" y1="55" x2="62" y2="55" stroke="white" strokeWidth="2" />
+              <line x1="36.5" y1="75" x2="63.5" y2="75" stroke="white" strokeWidth="2" />
+
+              {/* Central Windows */}
+              <rect x="47" y="44" width="6" height="7" rx="1.5" fill="white" />
+              <rect x="47" y="64" width="6" height="7" rx="1.5" fill="white" />
+
+              {/* Foundation / Base */}
+              <rect x="30" y="95" width="40" height="15" rx="3" fill="rgba(255, 255, 255, 0.25)" stroke="white" strokeWidth="2.5" />
+              <line x1="24" y1="110" x2="76" y2="110" stroke="white" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl relative z-10">
+          {/* Top Tagline Badge */}
+          <div className="inline-flex items-center gap-2 text-white/95 text-xs sm:text-sm font-semibold tracking-wide mb-3 sm:mb-4 drop-shadow">
+            <span>— মানুষের পাশে,</span>
+            <span className="text-[#FACC15]">🌾</span>
+            <span>সমাজের সাথে —</span>
+          </div>
+
+          {/* Main Title: আমাদের (white) সম্পর্কে (golden-yellow with brush stroke) */}
+          <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight mb-4 drop-shadow-md">
+            <span className="text-white">
+              {language === 'bn' ? 'আমাদের ' : 'About '}
+            </span>
+            <span className="text-[#FACC15] relative inline-block">
+              {language === 'bn' ? 'সম্পর্কে' : 'Us'}
+              {/* Yellow-Green Hand-Painted Brush Stroke Underline */}
+              <svg 
+                className="absolute -bottom-2 md:-bottom-2.5 left-0 w-full h-3 md:h-3.5 text-[#FACC15] pointer-events-none" 
+                viewBox="0 0 240 14" 
+                fill="none" 
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <path d="M3 10C52 4 172 3 237 8C194 12.2 88 12 3 10Z" fill="currentColor" opacity="0.95" />
+              </svg>
+            </span>
           </h1>
-          <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto">
-            {language === 'bn' 
-              ? 'আমাদের সংগঠনের ইতিহাস, লক্ষ্য এবং মূল্যবোধ সম্পর্কে জানুন'
-              : 'Learn about our organization\'s history, goals, and values'}
+
+          {/* Supporting Subtitle */}
+          <p className="text-white/90 text-sm sm:text-base md:text-lg max-w-2xl mx-auto font-normal leading-relaxed drop-shadow">
+            {language === 'bn'
+              ? 'আমাদের সংগঠনের ইতিহাস, লক্ষ্য এবং প্রধানদের সম্পর্কে জানুন'
+              : 'Learn about our organization’s history, mission, and leadership'}
           </p>
         </div>
-      </section>
 
-      {/* Mission & Vision */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-12 max-w-5xl mx-auto">
-            <div className="p-8 rounded-2xl bg-card border border-border shadow-sm">
-              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                <Target className="w-7 h-7 text-primary" />
-              </div>
-              <h2 className="font-heading text-2xl font-bold text-foreground mb-4">{t('about.mission')}</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {language === 'bn'
-                  ? 'সমাজের সুবিধাবঞ্চিত মানুষদের পাশে দাঁড়ানো এবং তাদের জীবনমান উন্নয়নে কাজ করা। আমরা শিক্ষা, স্বাস্থ্য, এবং সামাজিক উন্নয়নের মাধ্যমে একটি সুন্দর সমাজ গঠনে প্রতিশ্রুতিবদ্ধ।'
-                  : 'To stand by the underprivileged people of society and work to improve their quality of life. We are committed to building a beautiful society through education, health, and social development.'}
-              </p>
-            </div>
-            <div className="p-8 rounded-2xl bg-card border border-border shadow-sm">
-              <div className="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-6">
-                <Eye className="w-7 h-7 text-accent-foreground" />
-              </div>
-              <h2 className="font-heading text-2xl font-bold text-foreground mb-4">{t('about.vision')}</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {language === 'bn'
-                  ? 'একটি সুন্দর, সমতাপূর্ণ ও সমৃদ্ধ সমাজ গঠন যেখানে প্রতিটি মানুষ সম্মান ও মর্যাদার সাথে বাঁচতে পারবে। আমাদের স্বপ্ন একটি সুখী ও সমৃদ্ধ বাংলাদেশ।'
-                  : 'To build a beautiful, equitable and prosperous society where every person can live with respect and dignity. Our dream is a happy and prosperous Bangladesh.'}
-              </p>
-            </div>
-          </div>
+        {/* Bottom Smooth Curved Wave Transition into Section B */}
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none z-10 pointer-events-none">
+          <svg 
+            viewBox="0 0 1200 120" 
+            preserveAspectRatio="none" 
+            className="relative block w-full h-10 sm:h-14 md:h-16 text-white fill-current"
+          >
+            <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" />
+          </svg>
         </div>
       </section>
 
-      {/* Values */}
-      <section className="py-16 md:py-24 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
-              {t('about.values')}
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {values.map((value) => (
-              <div key={value.title} className="text-center p-6 rounded-xl bg-card border border-border">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <value.icon className="w-6 h-6 text-primary" />
+      {/* =========================================================================
+          SECTION B: MISSION & VISION CARDS (আমাদের লক্ষ্য & আমাদের দৃষ্টিভঙ্গি)
+          ========================================================================= */}
+      <section className="relative py-14 sm:py-18 lg:py-20 bg-white overflow-hidden">
+        {/* Subtle Decorative Floating Foliage on Background */}
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 w-28 sm:w-36 pointer-events-none select-none opacity-40">
+          <svg viewBox="0 0 100 100" fill="none" className="w-full h-full text-emerald-600">
+            <path d="M10 80C20 40 50 20 90 10C70 50 50 80 10 80Z" fill="currentColor" opacity="0.15" />
+          </svg>
+        </div>
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-28 sm:w-36 pointer-events-none select-none opacity-40">
+          <svg viewBox="0 0 100 100" fill="none" className="w-full h-full text-emerald-600 -scale-x-100">
+            <path d="M10 80C20 40 50 20 90 10C70 50 50 80 10 80Z" fill="currentColor" opacity="0.15" />
+          </svg>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 items-stretch">
+            
+            {/* Card 1: আমাদের লক্ষ্য (Our Mission) */}
+            <div className="bg-white rounded-[26px] border border-slate-200/90 p-7 sm:p-9 shadow-[0_10px_35px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_45px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden flex flex-col justify-between group hover:-translate-y-1">
+              <div>
+                {/* Organic Green Blob with Eye Icon */}
+                <div className="w-14 h-14 rounded-[18px] bg-[#0B6B3A] text-white flex items-center justify-center shadow-sm mb-6 group-hover:scale-105 transition-transform duration-300">
+                  <Eye className="w-7 h-7 stroke-[2.2]" />
                 </div>
-                <h3 className="font-heading font-semibold text-foreground mb-2">{value.title}</h3>
-                <p className="text-sm text-muted-foreground">{value.desc}</p>
+
+                {/* Heading */}
+                <h2 className="text-2xl sm:text-[26px] font-bold font-heading text-[#14231B] mb-3.5 tracking-tight group-hover:text-[#0B6B3A] transition-colors">
+                  {language === 'bn' ? 'আমাদের লক্ষ্য' : 'Our Mission'}
+                </h2>
+
+                {/* Paragraph */}
+                <p className="text-[#4B5E53] text-sm sm:text-[15px] leading-relaxed mb-6 font-normal">
+                  {language === 'bn'
+                    ? 'সমাজের সুবিধাবঞ্চিত মানুষদের পাশে দাঁড়ানো এবং তাদের জীবনমান উন্নয়নের জন্য কাজ করে, স্বাস্থ্য, শিক্ষা, এবং সামাজিক উন্নয়নের মাধ্যমে একটি সুন্দর সমাজ গড়ে তোলা আমাদের মূল লক্ষ্য।'
+                    : 'To stand beside underprivileged people, improving quality of life through healthcare, education, and social development.'}
+                </p>
               </div>
-            ))}
+
+              {/* Bottom Row: Pill Button on Left, Leaf Accent on Right */}
+              <div className="flex items-center justify-between pt-2">
+                <Link
+                  to="/programs"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#EAF6ED] text-[#0B6B3A] border border-[#C8E6C9] font-semibold text-xs sm:text-sm hover:bg-[#d5eed9] transition-all"
+                >
+                  <span>{language === 'bn' ? 'বিস্তারিত জানুন' : 'Learn More'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.2]" />
+                </Link>
+
+                {/* Corner Leaf Accent Motif */}
+                <div className="pointer-events-none opacity-40 group-hover:opacity-75 transition-opacity">
+                  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7 text-[#0B6B3A]">
+                    <path d="M6 26C8 16 16 8 28 4C26 14 18 24 6 26Z" fill="currentColor" />
+                    <path d="M12 28C16 20 22 14 30 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: আমাদের দৃষ্টিভঙ্গি (Our Vision) */}
+            <div className="bg-white rounded-[26px] border border-slate-200/90 border-l-4 border-l-[#D97706] p-7 sm:p-9 shadow-[0_10px_35px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_45px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden flex flex-col justify-between group hover:-translate-y-1">
+              <div>
+                {/* Organic Amber Blob with Target Icon */}
+                <div className="w-14 h-14 rounded-[18px] bg-[#D97706] text-white flex items-center justify-center shadow-sm mb-6 group-hover:scale-105 transition-transform duration-300">
+                  <Target className="w-7 h-7 stroke-[2.2]" />
+                </div>
+
+                {/* Heading */}
+                <h2 className="text-2xl sm:text-[26px] font-bold font-heading text-[#14231B] mb-3.5 tracking-tight group-hover:text-[#D97706] transition-colors">
+                  {language === 'bn' ? 'আমাদের দৃষ্টিভঙ্গি' : 'Our Vision'}
+                </h2>
+
+                {/* Paragraph */}
+                <p className="text-[#4B5E53] text-sm sm:text-[15px] leading-relaxed mb-6 font-normal">
+                  {language === 'bn'
+                    ? 'একটি সুন্দর, সমতাভিত্তিক ও সমৃদ্ধ সমাজ গঠন যেখানে প্রতিটি মানুষ সম্মান ও মানবিকতার সাথে জীবনযাপন করবে — সেটাই আমাদের দৃষ্টিভঙ্গি। আমরা বিশ্বাস করি, পরিবর্তন শুরু হয় মানুষের পাশে দাঁড়ানো থেকে।'
+                    : 'Building an equitable, thriving society where every human lives with dignity and compassion — that is our vision.'}
+                </p>
+              </div>
+
+              {/* Bottom Row: Pill Button on Left, Amber Leaf Accent on Right */}
+              <div className="flex items-center justify-between pt-2">
+                <Link
+                  to="/programs"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FFF6E5] text-[#D97706] border border-[#FDE68A] font-semibold text-xs sm:text-sm hover:bg-[#ffedcc] transition-all"
+                >
+                  <span>{language === 'bn' ? 'বিস্তারিত জানুন' : 'Learn More'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.2]" />
+                </Link>
+
+                {/* Corner Leaf Accent Motif in Amber */}
+                <div className="pointer-events-none opacity-40 group-hover:opacity-75 transition-opacity">
+                  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7 text-[#D97706]">
+                    <path d="M6 26C8 16 16 8 28 4C26 14 18 24 6 26Z" fill="currentColor" />
+                    <path d="M12 28C16 20 22 14 30 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* History */}
-      <section className="py-16 md:py-24 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-6">
-              {language === 'bn' ? 'আমাদের ইতিহাস' : 'Our History'}
+      {/* =========================================================================
+          SECTION C: OUR VALUES (আমাদের মূল্যবোধ) — 5 RESTRAINED ROUNDED CARDS
+          ========================================================================= */}
+      <section className="relative py-16 sm:py-20 lg:py-24 bg-[#EDF5EF]/85 border-y border-emerald-950/5 overflow-hidden">
+        {/* Gentle Top Wave Divider */}
+        <div className="absolute top-0 left-0 right-0 overflow-hidden leading-none z-0 pointer-events-none">
+          <svg viewBox="0 0 1200 60" preserveAspectRatio="none" className="w-full h-8 sm:h-10 text-white fill-current">
+            <path d="M0,0 C300,50 900,10 1200,40 L1200,0 L0,0 Z" />
+          </svg>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl relative z-10">
+          {/* Section Header */}
+          <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-14">
+            {/* Top Pill Badge: 🌿 ← আমাদের শক্তি → */}
+            <div className="flex justify-center mb-3.5">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] shadow-xs">
+                <span className="text-[#0B6B3A]">🌿</span>
+                <span className="text-[#0B6B3A] text-xs sm:text-sm font-bold tracking-wide">
+                  {language === 'bn' ? '← আমাদের শক্তি →' : '← Our Strength →'}
+                </span>
+              </div>
+            </div>
+
+            {/* Heading */}
+            <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black text-[#0B6B3A] tracking-tight leading-tight mb-3">
+              {language === 'bn' ? 'আমাদের মূল্যবোধ' : 'Our Values'}
             </h2>
-            <p className="text-muted-foreground leading-relaxed text-lg">
+
+            {/* Subtitle */}
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl mx-auto">
               {language === 'bn'
-                ? 'সময়ের বাতিঘর ২০১৫ সালে প্রতিষ্ঠিত হয়। একদল সমাজসেবী মানুষের হাত ধরে শুরু হওয়া এই সংগঠন আজ হাজারো মানুষের পাশে দাঁড়িয়েছে। গত এক দশকে আমরা শিক্ষা, স্বাস্থ্য, এবং দারিদ্র্য বিমোচনে অসংখ্য প্রকল্প বাস্তবায়ন করেছি।'
-                : 'Samoyer Batighor was established in 2015. This organization, which started with a group of social workers, has stood by thousands of people today. Over the past decade, we have implemented numerous projects in education, health, and poverty alleviation.'}
+                ? 'আমরা বিশ্বাস করি, সৎ মূল্যবোধই একটি শক্তিশালী ও টেকসই সমাজ গঠনের ভিত্তি।'
+                : 'We believe genuine values form the bedrock of a resilient and sustainable society.'}
             </p>
           </div>
+
+          {/* 5 Value Cards in an Even Row on Desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
+            {valuesData.map((val) => {
+              const Icon = val.icon;
+              return (
+                <div
+                  key={val.id}
+                  className="bg-white rounded-[22px] p-5 sm:p-6 text-center border border-slate-200/80 shadow-[0_6px_25px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_35px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1.5 relative overflow-hidden flex flex-col items-center justify-between min-h-[195px] group"
+                >
+                  <div className="flex flex-col items-center w-full">
+                    {/* Icon Container Blob */}
+                    <div 
+                      className={`w-13 h-13 sm:w-14 sm:h-14 rounded-[18px] ${val.iconBg} text-white flex items-center justify-center shadow-xs mb-4 group-hover:scale-105 transition-transform duration-300`}
+                    >
+                      <Icon className="w-6.5 h-6.5 stroke-[2.2]" />
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="font-heading font-bold text-base sm:text-lg text-[#14231B] mb-1.5 group-hover:text-[#0B6B3A] transition-colors">
+                      {language === 'bn' ? val.titleBn : val.titleEn}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-snug">
+                      {language === 'bn' ? val.descBn : val.descEn}
+                    </p>
+                  </div>
+
+                  {/* Clean Bottom Accent Line in Value's Distinct Color */}
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 h-1.5 rounded-b-[22px] pointer-events-none transition-all duration-300 group-hover:h-2"
+                    style={{ backgroundColor: val.color }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
+
+      {/* =========================================================================
+          SECTION D: OUR HISTORY (আমাদের ইতিহাস) — 2 COLUMN WITH RURAL IMAGE
+          ========================================================================= */}
+      <section className="relative py-16 sm:py-20 lg:py-24 bg-white overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+            
+            {/* Left Column: Rural Bangladesh Village Landscape Photo */}
+            <div className="lg:col-span-6">
+              <div className="relative rounded-[28px] overflow-hidden shadow-2xl border-4 border-white aspect-[4/3] group bg-slate-100">
+                <img
+                  src={historyPhoto}
+                  alt={language === 'bn' ? 'আমাদের ইতিহাস ও পটভূমি' : 'Our History & Heritage'}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+              </div>
+            </div>
+
+            {/* Right Column: Heading, Story & Action Button */}
+            <div className="lg:col-span-6 flex flex-col items-start">
+              {/* Header with Organic Leaf Accent */}
+              <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
+                <span className="w-8 h-8 rounded-full bg-[#E6F4EA] flex items-center justify-center text-[#0B6B3A] flex-shrink-0">
+                  <Sprout className="w-5 h-5 text-[#0B6B3A]" />
+                </span>
+                <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#14231B] tracking-tight leading-tight">
+                  {language === 'bn' ? 'আমাদের ইতিহাস' : 'Our History'}
+                </h2>
+              </div>
+
+              {/* Story Narrative */}
+              <p className="text-slate-600 sm:text-slate-700 text-sm sm:text-base leading-relaxed mb-7 font-normal">
+                {language === 'bn'
+                  ? 'সময়ের বাতিঘর ২০২৩ সালে প্রতিষ্ঠিত হয়। একজন সমাজসেবী মানুষের হাতে ধরে শুরু হয় এই সংগঠন। শুরু থেকেই আমাদের প্রধান লক্ষ্য ছিলো সাপাহার এলাকার পিছিয়ে পড়া মানুষদের পাশে দাঁড়ানো, শিক্ষা, স্বাস্থ্য, এবং সামাজিক উন্নয়নের মাধ্যমে একটি সুন্দর সমাজ গঠন করা।'
+                  : 'Samoyer Batighor was founded in 2023 through the vision of dedicated humanitarian leaders. From the very beginning, our prime focus has been to stand beside underprivileged communities in Sapahar, uplifting lives through education, healthcare, and progressive social development.'}
+              </p>
+
+              {/* Action Button: আরও জানতে চাই → */}
+              <Link
+                to="/contact"
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-[#0B6B3A] text-white font-bold text-sm sm:text-base hover:bg-[#08522c] shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+              >
+                <span>{language === 'bn' ? 'আরও জানতে চাই' : 'Learn More'}</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              </Link>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION E: CLEAN TRANSITION TO EXISTING FOOTER
+          (Footer is seamlessly rendered by MainLayout with no duplication)
+          ========================================================================= */}
     </MainLayout>
   );
 };
