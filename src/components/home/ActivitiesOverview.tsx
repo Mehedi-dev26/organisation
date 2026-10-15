@@ -200,30 +200,30 @@ const ActivitiesOverview: React.FC = () => {
               key={card.id}
               className="bg-white rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.1)] border border-emerald-950/5 p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:-translate-y-2 group"
             >
-              {/* Top Row: Icon Badge (Left) & Curved Swoosh Photo (Right) */}
-              <div className="flex items-start justify-between relative mb-5 sm:mb-6">
+              {/* Top Row: Icon Badge (Left) & Compact Curved Corner Photo (Top-Right) */}
+              <div className="flex items-start justify-between relative mb-4 sm:mb-5">
                 {/* Icon Badge */}
                 <div 
                   className={cn(
-                    "w-13 h-13 sm:w-14 sm:h-14 rounded-[16px] sm:rounded-[18px] flex items-center justify-center text-white shadow-sm transition-transform duration-300 group-hover:scale-105 flex-shrink-0 z-10",
+                    "w-12 h-12 sm:w-13 sm:h-13 rounded-[16px] flex items-center justify-center text-white shadow-xs transition-transform duration-300 group-hover:scale-105 flex-shrink-0 z-10",
                     card.iconBg
                   )}
                 >
-                  <card.Icon className="w-6.5 h-6.5 sm:w-7 sm:h-7 stroke-[2.2]" />
+                  <card.Icon className="w-6 h-6 sm:w-6.5 sm:h-6.5 stroke-[2.2]" />
                 </div>
 
-                {/* Top-Right Organic Curved Photo */}
-                <div className="absolute -top-6 -right-6 sm:-top-7 sm:-right-7 w-34 h-26 sm:w-38 sm:h-29 pointer-events-none z-0">
+                {/* Top-Right Compact Corner Photo (Restrained to corner only) */}
+                <div className="absolute top-0 right-0 w-24 sm:w-28 h-18 sm:h-20 pointer-events-none z-0">
                   <div 
                     className={cn(
-                      "w-full h-full rounded-bl-[55px] sm:rounded-bl-[65px] border-b-[2.5px] border-l-[2.5px] p-0.5 overflow-hidden transition-transform duration-500 group-hover:scale-105 bg-white shadow-xs",
+                      "w-full h-full rounded-bl-[40px] border-b-2 border-l-2 p-0.5 overflow-hidden transition-transform duration-500 group-hover:scale-105 bg-white shadow-2xs",
                       card.curveBorderColor
                     )}
                   >
                     <img 
                       src={card.image} 
                       alt={card.title} 
-                      className="w-full h-full object-cover rounded-bl-[52px] sm:rounded-bl-[62px]"
+                      className="w-full h-full object-cover rounded-bl-[38px]"
                       loading="lazy"
                     />
                   </div>
@@ -284,15 +284,20 @@ const ActivitiesOverview: React.FC = () => {
                 </div>
               </div>
 
-              {/* Subtle Bottom Accent Line & Soft Corner Contour */}
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 rounded-b-[24px] pointer-events-none transition-all duration-300 group-hover:h-1.5"
-                style={{ backgroundColor: card.accentColorHex }}
-              />
-              <div 
-                className="absolute bottom-0 left-0 w-7 h-7 rounded-bl-[24px] pointer-events-none opacity-15 transition-opacity group-hover:opacity-25"
-                style={{ backgroundColor: card.accentColorHex }}
-              />
+              {/* Exact Bottom-Left Corner Curved Accent Arc from Reference Screenshot */}
+              <svg 
+                className="absolute bottom-0 left-0 w-8 h-8 pointer-events-none z-10" 
+                viewBox="0 0 32 32" 
+                fill="none" 
+                aria-hidden="true"
+              >
+                <path 
+                  d="M0 32C0 14.327 14.327 0 32 0" 
+                  stroke={card.accentColorHex} 
+                  strokeWidth="5" 
+                  strokeLinecap="round"
+                />
+              </svg>
             </div>
           ))}
         </div>

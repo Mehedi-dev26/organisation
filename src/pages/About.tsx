@@ -76,26 +76,26 @@ const About = () => {
   return (
     <MainLayout>
       {/* =========================================================================
-          SECTION A: HERO SECTION WITH PANORAMA BG, LIGHTHOUSE & FLOATING LEAVES
+          SECTION A: HERO SECTION WITH LIGHT NATURAL TEXTURE & PROMINENT VIEW
           ========================================================================= */}
       <section 
-        className="relative pt-16 pb-24 md:pt-20 md:pb-28 text-center overflow-hidden"
+        className="relative pt-24 pb-32 sm:pt-28 sm:pb-36 md:pt-36 md:pb-44 text-center overflow-hidden"
         style={{
-          background: `linear-gradient(180deg, rgba(8, 64, 36, 0.88) 0%, rgba(11, 107, 58, 0.82) 50%, rgba(7, 51, 29, 0.94) 100%), url(${heroBgPhoto}) center/cover no-repeat`,
+          background: `linear-gradient(180deg, rgba(8, 52, 28, 0.45) 0%, rgba(11, 107, 58, 0.22) 40%, rgba(6, 42, 22, 0.58) 100%), url(${heroBgPhoto}) center/cover no-repeat`,
         }}
       >
         {/* Floating Green Leaves (Left) */}
-        <div className="absolute top-8 left-4 md:left-12 w-12 sm:w-16 pointer-events-none opacity-80 select-none">
-          <svg viewBox="0 0 48 48" fill="none" className="w-full h-full text-emerald-300">
-            <path d="M10 38C10 38 12 18 38 10C38 10 38 30 18 38C15 39 10 38 10 38Z" fill="currentColor" opacity="0.85" />
+        <div className="absolute top-10 left-4 md:left-12 w-14 sm:w-18 pointer-events-none opacity-85 select-none drop-shadow">
+          <svg viewBox="0 0 48 48" fill="none" className="w-full h-full text-lime-400">
+            <path d="M10 38C10 38 12 18 38 10C38 10 38 30 18 38C15 39 10 38 10 38Z" fill="currentColor" opacity="0.9" />
             <path d="M10 38C20 28 30 20 38 10" stroke="#064E3B" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </div>
 
-        {/* Floating Green Leaves (Top Right) */}
-        <div className="absolute top-6 right-8 md:right-24 w-10 sm:w-14 pointer-events-none opacity-70 select-none">
-          <svg viewBox="0 0 48 48" fill="none" className="w-full h-full text-lime-400 rotate-45">
-            <path d="M10 38C10 38 12 18 38 10C38 10 38 30 18 38C15 39 10 38 10 38Z" fill="currentColor" opacity="0.9" />
+        {/* Floating Green Leaves (Right) */}
+        <div className="absolute top-8 right-6 md:right-28 w-12 sm:w-16 pointer-events-none opacity-80 select-none drop-shadow">
+          <svg viewBox="0 0 48 48" fill="none" className="w-full h-full text-emerald-300 rotate-45">
+            <path d="M10 38C10 38 12 18 38 10C38 10 38 30 18 38C15 39 10 38 10 38Z" fill="currentColor" opacity="0.85" />
           </svg>
         </div>
 
@@ -105,26 +105,26 @@ const About = () => {
             <svg 
               viewBox="0 0 100 130" 
               fill="none" 
-              className="w-full h-full text-white/90 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+              className="w-full h-full text-white/95 drop-shadow-[0_0_18px_rgba(255,255,255,0.6)]"
             >
               {/* Radiating Light Rays */}
-              <line x1="50" y1="32" x2="10" y2="10" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
-              <line x1="50" y1="32" x2="0" y2="32" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
-              <line x1="50" y1="32" x2="10" y2="55" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
-              <line x1="50" y1="32" x2="90" y2="10" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
-              <line x1="50" y1="32" x2="100" y2="32" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
-              <line x1="50" y1="32" x2="90" y2="55" stroke="#FDE047" strokeWidth="2" strokeDasharray="3 3" opacity="0.85" />
+              <line x1="50" y1="32" x2="10" y2="10" stroke="#FDE047" strokeWidth="2.2" strokeDasharray="3 3" opacity="0.95" />
+              <line x1="50" y1="32" x2="0" y2="32" stroke="#FDE047" strokeWidth="2.2" strokeDasharray="3 3" opacity="0.95" />
+              <line x1="50" y1="32" x2="10" y2="55" stroke="#FDE047" strokeWidth="2.2" strokeDasharray="3 3" opacity="0.95" />
+              <line x1="50" y1="32" x2="90" y2="10" stroke="#FDE047" strokeWidth="2.2" strokeDasharray="3 3" opacity="0.95" />
+              <line x1="50" y1="32" x2="100" y2="32" stroke="#FDE047" strokeWidth="2.2" strokeDasharray="3 3" opacity="0.95" />
+              <line x1="50" y1="32" x2="90" y2="55" stroke="#FDE047" strokeWidth="2.2" strokeDasharray="3 3" opacity="0.95" />
 
               {/* Lighthouse Dome / Top Lantern */}
               <path d="M42 20 Q50 10 58 20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-              <rect x="40" y="20" width="20" height="15" rx="2" fill="rgba(253, 224, 71, 0.4)" stroke="white" strokeWidth="2" />
+              <rect x="40" y="20" width="20" height="15" rx="2" fill="rgba(253, 224, 71, 0.45)" stroke="white" strokeWidth="2" />
               <line x1="50" y1="20" x2="50" y2="35" stroke="white" strokeWidth="1.5" />
 
               {/* Balcony Railing */}
               <line x1="36" y1="35" x2="64" y2="35" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
 
               {/* Tapered Tower Body */}
-              <path d="M41 35 L35 95 H65 L59 35 Z" fill="rgba(255, 255, 255, 0.15)" stroke="white" strokeWidth="2.5" />
+              <path d="M41 35 L35 95 H65 L59 35 Z" fill="rgba(255, 255, 255, 0.18)" stroke="white" strokeWidth="2.5" />
               
               {/* Horizontal Stripes */}
               <line x1="38" y1="55" x2="62" y2="55" stroke="white" strokeWidth="2" />
@@ -135,7 +135,7 @@ const About = () => {
               <rect x="47" y="64" width="6" height="7" rx="1.5" fill="white" />
 
               {/* Foundation / Base */}
-              <rect x="30" y="95" width="40" height="15" rx="3" fill="rgba(255, 255, 255, 0.25)" stroke="white" strokeWidth="2.5" />
+              <rect x="30" y="95" width="40" height="15" rx="3" fill="rgba(255, 255, 255, 0.3)" stroke="white" strokeWidth="2.5" />
               <line x1="24" y1="110" x2="76" y2="110" stroke="white" strokeWidth="3" strokeLinecap="round" />
             </svg>
           </div>
@@ -143,48 +143,64 @@ const About = () => {
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl relative z-10">
           {/* Top Tagline Badge */}
-          <div className="inline-flex items-center gap-2 text-white/95 text-xs sm:text-sm font-semibold tracking-wide mb-3 sm:mb-4 drop-shadow">
+          <div className="inline-flex items-center gap-2 text-white/95 text-xs sm:text-sm font-semibold tracking-wide mb-3 sm:mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
             <span>— মানুষের পাশে,</span>
             <span className="text-[#FACC15]">🌾</span>
             <span>সমাজের সাথে —</span>
           </div>
 
-          {/* Main Title: আমাদের (white) সম্পর্কে (golden-yellow with brush stroke) */}
-          <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight mb-4 drop-shadow-md">
+          {/* Main Title: আমাদের (white) সম্পর্কে (golden-yellow) */}
+          <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-tight mb-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.65)]">
             <span className="text-white">
               {language === 'bn' ? 'আমাদের ' : 'About '}
             </span>
-            <span className="text-[#FACC15] relative inline-block">
+            <span className="text-[#FACC15]">
               {language === 'bn' ? 'সম্পর্কে' : 'Us'}
-              {/* Yellow-Green Hand-Painted Brush Stroke Underline */}
-              <svg 
-                className="absolute -bottom-2 md:-bottom-2.5 left-0 w-full h-3 md:h-3.5 text-[#FACC15] pointer-events-none" 
-                viewBox="0 0 240 14" 
-                fill="none" 
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-                <path d="M3 10C52 4 172 3 237 8C194 12.2 88 12 3 10Z" fill="currentColor" opacity="0.95" />
-              </svg>
             </span>
           </h1>
 
+          {/* Arched Golden Curved Underline matching reference screenshot */}
+          <div className="flex justify-center mb-4">
+            <svg 
+              className="w-52 sm:w-64 md:w-80 h-4 sm:h-5 text-[#FACC15] pointer-events-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" 
+              viewBox="0 0 240 18" 
+              fill="none"
+              preserveAspectRatio="none"
+            >
+              <path 
+                d="M4 15C70 3 170 3 236 15" 
+                stroke="currentColor" 
+                strokeWidth="3.2" 
+                strokeLinecap="round" 
+              />
+            </svg>
+          </div>
+
           {/* Supporting Subtitle */}
-          <p className="text-white/90 text-sm sm:text-base md:text-lg max-w-2xl mx-auto font-normal leading-relaxed drop-shadow">
+          <p className="text-white text-base sm:text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">
             {language === 'bn'
               ? 'আমাদের সংগঠনের ইতিহাস, লক্ষ্য এবং প্রধানদের সম্পর্কে জানুন'
               : 'Learn about our organization’s history, mission, and leadership'}
           </p>
         </div>
 
-        {/* Bottom Smooth Curved Wave Transition into Section B */}
+        {/* Bottom Double-Layered Wave Transition (Ribbon + White) */}
         <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none z-10 pointer-events-none">
+          {/* Layer 1: Semi-translucent dark green wave ribbon */}
+          <svg 
+            viewBox="0 0 1200 120" 
+            preserveAspectRatio="none" 
+            className="relative block w-full h-10 sm:h-14 md:h-16 text-[#0B6B3A]/70 fill-current -mb-8 sm:-mb-10"
+          >
+            <path d="M0,35 C200,90 450,15 700,55 C950,95 1100,25 1200,45 L1200,120 L0,120 Z" />
+          </svg>
+          {/* Layer 2: Solid white wave */}
           <svg 
             viewBox="0 0 1200 120" 
             preserveAspectRatio="none" 
             className="relative block w-full h-10 sm:h-14 md:h-16 text-white fill-current"
           >
-            <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" />
+            <path d="M0,45 C250,105 500,20 750,65 C1000,110 1100,35 1200,55 L1200,120 L0,120 Z" />
           </svg>
         </div>
       </section>
@@ -372,31 +388,45 @@ const About = () => {
       </section>
 
       {/* =========================================================================
-          SECTION D: OUR HISTORY (আমাদের ইতিহাস) — 2 COLUMN WITH RURAL IMAGE
+          SECTION D: OUR HISTORY (আমাদের ইতিহাস) — SEAMLESS LANDSCAPE BLEND
           ========================================================================= */}
-      <section className="relative py-16 sm:py-20 lg:py-24 bg-white overflow-hidden">
+      <section className="relative py-20 sm:py-24 lg:py-28 bg-gradient-to-r from-emerald-50/25 via-white to-emerald-50/30 overflow-hidden">
+        {/* Landscape Image integrated on the left with soft organic fade into background */}
+        <div className="absolute top-0 bottom-0 left-0 w-full lg:w-[50%] pointer-events-none select-none z-0 overflow-hidden">
+          <img 
+            src={historyPhoto} 
+            alt="" 
+            className="w-full h-full object-cover object-left opacity-90 transition-transform duration-700 hover:scale-105"
+            style={{
+              maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 55%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0) 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 55%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0) 100%)',
+            }}
+          />
+          {/* Subtle misty watercolor overlays blending naturally */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-white/95 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/30 via-transparent to-transparent pointer-events-none" />
+        </div>
+
+        {/* Floating Green Leaves (Top Right of History Section) */}
+        <div className="absolute top-8 right-6 sm:right-12 w-12 sm:w-16 pointer-events-none opacity-80 select-none z-10">
+          <svg viewBox="0 0 48 48" fill="none" className="w-full h-full text-emerald-600">
+            <path d="M10 38C10 38 12 18 38 10C38 10 38 30 18 38C15 39 10 38 10 38Z" fill="currentColor" opacity="0.8" />
+            <path d="M10 38C20 28 30 20 38 10" stroke="#064E3B" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
             
-            {/* Left Column: Rural Bangladesh Village Landscape Photo */}
-            <div className="lg:col-span-6">
-              <div className="relative rounded-[28px] overflow-hidden shadow-2xl border-4 border-white aspect-[4/3] group bg-slate-100">
-                <img
-                  src={historyPhoto}
-                  alt={language === 'bn' ? 'আমাদের ইতিহাস ও পটভূমি' : 'Our History & Heritage'}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-              </div>
-            </div>
+            {/* Left Column Spacer so the landscape visually lives on the left */}
+            <div className="lg:col-span-5 hidden lg:block min-h-[300px]" />
 
             {/* Right Column: Heading, Story & Action Button */}
-            <div className="lg:col-span-6 flex flex-col items-start">
+            <div className="lg:col-span-7 flex flex-col items-start bg-white/80 lg:bg-transparent backdrop-blur-xs lg:backdrop-blur-none p-6 sm:p-8 lg:p-0 rounded-3xl">
               {/* Header with Organic Leaf Accent */}
-              <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
-                <span className="w-8 h-8 rounded-full bg-[#E6F4EA] flex items-center justify-center text-[#0B6B3A] flex-shrink-0">
-                  <Sprout className="w-5 h-5 text-[#0B6B3A]" />
+              <div className="flex items-center gap-3 mb-4 sm:mb-5">
+                <span className="w-9 h-9 rounded-full bg-[#E6F4EA] flex items-center justify-center text-[#0B6B3A] flex-shrink-0 shadow-2xs">
+                  <Sprout className="w-5.5 h-5.5 text-[#0B6B3A]" />
                 </span>
                 <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#14231B] tracking-tight leading-tight">
                   {language === 'bn' ? 'আমাদের ইতিহাস' : 'Our History'}
@@ -404,7 +434,7 @@ const About = () => {
               </div>
 
               {/* Story Narrative */}
-              <p className="text-slate-600 sm:text-slate-700 text-sm sm:text-base leading-relaxed mb-7 font-normal">
+              <p className="text-slate-700 text-sm sm:text-base leading-relaxed mb-7 font-normal">
                 {language === 'bn'
                   ? 'সময়ের বাতিঘর ২০২৩ সালে প্রতিষ্ঠিত হয়। একজন সমাজসেবী মানুষের হাতে ধরে শুরু হয় এই সংগঠন। শুরু থেকেই আমাদের প্রধান লক্ষ্য ছিলো সাপাহার এলাকার পিছিয়ে পড়া মানুষদের পাশে দাঁড়ানো, শিক্ষা, স্বাস্থ্য, এবং সামাজিক উন্নয়নের মাধ্যমে একটি সুন্দর সমাজ গঠন করা।'
                   : 'Samoyer Batighor was founded in 2023 through the vision of dedicated humanitarian leaders. From the very beginning, our prime focus has been to stand beside underprivileged communities in Sapahar, uplifting lives through education, healthcare, and progressive social development.'}
@@ -421,6 +451,13 @@ const About = () => {
             </div>
 
           </div>
+        </div>
+
+        {/* Bottom Organic Dark Green Wave transitioning smoothly into Footer */}
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none z-10 pointer-events-none">
+          <svg viewBox="0 0 1200 80" preserveAspectRatio="none" className="relative block w-full h-8 sm:h-12 md:h-14 text-[#0B6B3A] fill-current">
+            <path d="M0,40 C300,85 700,10 1200,55 L1200,80 L0,80 Z" />
+          </svg>
         </div>
       </section>
 
