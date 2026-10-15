@@ -145,20 +145,24 @@ const ProgramsPreview = () => {
   });
 
   const programs: ProgramItem[] = (dbEvents && dbEvents.length > 0)
-    ? dbEvents.map((ev) => ({
-        id: ev.id,
-        title_bn: ev.title_bn,
-        title_en: ev.title_en || ev.title_bn,
-        description_bn: ev.description_bn || '',
-        description_en: ev.description_en || ev.description_bn || '',
-        status: (ev.status === 'completed' || (ev.event_date && new Date(ev.event_date) < new Date())) ? 'completed' : 'ongoing',
-        status_bn: (ev.status === 'completed' || (ev.event_date && new Date(ev.event_date) < new Date())) ? 'সম্পন্ন' : 'চলমান',
-        image_url: ev.image_url || 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
-        target_amount: ev.target_amount ? Number(ev.target_amount) : undefined,
-        raised_amount: ev.raised_amount ? Number(ev.raised_amount) : undefined,
-        category_bn: ev.category_bn || undefined,
-        date: ev.event_date || undefined,
-      }))
+    ? dbEvents.map((evItem) => {
+        const ev = evItem as any;
+        const isCompleted = ev.status === 'completed' || (ev.event_date && new Date(ev.event_date) < new Date());
+        return {
+          id: ev.id,
+          title_bn: ev.title_bn,
+          title_en: ev.title_en || ev.title_bn,
+          description_bn: ev.description_bn || '',
+          description_en: ev.description_en || ev.description_bn || '',
+          status: isCompleted ? 'completed' : 'ongoing',
+          status_bn: isCompleted ? 'সম্পন্ন' : 'চলমান',
+          image_url: ev.image_url || 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+          target_amount: ev.target_amount ? Number(ev.target_amount) : undefined,
+          raised_amount: ev.raised_amount ? Number(ev.raised_amount) : undefined,
+          category_bn: ev.category_bn || undefined,
+          date: ev.event_date || undefined,
+        };
+      })
     : defaultPrograms;
 
   const bkashNumber = '01711050841';

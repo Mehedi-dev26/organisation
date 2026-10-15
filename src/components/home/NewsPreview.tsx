@@ -70,29 +70,72 @@ const NewsPreview = () => {
   return (
     <section className="py-16 md:py-24 bg-slate-50/60 border-t border-slate-100">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        {/* Centered Heading in Front Page Style */}
-        <div className="text-center mb-12 md:mb-14">
-          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-100/80 text-emerald-800 text-xs sm:text-sm font-semibold mb-3 border border-emerald-200">
-            <Newspaper className="w-3.5 h-3.5 text-emerald-700" />
-            <span>{language === 'bn' ? 'সর্বশেষ আপডেট ও কার্যক্রম' : 'Latest Updates'}</span>
+        {/* Centered Heading in Signature Front Page Style */}
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-14">
+          {/* Top Pill Badge */}
+          <div className="flex justify-center mb-4 sm:mb-5">
+            <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] shadow-xs">
+              <span className="w-5 h-5 rounded-full bg-[#0B6B3A] flex items-center justify-center text-white flex-shrink-0">
+                <Newspaper className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-[#0B6B3A] text-xs sm:text-sm font-semibold tracking-wide">
+                {language === 'bn' ? 'সর্বশেষ আপডেট ও নোটিশ' : 'Latest Updates & Notices'}
+              </span>
+            </div>
           </div>
 
-          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">
-            {language === 'bn' ? 'সাম্প্রতিক সংবাদ' : 'Recent News'}
-          </h2>
+          {/* Main Heading with Organic Leaf Strokes & Hand-Painted Underline */}
+          <div className="inline-flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap mb-3.5">
+            {/* Left Leaf Sparkle Strokes */}
+            <svg 
+              className="w-6 h-6 sm:w-8 sm:h-8 text-[#0B6B3A] flex-shrink-0 hidden xs:inline-block" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              aria-hidden="true"
+            >
+              <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M21 11C16 10 11.5 7 8 2" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+            </svg>
 
-          <p className="text-gray-600 text-sm md:text-base mt-2 max-w-2xl mx-auto">
+            {/* Title */}
+            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+              <span className="text-[#14231B] dark:text-slate-100">
+                {language === 'bn' ? 'সাম্প্রতিক ' : 'Recent '}
+              </span>
+              <span className="text-[#0B6B3A] relative inline-block">
+                {language === 'bn' ? 'সংবাদ ও নোটিশ' : 'News & Notice'}
+                {/* Yellow-Green Hand-Painted Brush Stroke Underline */}
+                <svg 
+                  className="absolute -bottom-2 md:-bottom-2.5 left-0 w-full h-3 md:h-3.5 text-[#9BD038] pointer-events-none" 
+                  viewBox="0 0 240 14" 
+                  fill="none" 
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <path d="M3 10C52 4 172 3 237 8C194 12.2 88 12 3 10Z" fill="currentColor" opacity="0.95" />
+                </svg>
+              </span>
+            </h2>
+
+            {/* Right Leaf Sparkle Strokes (Mirrored) */}
+            <svg 
+              className="w-6 h-6 sm:w-8 sm:h-8 text-[#0B6B3A] flex-shrink-0 -scale-x-100 hidden xs:inline-block" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              aria-hidden="true"
+            >
+              <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M21 11C16 10 11.5 7 8 2" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base mt-2 max-w-2xl mx-auto">
             {language === 'bn' 
               ? 'আমাদের সংগঠনের মাঠপর্যায়ের মানবিক কার্যক্রম, উদ্যোগ ও গুরুত্বপূর্ণ সাম্প্রতিক সংবাদ' 
               : 'Latest field activities, humanitarian initiatives, and news from our organization'}
           </p>
-
-          {/* Section Divider (Line - Dot - Line) */}
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <div className="w-12 h-0.5 bg-emerald-600/40 rounded-full" />
-            <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-pulse" />
-            <div className="w-12 h-0.5 bg-emerald-600/40 rounded-full" />
-          </div>
         </div>
 
         {isLoading ? (

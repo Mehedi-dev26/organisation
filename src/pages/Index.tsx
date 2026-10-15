@@ -1,9 +1,8 @@
 import MainLayout from '@/components/layout/MainLayout';
 import HeroSection from '@/components/home/HeroSection';
-import StatsSection from '@/components/home/StatsSection';
+import ActivitiesOverview from '@/components/home/ActivitiesOverview';
 import AboutPreview from '@/components/home/AboutPreview';
 import CommitteePreview from '@/components/home/CommitteePreview';
-import ProgramsPreview from '@/components/home/ProgramsPreview';
 import NewsPreview from '@/components/home/NewsPreview';
 import CTASection from '@/components/home/CTASection';
 
@@ -11,10 +10,9 @@ const Index = () => {
   return (
     <MainLayout>
       <HeroSection />
-      <StatsSection />
+      <ActivitiesOverview />
       <AboutPreview />
       <CommitteePreview />
-      <ProgramsPreview />
       <CTASection />
       <NewsPreview />
     </MainLayout>

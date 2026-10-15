@@ -81,7 +81,12 @@ const Settings = () => {
               setHeroBanner((prev) => ({ ...prev, ...(row.value as any) }));
             }
             if (row.key === 'about_section' && row.value) {
-              setAboutSection((prev) => ({ ...prev, ...(row.value as any) }));
+              const aboutVal = row.value as any;
+              setAboutSection((prev) => ({ 
+                ...prev, 
+                ...aboutVal,
+                stats: typeof aboutVal.stats === 'string' ? aboutVal.stats : '৫+ বছর'
+              }));
             }
             if (row.key === 'cta_section' && row.value) {
               setCtaSection((prev) => ({ ...prev, ...(row.value as any) }));

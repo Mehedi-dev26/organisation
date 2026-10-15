@@ -14,7 +14,7 @@ const translations: Record<string, Record<Language, string>> = {
   'nav.about': { bn: 'আমাদের সম্পর্কে', en: 'About Us' },
   'nav.members': { bn: 'সদস্যবৃন্দ', en: 'Members' },
   'nav.committee': { bn: 'কমিটি', en: 'Committee' },
-  'nav.blood_donors': { bn: 'রক্তদান', en: 'Blood Donors' },
+  'nav.blood_donors': { bn: 'রক্তদাতা', en: 'Blood Donors' },
   'nav.events': { bn: 'কার্যক্রম', en: 'Programs' },
   'nav.news': { bn: 'সংবাদ', en: 'News' },
   'nav.gallery': { bn: 'গ্যালারি', en: 'Gallery' },

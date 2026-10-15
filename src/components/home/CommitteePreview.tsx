@@ -1,7 +1,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Award } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,13 +26,66 @@ const CommitteePreview = () => {
   return (
     <section className="py-16 md:py-24 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <div className="text-center mb-12 md:mb-16">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            {t('committee.title')}
-          </span>
-          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-            {t('committee.title')}
-          </h2>
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+          {/* Top Pill Badge */}
+          <div className="flex justify-center mb-4 sm:mb-5">
+            <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] shadow-xs">
+              <span className="w-5 h-5 rounded-full bg-[#0B6B3A] flex items-center justify-center text-white flex-shrink-0">
+                <Award className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-[#0B6B3A] text-xs sm:text-sm font-semibold tracking-wide">
+                {language === 'bn' ? 'সংগঠন পরিচালনা ও নেতৃত্ব পরিষদ' : 'Governance & Leadership Council'}
+              </span>
+            </div>
+          </div>
+
+          {/* Main Heading with Organic Leaf Strokes & Hand-Painted Underline */}
+          <div className="inline-flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap">
+            {/* Left Leaf Sparkle Strokes */}
+            <svg 
+              className="w-6 h-6 sm:w-8 sm:h-8 text-[#0B6B3A] flex-shrink-0 hidden xs:inline-block" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              aria-hidden="true"
+            >
+              <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M21 11C16 10 11.5 7 8 2" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+            </svg>
+
+            {/* Title */}
+            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+              <span className="text-[#14231B] dark:text-slate-100">
+                {language === 'bn' ? 'আমাদের ' : 'Executive '}
+              </span>
+              <span className="text-[#0B6B3A] relative inline-block">
+                {language === 'bn' ? 'কার্যনির্বাহী কমিটি' : 'Committee'}
+                {/* Yellow-Green Hand-Painted Brush Stroke Underline */}
+                <svg 
+                  className="absolute -bottom-2 md:-bottom-2.5 left-0 w-full h-3 md:h-3.5 text-[#9BD038] pointer-events-none" 
+                  viewBox="0 0 240 14" 
+                  fill="none" 
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <path d="M3 10C52 4 172 3 237 8C194 12.2 88 12 3 10Z" fill="currentColor" opacity="0.95" />
+                </svg>
+              </span>
+            </h2>
+
+            {/* Right Leaf Sparkle Strokes (Mirrored) */}
+            <svg 
+              className="w-6 h-6 sm:w-8 sm:h-8 text-[#0B6B3A] flex-shrink-0 -scale-x-100 hidden xs:inline-block" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              aria-hidden="true"
+            >
+              <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <path d="M21 11C16 10 11.5 7 8 2" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+            </svg>
+          </div>
         </div>
 
         {isLoading ? (
