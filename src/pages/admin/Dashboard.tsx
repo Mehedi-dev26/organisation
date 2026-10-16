@@ -24,7 +24,9 @@ import {
   ChevronRight,
   Cloud,
   FileSpreadsheet,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,11 +64,17 @@ const Dashboard = () => {
   const { language } = useLanguage();
   const { isAdmin } = useAuth();
 
-  // Real-time subscriptions for all dashboard data
-  useMultiTableRealtimeSubscription([
-    { table: 'transactions', queryKeys: [['monthly-transactions'], ['transaction-types'], ['financial-summary']] },
-    { table: 'members', queryKeys: [['admin-stats']] },
-  ]);
+  const [activeLogTab, setActiveLogTab] = React.useState<'requests' | 'logs'>('requests');
+
+  // Real-time subscriptions for all dashboard data (memoized to prevent re-subscription loop)
+  const subscriptionTables = React.useMemo(() => [
+    { table: 'transactions' as const, queryKeys: [['monthly-transactions'], ['transaction-types'], ['financial-summary']] },
+    { table: 'members' as const, queryKeys: [['admin-stats'], ['dashboard-pending-members'], ['recent-activities']] },
+    { table: 'member_dues' as const, queryKeys: [['dashboard-pending-payments']] },
+    { table: 'activity_logs' as const, queryKeys: [['activity-logs']] },
+  ], []);
+
+  useMultiTableRealtimeSubscription(subscriptionTables);
 
   // Overall organization counts
   const { data: stats } = useQuery({
@@ -225,7 +233,46 @@ const Dashboard = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Cashier activity logs
+  // Pending member requests
+  const { data: pendingMembers = [] } = useQuery({
+    queryKey: ['dashboard-pending-members'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('members')
+        .select('id, member_id, full_name, phone, created_at, status')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(6);
+      return data || [];
+    },
+    enabled: isAdmin,
+  });
+
+  // Pending payment verification requests
+  const { data: pendingPayments = [] } = useQuery({
+    queryKey: ['dashboard-pending-payments'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('member_dues')
+        .select(`
+          id, 
+          amount, 
+          month_year, 
+          transaction_id, 
+          payment_method,
+          submitted_at, 
+          members (full_name, phone)
+        `)
+        .eq('payment_status', 'submitted')
+        .eq('is_paid', false)
+        .order('submitted_at', { ascending: false })
+        .limit(6);
+      return data || [];
+    },
+    enabled: isAdmin,
+  });
+
+  // Activity logs
   const { data: activityLogs } = useQuery({
     queryKey: ['activity-logs'],
     queryFn: async () => {
@@ -725,104 +772,290 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 6. Cashier Activity Log Card ("ক্যাশিয়ার কার্যকলাপ লগ") */}
-      {isAdmin && (
-        <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                <ClipboardList className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
-                {language === 'bn' ? 'ক্যাশিয়ার কার্যকলাপ লগ' : 'Cashier Activity Logs'}
-              </h3>
-            </div>
-            <Link
-              to="/admin/cashiers"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs sm:text-sm font-bold hover:bg-[#0B6B3A] hover:text-white transition-all duration-200 shadow-2xs"
-            >
-              {language === 'bn' ? 'সকল লগ দেখুন' : 'View All Logs'}
-              <span aria-hidden="true">→</span>
-            </Link>
-          </div>
+      {/* 6. Requests & Activity Log Card ("আবেদন ও কার্যকলাপ লগ") */}
+      {isAdmin && (() => {
+        const totalPendingRequests = (pendingMembers?.length || 0) + (pendingPayments?.length || 0);
 
-          {activityLogs && activityLogs.length > 0 ? (
-            <div className="space-y-3 max-h-[350px] overflow-y-auto">
-              {activityLogs.map((log) => (
-                <div key={log.id} className="flex items-start gap-3 p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70">
-                  <div className={`p-2 rounded-lg ${
-                    log.action_type === 'delete' 
-                      ? 'bg-red-100 text-red-600' 
-                      : log.action_type === 'payment' 
-                        ? 'bg-green-100 text-green-600' 
-                        : 'bg-blue-100 text-blue-600'
-                  }`}>
-                    {log.action_type === 'delete' ? (
-                      <Trash2 className="w-4 h-4" />
-                    ) : log.action_type === 'payment' ? (
-                      <CreditCard className="w-4 h-4" />
-                    ) : (
-                      <Activity className="w-4 h-4" />
+        return (
+          <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                  <ClipboardList className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
+                    {language === 'bn' ? 'আবেদন ও কার্যকলাপ লগ' : 'Requests & Activity Logs'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {language === 'bn' 
+                      ? 'অপেক্ষমাণ আবেদন যাচাই ও সাম্প্রতিক কার্যকলাপের বিবরণ'
+                      : 'Review pending requests and recent activity records'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons & Tabs */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => setActiveLogTab('requests')}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      activeLogTab === 'requests'
+                        ? 'bg-white text-emerald-700 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    {language === 'bn' ? 'অপেক্ষমাণ আবেদন' : 'Pending Requests'}
+                    {totalPendingRequests > 0 && (
+                      <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
+                        {totalPendingRequests}
+                      </span>
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveLogTab('logs')}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      activeLogTab === 'logs'
+                        ? 'bg-white text-emerald-700 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5" />
+                    {language === 'bn' ? 'কার্যকলাপ ইতিহাস' : 'Activity History'}
+                  </button>
+                </div>
+
+                {activeLogTab === 'requests' ? (
+                  <Link
+                    to="/admin/payment-verification"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs"
+                  >
+                    {language === 'bn' ? 'পেমেন্ট যাচাই' : 'Verify Payments'}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                ) : (
+                  <Link
+                    to="/admin/cashiers"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs"
+                  >
+                    {language === 'bn' ? 'ক্যাশিয়ার লগ' : 'Cashier Logs'}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Content for Requests Tab */}
+            {activeLogTab === 'requests' && (
+              <div>
+                {totalPendingRequests > 0 ? (
+                  <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    {/* Pending Membership Requests */}
+                    {pendingMembers.map((member: any) => (
+                      <div 
+                        key={`member-${member.id}`} 
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/80 hover:bg-emerald-50/40 rounded-xl border border-slate-200/80 transition-all duration-150"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700 mt-0.5">
+                            <UserPlus className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-slate-800">
+                                {member.full_name}
+                              </p>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800">
+                                {language === 'bn' ? 'সদস্য আবেদন' : 'Member Registration'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {language === 'bn' ? 'মোবাইল:' : 'Phone:'} {member.phone || 'N/A'} • {formatActivityDate(member.created_at)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Link
+                          to={`/admin/members?search=${encodeURIComponent(member.full_name)}`}
+                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shadow-2xs"
+                        >
+                          {language === 'bn' ? 'অনুমোদন করুন' : 'Approve'}
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    ))}
+
+                    {/* Pending Dues Payments */}
+                    {pendingPayments.map((payment: any) => (
+                      <div 
+                        key={`payment-${payment.id}`} 
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/80 hover:bg-amber-50/40 rounded-xl border border-slate-200/80 transition-all duration-150"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-amber-100 text-amber-700 mt-0.5">
+                            <CreditCard className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-slate-800">
+                                {payment.members?.full_name || (language === 'bn' ? 'সদস্য' : 'Member')}
+                              </p>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                                ৳{payment.amount}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {language === 'bn' ? 'মাস:' : 'Month:'} {payment.month_year} 
+                              {payment.transaction_id && ` • TrxID: ${payment.transaction_id}`}
+                              {payment.payment_method && ` • (${payment.payment_method})`}
+                              {payment.submitted_at && ` • ${formatActivityDate(payment.submitted_at)}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Link
+                          to="/admin/payment-verification"
+                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-colors shadow-2xs"
+                        >
+                          {language === 'bn' ? 'যাচাই করুন' : 'Verify'}
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">
-                      {language === 'bn' ? log.description_bn : log.description_en}
+                ) : (
+                  <div className="py-10 flex flex-col items-center justify-center text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-3 shadow-xs">
+                      <CheckCircle2 className="w-7 h-7 stroke-[2.2]" />
+                    </div>
+                    <p className="font-heading font-bold text-base text-slate-800">
+                      {language === 'bn' ? 'বর্তমানে কোনো অপেক্ষমাণ আবেদন নেই' : 'No pending requests at the moment'}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        log.user_role?.includes('cashier') 
-                          ? 'bg-amber-100 text-amber-800' 
-                          : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {log.user_role?.includes('cashier') 
-                          ? (language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier')
-                          : (language === 'bn' ? 'অ্যাডমিন' : 'Admin')}
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {log.user_name}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        • {formatActivityDate(log.created_at)}
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                      {language === 'bn' 
+                        ? 'সকল নতুন সদস্য নিবন্ধন ও পেমেন্ট যাচাই সম্পন্ন হয়েছে।'
+                        : 'All new member registrations and payment verifications have been processed.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Content for Activity Logs Tab */}
+            {activeLogTab === 'logs' && (
+              <div>
+                {activityLogs && activityLogs.length > 0 ? (
+                  <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    {activityLogs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70">
+                        <div className={`p-2 rounded-lg ${
+                          log.action_type === 'delete' 
+                            ? 'bg-red-100 text-red-600' 
+                            : log.action_type === 'payment' 
+                              ? 'bg-green-100 text-green-600' 
+                              : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {log.action_type === 'delete' ? (
+                            <Trash2 className="w-4 h-4" />
+                          ) : log.action_type === 'payment' ? (
+                            <CreditCard className="w-4 h-4" />
+                          ) : (
+                            <Activity className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-800">
+                            {language === 'bn' ? log.description_bn : log.description_en}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                              log.user_role?.includes('cashier') 
+                                ? 'bg-amber-100 text-amber-800' 
+                                : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {log.user_role?.includes('cashier') 
+                                ? (language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier')
+                                : (language === 'bn' ? 'অ্যাডমিন' : 'Admin')}
+                            </span>
+                            <span className="text-xs text-slate-500 font-medium">
+                              {log.user_name}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              • {formatActivityDate(log.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : recentActivities && recentActivities.length > 0 ? (
+                  /* Fallback to Recent System Activities so it is never permanently empty */
+                  <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    <div className="flex items-center justify-between pb-1 text-xs text-slate-500">
+                      <span>{language === 'bn' ? 'সাম্প্রতিক সিস্টেম রেকর্ড:' : 'Recent System Records:'}</span>
+                      <span className="text-[11px] bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                        {language === 'bn' ? 'সরাসরি ডেটাবেজ থেকে' : 'Live from database'}
                       </span>
                     </div>
+                    {recentActivities.map((act) => {
+                      const IconComp = act.icon;
+                      return (
+                        <div key={act.id} className="flex items-start gap-3 p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70">
+                          <div className={`p-2 rounded-lg ${act.iconBg} ${act.iconColor}`}>
+                            <IconComp className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-800">
+                              {act.title}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              {formatActivityDate(act.date)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* Empty State Matching Screenshot with Notepad & Leaf Sparkles */
-            <div className="py-10 sm:py-12 flex flex-col items-center justify-center text-center">
-              <div className="relative inline-flex items-center justify-center gap-4">
-                {/* Left Leaf Sparkle */}
-                <div className="w-7 h-7 text-emerald-500/70 flex-shrink-0">
-                  <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
-                    <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                    <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
-                </div>
+                ) : (
+                  /* Empty State Matching Screenshot with Notepad & Leaf Sparkles */
+                  <div className="py-10 sm:py-12 flex flex-col items-center justify-center text-center">
+                    <div className="relative inline-flex items-center justify-center gap-4">
+                      {/* Left Leaf Sparkle */}
+                      <div className="w-7 h-7 text-emerald-500/70 flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
+                          <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                          <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                      </div>
 
-                {/* Center Green Clipboard Checklist Icon */}
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 border-2 border-dashed border-emerald-300 flex items-center justify-center text-emerald-600 shadow-sm">
-                  <FileSpreadsheet className="w-8 h-8 stroke-[2.2]" />
-                </div>
+                      {/* Center Green Clipboard Checklist Icon */}
+                      <div className="w-16 h-16 rounded-2xl bg-emerald-50 border-2 border-dashed border-emerald-300 flex items-center justify-center text-emerald-600 shadow-sm">
+                        <FileSpreadsheet className="w-8 h-8 stroke-[2.2]" />
+                      </div>
 
-                {/* Right Leaf Sparkle */}
-                <div className="w-7 h-7 text-emerald-500/70 flex-shrink-0 -scale-x-100">
-                  <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
-                    <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                    <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
-                </div>
+                      {/* Right Leaf Sparkle */}
+                      <div className="w-7 h-7 text-emerald-500/70 flex-shrink-0 -scale-x-100">
+                        <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
+                          <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                          <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <p className="font-heading font-bold text-sm sm:text-base text-slate-700 mt-4">
+                      {language === 'bn' ? 'কোনো কার্যকলাপ লগ নেই' : 'No activity logs found'}
+                    </p>
+                  </div>
+                )}
               </div>
-
-              <p className="font-heading font-bold text-sm sm:text-base text-slate-700 mt-4">
-                {language === 'bn' ? 'কোনো কার্যকলাপ লগ নেই' : 'No activity logs found'}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
 
       {/* 7. Bottom Row: Recent Activity & Monthly Comparison (সাম্প্রতিক কার্যক্রম & মাসিক তুলনা) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

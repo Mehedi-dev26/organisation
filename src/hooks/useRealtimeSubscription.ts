@@ -11,10 +11,13 @@ interface UseRealtimeSubscriptionOptions {
 
 export const useRealtimeSubscription = ({ table, queryKey }: UseRealtimeSubscriptionOptions) => {
   const queryClient = useQueryClient();
+  const queryKeySerialized = JSON.stringify(queryKey);
 
   useEffect(() => {
+    const parsedQueryKey: string[] = JSON.parse(queryKeySerialized);
+    const channelName = `realtime-${table}-${parsedQueryKey.join('-')}`;
     const channel = supabase
-      .channel(`realtime-${table}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -22,10 +25,8 @@ export const useRealtimeSubscription = ({ table, queryKey }: UseRealtimeSubscrip
           schema: 'public',
           table: table,
         },
-        (payload) => {
-          console.log(`Realtime update for ${table}:`, payload);
-          // Invalidate the query to refetch data
-          queryClient.invalidateQueries({ queryKey });
+        () => {
+          queryClient.invalidateQueries({ queryKey: parsedQueryKey });
         }
       )
       .subscribe();
@@ -33,15 +34,17 @@ export const useRealtimeSubscription = ({ table, queryKey }: UseRealtimeSubscrip
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [table, queryKey, queryClient]);
+  }, [table, queryKeySerialized, queryClient]);
 };
 
 // Multi-table subscription hook for dashboards
 export const useMultiTableRealtimeSubscription = (tables: { table: TableName; queryKeys: string[][] }[]) => {
   const queryClient = useQueryClient();
+  const tablesSerialized = JSON.stringify(tables);
 
   useEffect(() => {
-    const channels = tables.map(({ table, queryKeys }) => {
+    const parsedTables: { table: TableName; queryKeys: string[][] }[] = JSON.parse(tablesSerialized);
+    const channels = parsedTables.map(({ table, queryKeys }) => {
       const channel = supabase
         .channel(`realtime-multi-${table}`)
         .on(
@@ -51,9 +54,7 @@ export const useMultiTableRealtimeSubscription = (tables: { table: TableName; qu
             schema: 'public',
             table: table,
           },
-          (payload) => {
-            console.log(`Realtime update for ${table}:`, payload);
-            // Invalidate all related queries
+          () => {
             queryKeys.forEach(queryKey => {
               queryClient.invalidateQueries({ queryKey });
             });
@@ -69,5 +70,5 @@ export const useMultiTableRealtimeSubscription = (tables: { table: TableName; qu
         supabase.removeChannel(channel);
       });
     };
-  }, [tables, queryClient]);
+  }, [tablesSerialized, queryClient]);
 };
