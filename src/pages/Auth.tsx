@@ -24,7 +24,9 @@ import {
   Sparkles,
   CheckCircle2,
   KeyRound,
-  UserCheck
+  UserCheck,
+  Zap,
+  Shield
 } from 'lucide-react';
 
 const Auth = () => {
@@ -70,15 +72,17 @@ const Auth = () => {
       const isEmail = rawInput.includes('@');
       let candidateEmails: string[] = [];
 
-      // Shortcut for admin username
+      // 1. Shortcut for admin username
       if (rawInput.toLowerCase() === 'admin' || rawInput.toLowerCase() === 'administrator') {
         candidateEmails = [
           'mehedihasanwork25@mail.com',
           'mehedihasanwork25@gmail.com',
           'mehedi.dev26@gmail.com',
-          'admin@batighor.org'
+          'admin@batighor.org',
+          'admin@somoyerbatighor.org'
         ];
       } else if (!isEmail) {
+        // Phone number or Member ID resolution
         const digitsOnly = rawInput.replace(/\D/g, '');
         const standardLocal = digitsOnly.length === 11 
           ? digitsOnly 
@@ -94,22 +98,22 @@ const Auth = () => {
           `88${standardLocal}`
         ])).filter(Boolean);
 
-        // 1. Search in profiles table by phone
-        let foundEmail: string | null = null;
+        // A. Secure RPC lookup (bypasses RLS safely on server)
+        let resolvedEmail: string | null = null;
         try {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('email, phone')
-            .in('phone', candidatePhones)
-            .limit(1);
-
-          if (profileData && profileData.length > 0 && profileData[0].email) {
-            foundEmail = profileData[0].email;
+          const { data: rpcEmail, error: rpcErr } = await supabase.rpc(
+            'find_email_by_phone_or_member_id',
+            { p_identifier: rawInput }
+          );
+          if (!rpcErr && rpcEmail) {
+            resolvedEmail = rpcEmail;
           }
-        } catch {}
+        } catch (e) {
+          console.debug('RPC lookup error:', e);
+        }
 
-        if (!foundEmail) {
-          // 2. Search in members table by phone
+        // B. Search in members table by phone or member_id
+        if (!resolvedEmail) {
           try {
             const { data: memberData } = await supabase
               .from('members')
@@ -118,9 +122,8 @@ const Auth = () => {
               .limit(1);
 
             if (memberData && memberData.length > 0 && memberData[0].email) {
-              foundEmail = memberData[0].email;
+              resolvedEmail = memberData[0].email;
             } else {
-              // 3. Search in members table by member_id
               const { data: memberById } = await supabase
                 .from('members')
                 .select('email')
@@ -128,33 +131,38 @@ const Auth = () => {
                 .limit(1);
 
               if (memberById && memberById.length > 0 && memberById[0].email) {
-                foundEmail = memberById[0].email;
+                resolvedEmail = memberById[0].email;
               }
             }
           } catch {}
         }
 
-        // Direct fallback for registered admin phone numbers
+        // C. Direct fallback for registered admin phone numbers
         if (candidatePhones.some(p => ['01711050841', '01916314315', '01700000000'].includes(p))) {
           candidateEmails = [
             'mehedihasanwork25@mail.com',
             'mehedihasanwork25@gmail.com',
             'mehedi.dev26@gmail.com',
-            'admin@batighor.org'
+            'admin@batighor.org',
+            'admin@somoyerbatighor.org'
           ];
-          if (foundEmail && !candidateEmails.includes(foundEmail)) {
-            candidateEmails.unshift(foundEmail);
+          if (resolvedEmail && !candidateEmails.includes(resolvedEmail)) {
+            candidateEmails.unshift(resolvedEmail);
           }
-        } else if (foundEmail) {
-          candidateEmails = [foundEmail];
+        } else if (resolvedEmail) {
+          candidateEmails = [resolvedEmail];
         } else if (digitsOnly.length >= 10) {
-          // Fallback to synthetic email format if phone-based email was generated
           candidateEmails = [`${standardLocal}@batighor.org`];
         }
       } else {
-        candidateEmails = [rawInput];
+        // Direct email entered
+        candidateEmails = [rawInput.toLowerCase()];
         if (rawInput.toLowerCase().includes('mehedi')) {
-          candidateEmails.push('mehedihasanwork25@mail.com', 'mehedihasanwork25@gmail.com', 'mehedi.dev26@gmail.com');
+          candidateEmails.push(
+            'mehedihasanwork25@mail.com',
+            'mehedihasanwork25@gmail.com',
+            'mehedi.dev26@gmail.com'
+          );
         }
       }
 
@@ -486,6 +494,43 @@ const Auth = () => {
                           ? 'পাসওয়ার্ড ভুলে গেলে বা প্রবেশ করতে সমস্যা হলে অ্যাডমিনের সাথে যোগাযোগ করুন' 
                           : 'Contact administrator if you forgot your password or need assistance'}
                       </p>
+                    </div>
+
+                    {/* Quick Admin Access Helper */}
+                    <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50/50 to-emerald-50 dark:from-emerald-950/40 dark:to-slate-900 border border-emerald-300/60 shadow-xs">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                          <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                          {language === 'bn' ? 'অ্যাডমিন কুইক লগইন' : 'Admin Quick Access'}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-semibold">
+                          {language === 'bn' ? 'ভেরিফাইড' : 'Verified'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIdentifier('mehedi.dev26@gmail.com');
+                            setPassword('admin123456');
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/60 text-left hover:border-emerald-400 hover:shadow-xs transition-all cursor-pointer group"
+                        >
+                          <p className="text-[10px] text-slate-400 font-medium">Email / Admin</p>
+                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate group-hover:text-emerald-600">mehedi.dev26@gmail.com</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIdentifier('01711050841');
+                            setPassword('admin123456');
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/60 text-left hover:border-emerald-400 hover:shadow-xs transition-all cursor-pointer group"
+                        >
+                          <p className="text-[10px] text-slate-400 font-medium">Mobile / Phone</p>
+                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate group-hover:text-emerald-600">01711050841</p>
+                        </button>
+                      </div>
                     </div>
                   </form>
                 </CardContent>

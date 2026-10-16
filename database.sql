@@ -292,6 +292,81 @@ BEGIN
 END;
 $$;
 
+-- Function: find_email_by_phone_or_member_id (Secure Phone/MemberID to Email resolver)
+CREATE OR REPLACE FUNCTION public.find_email_by_phone_or_member_id(p_identifier text)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_clean_phone text;
+  v_email text;
+BEGIN
+  IF p_identifier IS NULL OR trim(p_identifier) = '' THEN
+    RETURN NULL;
+  END IF;
+
+  p_identifier := trim(p_identifier);
+
+  IF p_identifier LIKE '%@%' THEN
+    RETURN p_identifier;
+  END IF;
+
+  v_clean_phone := regexp_replace(p_identifier, '\D', '', 'g');
+  IF length(v_clean_phone) = 13 AND v_clean_phone LIKE '88%' THEN
+    v_clean_phone := substr(v_clean_phone, 3);
+  END IF;
+
+  SELECT email INTO v_email
+  FROM auth.users
+  WHERE (
+    phone = p_identifier
+    OR phone = v_clean_phone
+    OR phone = ('+88' || v_clean_phone)
+    OR raw_user_meta_data->>'phone' = p_identifier
+    OR raw_user_meta_data->>'phone' = v_clean_phone
+    OR raw_user_meta_data->>'phone' = ('+88' || v_clean_phone)
+  )
+  LIMIT 1;
+
+  IF v_email IS NOT NULL THEN
+    RETURN v_email;
+  END IF;
+
+  SELECT email INTO v_email
+  FROM public.members
+  WHERE (
+    member_id = p_identifier
+    OR regexp_replace(phone, '\D', '', 'g') = v_clean_phone
+    OR phone = p_identifier
+  )
+  AND email IS NOT NULL AND email != ''
+  LIMIT 1;
+
+  IF v_email IS NOT NULL THEN
+    RETURN v_email;
+  END IF;
+
+  SELECT email INTO v_email
+  FROM public.profiles
+  WHERE (
+    regexp_replace(phone, '\D', '', 'g') = v_clean_phone
+    OR phone = p_identifier
+  )
+  AND email IS NOT NULL AND email != ''
+  LIMIT 1;
+
+  IF v_email IS NOT NULL THEN
+    RETURN v_email;
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.find_email_by_phone_or_member_id(text) TO anon, authenticated, service_role;
+
 -- Function: update_updated_at_column
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS trigger
