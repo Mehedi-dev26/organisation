@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Members from "./pages/Members";
@@ -67,7 +68,8 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <ErrorBoundary>
+            <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />
@@ -113,6 +115,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+        </ErrorBoundary>
         </TooltipProvider>
       </AuthProvider>
     </LanguageProvider>

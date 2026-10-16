@@ -120,11 +120,11 @@ const Auth = () => {
         // 2. RPC lookup fallback
         if (!resolvedEmail) {
           try {
-            const { data: rpcEmail } = await supabase.rpc(
+            const { data: rpcEmail } = await (supabase.rpc as any)(
               'find_email_by_phone_or_member_id',
               { p_identifier: rawInput }
             );
-            if (rpcEmail) {
+            if (rpcEmail && typeof rpcEmail === 'string') {
               resolvedEmail = rpcEmail;
             }
           } catch {}

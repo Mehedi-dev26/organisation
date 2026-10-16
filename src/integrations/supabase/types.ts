@@ -639,6 +639,33 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -650,6 +677,12 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      find_email_by_phone_or_member_id: {
+        Args: {
+          _identifier: string
+        }
+        Returns: string
       }
     }
     Enums: {

@@ -139,8 +139,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         supabase
           .from('user_roles')
           .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' })
-          .then(() => {})
-          .catch(() => {});
+          .then(() => {}, () => {});
       }
     } catch (err) {
       console.error('Error checking roles:', err);
@@ -255,8 +254,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         supabase
           .from('user_roles')
           .upsert({ user_id: data.user.id, role: 'admin' }, { onConflict: 'user_id,role' })
-          .then(() => {})
-          .catch(() => {});
+          .then(() => {}, () => {});
       }
       
       return { error, isAdmin: userIsAdmin, isMember: userIsMember, isCashier: userIsCashier };

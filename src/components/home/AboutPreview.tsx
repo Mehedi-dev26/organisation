@@ -16,7 +16,7 @@ import { useSiteSettings } from '@/services/siteSettingsService';
 
 const AboutPreview = () => {
   const { language } = useLanguage();
-  const { data: siteSettings } = useSiteSettings();
+  const { data: siteSettings, isLoading } = useSiteSettings();
   const aboutSettings = siteSettings?.about_section;
 
   const title = (aboutSettings && (language === 'bn' ? aboutSettings.title_bn : aboutSettings.title_en))

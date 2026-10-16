@@ -83,7 +83,7 @@ export const useSiteSettings = () => {
   return useQuery({
     queryKey: ['site-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('site_settings')
         .select('*');
 
@@ -93,8 +93,8 @@ export const useSiteSettings = () => {
       }
 
       const map: Record<string, any> = {};
-      data?.forEach((row) => {
-        if (row.key && row.value) {
+      data?.forEach((row: any) => {
+        if (row?.key && row?.value) {
           map[row.key] = row.value;
         }
       });
@@ -121,7 +121,7 @@ export const useHeroBanners = () => {
     queryKey: ['hero-banners'],
     queryFn: async (): Promise<BannerSlide[]> => {
       // 1. Fetch site_settings hero_banner and hero_banners
-      const { data: settingsRows } = await supabase
+      const { data: settingsRows } = await (supabase as any)
         .from('site_settings')
         .select('key, value')
         .in('key', ['hero_banner', 'hero_banners']);
@@ -129,10 +129,10 @@ export const useHeroBanners = () => {
       let mainHero: HeroBannerData | null = null;
       let extraBanners: HeroBannerData[] = [];
 
-      settingsRows?.forEach((row) => {
-        if (row.key === 'hero_banner' && row.value) {
+      settingsRows?.forEach((row: any) => {
+        if (row?.key === 'hero_banner' && row?.value) {
           mainHero = row.value as HeroBannerData;
-        } else if (row.key === 'hero_banners' && Array.isArray(row.value)) {
+        } else if (row?.key === 'hero_banners' && Array.isArray(row?.value)) {
           extraBanners = row.value as HeroBannerData[];
         }
       });

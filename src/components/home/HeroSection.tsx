@@ -11,17 +11,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
-import { 
-  Users, 
-  ChevronLeft, 
-  ChevronRight, 
-  HeartHandshake, 
-  Sparkles,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Link } from 'react-router-dom';
 import { useHeroBanners, BannerSlide } from '@/services/siteSettingsService';
 
 const HeroSection = () => {

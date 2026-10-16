@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { UserPlus, Heart, Phone, Sparkles } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useSiteSettings } from '@/services/siteSettingsService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
@@ -78,16 +79,14 @@ const CTASection = () => {
             </div>
 
             <div className="flex flex-col gap-2 pt-2">
-              <button
-                type="button"
-                className="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition-all text-center inline-flex items-center justify-center gap-2"
-                asChild
+              <Link
+                to="/member-registration"
+                onClick={() => setIsVolunteerModalOpen(false)}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition-all text-center inline-flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Link to="/member-registration" onClick={() => setIsVolunteerModalOpen(false)}>
-                  <UserPlus className="w-4 h-4" />
-                  <span>{language === 'bn' ? 'অনলাইন নিবন্ধন ফরম পূরণ করুন' : 'Fill Online Registration Form'}</span>
-                </Link>
-              </button>
+                <UserPlus className="w-4 h-4" />
+                <span>{language === 'bn' ? 'অনলাইন নিবন্ধন ফরম পূরণ করুন' : 'Fill Online Registration Form'}</span>
+              </Link>
 
               <a
                 href="tel:01916314315"

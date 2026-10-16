@@ -18,8 +18,11 @@ const CommitteePreview = () => {
         .order('sort_order', { ascending: true })
         .limit(3);
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.warn('Error fetching committee preview:', error);
+        return [];
+      }
+      return data || [];
     },
   });
 
