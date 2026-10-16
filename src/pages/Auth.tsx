@@ -67,10 +67,18 @@ const Auth = () => {
     try {
       const rawInput = identifier.trim();
       let loginEmail = rawInput;
-
-      // Check if user entered phone number or member ID instead of email
       const isEmail = rawInput.includes('@');
-      if (!isEmail) {
+      let candidateEmails: string[] = [];
+
+      // Shortcut for admin username
+      if (rawInput.toLowerCase() === 'admin' || rawInput.toLowerCase() === 'administrator') {
+        candidateEmails = [
+          'mehedihasanwork25@mail.com',
+          'mehedihasanwork25@gmail.com',
+          'mehedi.dev26@gmail.com',
+          'admin@batighor.org'
+        ];
+      } else if (!isEmail) {
         const digitsOnly = rawInput.replace(/\D/g, '');
         const standardLocal = digitsOnly.length === 11 
           ? digitsOnly 
@@ -88,63 +96,88 @@ const Auth = () => {
 
         // 1. Search in profiles table by phone
         let foundEmail: string | null = null;
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('email, phone')
-          .in('phone', candidatePhones)
-          .limit(1);
-
-        if (profileData && profileData.length > 0 && profileData[0].email) {
-          foundEmail = profileData[0].email;
-        } else {
-          // 2. Search in members table by phone
-          const { data: memberData } = await supabase
-            .from('members')
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
             .select('email, phone')
             .in('phone', candidatePhones)
             .limit(1);
 
-          if (memberData && memberData.length > 0 && memberData[0].email) {
-            foundEmail = memberData[0].email;
-          } else {
-            // 3. Search in members table by member_id
-            const { data: memberById } = await supabase
+          if (profileData && profileData.length > 0 && profileData[0].email) {
+            foundEmail = profileData[0].email;
+          }
+        } catch {}
+
+        if (!foundEmail) {
+          // 2. Search in members table by phone
+          try {
+            const { data: memberData } = await supabase
               .from('members')
-              .select('email')
-              .eq('member_id', rawInput)
+              .select('email, phone')
+              .in('phone', candidatePhones)
               .limit(1);
 
-            if (memberById && memberById.length > 0 && memberById[0].email) {
-              foundEmail = memberById[0].email;
+            if (memberData && memberData.length > 0 && memberData[0].email) {
+              foundEmail = memberData[0].email;
+            } else {
+              // 3. Search in members table by member_id
+              const { data: memberById } = await supabase
+                .from('members')
+                .select('email')
+                .eq('member_id', rawInput)
+                .limit(1);
+
+              if (memberById && memberById.length > 0 && memberById[0].email) {
+                foundEmail = memberById[0].email;
+              }
             }
-          }
+          } catch {}
         }
 
         // Direct fallback for registered admin phone numbers
-        if (!foundEmail && candidatePhones.some(p => ['01711050841', '01916314315', '01700000000'].includes(p))) {
-          foundEmail = 'mehedihasanwork25@mail.com';
-        }
-
-        if (foundEmail) {
-          loginEmail = foundEmail;
+        if (candidatePhones.some(p => ['01711050841', '01916314315', '01700000000'].includes(p))) {
+          candidateEmails = [
+            'mehedihasanwork25@mail.com',
+            'mehedihasanwork25@gmail.com',
+            'mehedi.dev26@gmail.com',
+            'admin@batighor.org'
+          ];
+          if (foundEmail && !candidateEmails.includes(foundEmail)) {
+            candidateEmails.unshift(foundEmail);
+          }
+        } else if (foundEmail) {
+          candidateEmails = [foundEmail];
         } else if (digitsOnly.length >= 10) {
           // Fallback to synthetic email format if phone-based email was generated
-          loginEmail = `${standardLocal}@batighor.org`;
+          candidateEmails = [`${standardLocal}@batighor.org`];
+        }
+      } else {
+        candidateEmails = [rawInput];
+        if (rawInput.toLowerCase().includes('mehedi')) {
+          candidateEmails.push('mehedihasanwork25@mail.com', 'mehedihasanwork25@gmail.com', 'mehedi.dev26@gmail.com');
         }
       }
 
-      // Execute login
-      const { error, isAdmin: userIsAdmin, isMember: userIsMember, isCashier: userIsCashier } = 
-        await signIn(loginEmail, password);
+      // Execute login across candidate emails until success
+      let authResult: { error: any; isAdmin: boolean; isMember: boolean; isCashier: boolean } | null = null;
+      const emailsToAttempt = Array.from(new Set(candidateEmails.length > 0 ? candidateEmails : [loginEmail]));
 
-      if (error) {
+      for (const emailToTry of emailsToAttempt) {
+        authResult = await signIn(emailToTry, password);
+        if (!authResult.error) {
+          break;
+        }
+      }
+
+      if (!authResult || authResult.error) {
+        const errorMsg = authResult?.error?.message || 'Invalid login credentials';
         toast({
           title: language === 'bn' ? 'লগইন ব্যর্থ হয়েছে' : 'Login Failed',
-          description: !isEmail && error.message.includes('Invalid login credentials')
+          description: !isEmail && errorMsg.includes('Invalid login credentials')
             ? (language === 'bn' 
                 ? 'মোবাইল নম্বর বা পাসওয়ার্ড সঠিক নয়। আপনার একাউন্ট না থাকলে নিবন্ধন করুন।' 
                 : 'Invalid mobile number or password.')
-            : error.message,
+            : errorMsg,
           variant: 'destructive',
         });
         setIsLoading(false);
@@ -157,11 +190,11 @@ const Auth = () => {
       });
 
       // Automatically navigate to the correct dashboard based on role
-      if (userIsAdmin) {
+      if (authResult.isAdmin) {
         navigate('/admin');
-      } else if (userIsCashier) {
+      } else if (authResult.isCashier) {
         navigate('/cashier');
-      } else if (userIsMember) {
+      } else if (authResult.isMember) {
         navigate('/member-dashboard');
       } else {
         navigate('/member-dashboard');

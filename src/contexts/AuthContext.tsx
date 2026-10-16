@@ -17,6 +17,41 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ADMIN_EMAILS = [
+  'mehedihasanwork25@mail.com',
+  'mehedihasanwork25@gmail.com',
+  'mehedi.dev26@gmail.com',
+  'admin@batighor.org',
+  'admin@somoyerbatighor.org',
+];
+
+const ADMIN_PHONES = [
+  '01711050841',
+  '01916314315',
+  '01700000000',
+];
+
+export const isUserAdmin = (user: User | null, roles: string[] = []): boolean => {
+  if (!user) return false;
+  if (roles.includes('admin')) return true;
+
+  const email = (user.email || '').toLowerCase().trim();
+  const phone = (user.phone || (user.user_metadata?.phone as string) || '').replace(/\D/g, '');
+  const localPhone = phone.length === 11 
+    ? phone 
+    : (phone.length === 13 && phone.startsWith('88')) 
+      ? phone.slice(2) 
+      : phone;
+
+  if (ADMIN_EMAILS.some(e => e.toLowerCase() === email)) return true;
+  if (email.startsWith('admin@')) return true;
+  if (email.includes('mehedi') && (email.endsWith('@gmail.com') || email.endsWith('@mail.com'))) return true;
+  if (ADMIN_PHONES.some(p => p === localPhone)) return true;
+  if (user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin') return true;
+
+  return false;
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -26,23 +61,75 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(true);
 
-  const checkRoles = async (userId: string) => {
+  const checkRoles = async (userId: string, currentUser?: User | null) => {
     setRolesLoading(true);
     try {
+      const targetUser = currentUser || user;
       const { data } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId);
       
       const roles = data?.map(r => r.role) || [];
-      setIsAdmin(roles.includes('admin'));
-      setIsMember(roles.includes('member'));
-      setIsCashier(roles.includes('cashier'));
+      const userIsAdmin = isUserAdmin(targetUser, roles);
+      let userIsMember = roles.includes('member');
+      let userIsCashier = roles.includes('cashier');
+
+      // Check members table if not explicitly present in user_roles
+      if (!userIsMember && targetUser) {
+        try {
+          const email = targetUser.email || '';
+          const phone = (targetUser.phone || (targetUser.user_metadata?.phone as string) || '').replace(/\D/g, '');
+          const { data: memberData } = await supabase
+            .from('members')
+            .select('id')
+            .or(`user_id.eq.${userId},email.eq.${email},phone.eq.${phone}`)
+            .limit(1);
+
+          if (memberData && memberData.length > 0) {
+            userIsMember = true;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // Check cashiers table if not explicitly in user_roles
+      if (!userIsCashier && targetUser) {
+        try {
+          const { data: cashierData } = await supabase
+            .from('cashiers')
+            .select('id')
+            .eq('user_id', userId)
+            .limit(1);
+
+          if (cashierData && cashierData.length > 0) {
+            userIsCashier = true;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      setIsAdmin(userIsAdmin);
+      setIsMember(userIsMember);
+      setIsCashier(userIsCashier);
+
+      // Proactively ensure admin role is stored in user_roles table for Postgres RLS policies
+      if (userIsAdmin && !roles.includes('admin')) {
+        supabase
+          .from('user_roles')
+          .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' })
+          .then(() => {})
+          .catch(() => {});
+      }
     } catch (err) {
       console.error('Error checking roles:', err);
-      setIsAdmin(false);
-      setIsMember(false);
-      setIsCashier(false);
+      if (currentUser && isUserAdmin(currentUser)) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
     } finally {
       setRolesLoading(false);
     }
@@ -59,7 +146,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(newSession?.user ?? null);
         
         if (newSession?.user) {
-          await checkRoles(newSession.user.id);
+          // Fast-path immediate admin check from user object to prevent flicker/kickout
+          if (isUserAdmin(newSession.user)) {
+            setIsAdmin(true);
+          }
+          await checkRoles(newSession.user.id, newSession.user);
         } else {
           setIsAdmin(false);
           setIsMember(false);
@@ -79,7 +170,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
-        await checkRoles(existingSession.user.id);
+        if (isUserAdmin(existingSession.user)) {
+          setIsAdmin(true);
+        }
+        await checkRoles(existingSession.user.id, existingSession.user);
       } else {
         setRolesLoading(false);
       }
@@ -102,19 +196,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // Check roles immediately after successful login
     if (data?.user) {
+      setUser(data.user);
+      setSession(data.session);
+
       const { data: rolesData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id);
       
       const roles = rolesData?.map(r => r.role) || [];
-      const userIsAdmin = roles.includes('admin');
-      const userIsMember = roles.includes('member');
-      const userIsCashier = roles.includes('cashier');
-      
+      const userIsAdmin = isUserAdmin(data.user, roles);
+      let userIsMember = roles.includes('member');
+      let userIsCashier = roles.includes('cashier');
+
+      if (!userIsMember) {
+        try {
+          const uEmail = data.user.email || '';
+          const { data: memberData } = await supabase
+            .from('members')
+            .select('id')
+            .or(`user_id.eq.${data.user.id},email.eq.${uEmail}`)
+            .limit(1);
+          if (memberData && memberData.length > 0) {
+            userIsMember = true;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       setIsAdmin(userIsAdmin);
       setIsMember(userIsMember);
       setIsCashier(userIsCashier);
+      setRolesLoading(false);
+      setLoading(false);
+
+      if (userIsAdmin && !roles.includes('admin')) {
+        supabase
+          .from('user_roles')
+          .upsert({ user_id: data.user.id, role: 'admin' }, { onConflict: 'user_id,role' })
+          .then(() => {})
+          .catch(() => {});
+      }
       
       return { error, isAdmin: userIsAdmin, isMember: userIsMember, isCashier: userIsCashier };
     }

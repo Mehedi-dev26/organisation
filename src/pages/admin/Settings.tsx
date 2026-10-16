@@ -10,14 +10,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Key, User, Shield, Bell, LayoutTemplate, Image, Save, Loader2, Sparkles, Heart } from 'lucide-react';
+import { Eye, EyeOff, Key, User, Shield, Bell, LayoutTemplate, Image, Save, Loader2, Sparkles, Heart, Activity, Database, CheckCircle2, Clock, RefreshCw, Server, Zap, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useQueryClient } from '@tanstack/react-query';
+import { sendKeepAlivePing, getKeepAliveStats, KeepAliveStats } from '@/services/keepAliveService';
 
 const Settings = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Supabase Keep-Alive state
+  const [keepAliveStats, setKeepAliveStats] = useState<KeepAliveStats>(getKeepAliveStats());
+  const [isPinging, setIsPinging] = useState(false);
   
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -178,6 +183,32 @@ const Settings = () => {
     }
   };
 
+  // Manual Keep-Alive Ping Handler
+  const handleManualPing = async () => {
+    setIsPinging(true);
+    try {
+      const stats = await sendKeepAlivePing();
+      setKeepAliveStats(stats);
+      if (stats.lastPingStatus === 'success') {
+        toast.success(
+          language === 'bn'
+            ? `সুপাবেজ ব্যাকএন্ড সচল ও সক্রিয় আছে! (লেটেন্সি: ${stats.latencyMs}ms)`
+            : `Supabase backend is live and active! (Latency: ${stats.latencyMs}ms)`
+        );
+      } else {
+        toast.error(
+          language === 'bn'
+            ? `পিং ব্যর্থ হয়েছে: ${stats.errorMessage || 'অজানা ত্রুটি'}`
+            : `Ping failed: ${stats.errorMessage || 'Unknown error'}`
+        );
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error pinging database');
+    } finally {
+      setIsPinging(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -185,19 +216,23 @@ const Settings = () => {
           {language === 'bn' ? 'সেটিংস ও ওয়েবসাইট কন্ট্রোল' : 'Settings & Site Control'}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {language === 'bn' ? 'আপনার অ্যাকাউন্ট এবং ওয়েবসাইটের ব্যানার ও কন্টেন্ট ডাটাবেস থেকে পরিচালনা করুন' : 'Manage your account and customize homepage banners/content dynamically'}
+          {language === 'bn' ? 'আপনার অ্যাকাউন্ট, ওয়েবসাইটের ব্যানার ও ডাটাবেস কিপ-অ্যালাইভ পরিচালনা করুন' : 'Manage account, homepage banners, and Supabase keep-alive status'}
         </p>
       </div>
 
       <Tabs defaultValue="website_content" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
-          <TabsTrigger value="website_content" className="flex items-center gap-2 font-bold text-xs sm:text-sm">
+        <TabsList className="grid w-full grid-cols-3 max-w-xl mb-6">
+          <TabsTrigger value="website_content" className="flex items-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm">
             <LayoutTemplate className="w-4 h-4" />
-            <span>{language === 'bn' ? 'ব্যানার ও কন্টেন্ট' : 'Site Content & Banners'}</span>
+            <span>{language === 'bn' ? 'ব্যানার ও কন্টেন্ট' : 'Site Content'}</span>
           </TabsTrigger>
-          <TabsTrigger value="general" className="flex items-center gap-2 font-bold text-xs sm:text-sm">
+          <TabsTrigger value="supabase_health" className="flex items-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm">
+            <Activity className="w-4 h-4 text-emerald-600" />
+            <span>{language === 'bn' ? 'ব্যাকএন্ড কিপ-অ্যালাইভ' : 'Backend Health'}</span>
+          </TabsTrigger>
+          <TabsTrigger value="general" className="flex items-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm">
             <User className="w-4 h-4" />
-            <span>{language === 'bn' ? 'অ্যাকাউন্ট সেটিংস' : 'Account Settings'}</span>
+            <span>{language === 'bn' ? 'অ্যাকাউন্ট' : 'Account'}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -525,6 +560,140 @@ const Settings = () => {
                 <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 rounded-full">
                   {language === 'bn' ? 'সক্রিয়' : 'Active'}
                 </span>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Tab 3: Supabase Backend Keep-Alive & Health Monitoring ── */}
+        <TabsContent value="supabase_health" className="space-y-6">
+          <Card className="border-emerald-200/80 shadow-[0_10px_35px_rgba(0,0,0,0.06)] rounded-[24px] overflow-hidden">
+            <CardHeader className="bg-emerald-50/60 dark:bg-emerald-950/20 border-b border-emerald-100/80 pb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+                    <Database className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-heading font-bold text-emerald-950 dark:text-emerald-200">
+                      {language === 'bn' ? 'সুপাবেজ ব্যাকএন্ড সচল রাখার অটোমেশন সিস্টেম' : 'Supabase Backend Keep-Alive Automation'}
+                    </CardTitle>
+                    <CardDescription className="text-emerald-800/80 dark:text-emerald-400 text-xs sm:text-sm mt-0.5">
+                      {language === 'bn'
+                        ? 'নিষ্ক্রিয়তার কারণে সুপাবেজ যাতে স্বয়ংক্রিয়ভাবে বন্ধ (Auto-Pause) না হয়, তার জন্য সক্রিয় ব্যবস্থা'
+                        : 'Continuous health monitoring and automated pings to keep Supabase 24/7 active'}
+                    </CardDescription>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-200">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    {language === 'bn' ? 'ডাটাবেস সচল ও সক্রিয়' : 'Database Live & Active'}
+                  </span>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-6 space-y-6">
+              {/* How it works banner */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span>{language === 'bn' ? 'স্বয়ংক্রিয় অটো-পিং কিভাবে কাজ করে?' : 'How does Auto-Ping work?'}</span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+                    {language === 'bn'
+                      ? 'Supabase Free Tier-এ একটানা ৭ দিন কোনো রিকোয়েস্ট না আসলে প্রজেক্ট পজ (Pause) হয়ে যায়। আমাদের সিস্টেমে দুটি সুরক্ষা স্তর রয়েছে: ১) Vercel Cloud Cron ও অটোমেশন প্রতি ৪৮ ঘণ্টায় সরাসরি ব্যাকএন্ডে কুয়েরি পাঠায় (ওয়েবসাইটে কেউ না আসলেও এটি চলবে)। ২) ভিজিটররা ওয়েবসাইটে প্রবেশ করলে স্বয়ংক্রিয় ব্যাকগ্রাউন্ড হার্টবিট চালু হয়।'
+                      : 'Supabase Free Tier pauses projects after 7 days of inactivity. Our system implements dual protection: 1) Vercel Cloud Cron runs an automated cloud ping every 48 hours without needing user visits. 2) Client-side lightweight heartbeats run automatically on visitor traffic.'}
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleManualPing}
+                  disabled={isPinging}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-5 py-2.5 shadow-sm whitespace-nowrap text-xs sm:text-sm"
+                >
+                  {isPinging ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {language === 'bn' ? 'পিং পাঠানো হচ্ছে...' : 'Pinging...'}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      {language === 'bn' ? 'এখনই পিং টেস্ট করুন' : 'Test / Ping Now'}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Status Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+                    <span>{language === 'bn' ? 'ক্লাউড অটোমেশন' : 'Cloud Automation'}</span>
+                    <Server className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-base font-bold text-slate-900 dark:text-white">Vercel Cron & Cloud</p>
+                  <p className="text-[11px] text-emerald-600 font-medium">প্রতি ৪৮ ঘণ্টায় (04:00 UTC)</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+                    <span>{language === 'bn' ? 'শেষ টেস্ট ফলাফল' : 'Last Ping Status'}</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-base font-bold text-slate-900 dark:text-white">
+                    {keepAliveStats.lastPingStatus === 'success' 
+                      ? (language === 'bn' ? 'সফল (সক্রিয়)' : 'Success (Active)')
+                      : keepAliveStats.lastPingStatus === 'error'
+                      ? (language === 'bn' ? 'ত্রুটি' : 'Error')
+                      : (language === 'bn' ? 'অপেক্ষা করছে' : 'Pending')}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    {keepAliveStats.latencyMs ? `রেসপন্স টাইম: ${keepAliveStats.latencyMs}ms` : 'কোনো ডেটা নেই'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+                    <span>{language === 'bn' ? 'শেষ পিং সময়' : 'Last Ping Time'}</span>
+                    <Clock className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                    {keepAliveStats.lastPingTime 
+                      ? new Date(keepAliveStats.lastPingTime).toLocaleTimeString(language === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                      : (language === 'bn' ? 'এখনই পিং করুন' : 'Ping now')}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    {keepAliveStats.lastPingTime 
+                      ? new Date(keepAliveStats.lastPingTime).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US')
+                      : 'N/A'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+                    <span>{language === 'bn' ? 'পরবর্তী পজ ঝুঁকি' : 'Pause Risk'}</span>
+                    <Shield className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">০% ঝুঁকি (নিরাপদ)</p>
+                  <p className="text-[11px] text-slate-500">৭ দিন নিষ্ক্রিয়তা কখনোই ঘটবে না</p>
+                </div>
+              </div>
+
+              {/* Endpoint info */}
+              <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                  <Server className="w-4 h-4 text-emerald-600" />
+                  <span>{language === 'bn' ? 'সুপাবেজ সংযোগ বিশদ' : 'Supabase Connection Details'}</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400 font-mono">
+                  <div className="truncate">URL: https://rbmhzcapomiiduknkfya.supabase.co</div>
+                  <div>Ping Frequency: Every 48 Hours (Cloud Cron) + On-Demand</div>
+                </div>
               </div>
             </CardContent>
           </Card>

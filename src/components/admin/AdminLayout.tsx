@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, isUserAdmin } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
@@ -19,17 +19,18 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const isAuthLoading = loading || rolesLoading;
+  const effectiveIsAdmin = isAdmin || isUserAdmin(user);
 
   useEffect(() => {
     if (!isAuthLoading) {
       if (!user) {
         navigate('/auth');
-      } else if (!isAdmin) {
+      } else if (!effectiveIsAdmin) {
         // Non-admin users cannot access admin panel
         navigate('/');
       }
     }
-  }, [user, isAdmin, isAuthLoading, navigate]);
+  }, [user, effectiveIsAdmin, isAuthLoading, navigate]);
 
   if (isAuthLoading) {
     return (
@@ -44,7 +45,7 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !effectiveIsAdmin) {
     return null;
   }
 

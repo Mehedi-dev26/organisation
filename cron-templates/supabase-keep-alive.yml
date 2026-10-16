@@ -1,0 +1,52 @@
+name: Supabase Backend Keep-Alive (Prevent Auto-Pause)
+
+on:
+  schedule:
+    # Runs every 2 days at 04:00 UTC (10:00 AM Bangladesh Time)
+    # Supabase Free Tier pauses inactive databases after 7 days without queries.
+    # Running this every 48 hours keeps the database continuously active 24/7!
+    - cron: '0 4 */2 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions web dashboard
+
+jobs:
+  ping-supabase:
+    name: Ping Supabase Database & REST API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase REST Endpoint
+        run: |
+          echo "=========================================================="
+          echo "📡 Initiating Supabase Keep-Alive Health Check..."
+          echo "Timestamp (UTC): $(date -u)"
+          echo "=========================================================="
+          
+          SUPABASE_URL="https://rbmhzcapomiiduknkfya.supabase.co"
+          API_KEY="${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}"
+          
+          if [ -z "$API_KEY" ]; then
+            API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJibWh6Y2Fwb21paWR1a25rZnlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4NjQyMjIsImV4cCI6MjEwNzQ0MDIyMn0.7iXjvzzbw0Ln7hKauvV8kthAXOxTmXNezhsYQsdUQik"
+          fi
+          
+          RESPONSE=$(curl -s -S -w "\nHTTP_STATUS:%{http_code}\nLATENCY:%{time_total}s" \
+            -H "apikey: $API_KEY" \
+            -H "Authorization: Bearer $API_KEY" \
+            "$SUPABASE_URL/rest/v1/news?select=id&limit=1")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d':' -f2)
+          LATENCY=$(echo "$RESPONSE" | grep "LATENCY:" | cut -d':' -f2)
+          
+          echo "Response HTTP Status: $HTTP_CODE"
+          echo "Round-trip Latency:   $LATENCY"
+          
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+            echo "=========================================================="
+            echo "✅ Supabase is LIVE and ACTIVE! Inactivity pause timer successfully reset."
+            echo "=========================================================="
+          else
+            echo "=========================================================="
+            echo "⚠️ Warning: Received HTTP Status $HTTP_CODE"
+            echo "Response: $RESPONSE"
+            echo "=========================================================="
+            exit 1
+          fi

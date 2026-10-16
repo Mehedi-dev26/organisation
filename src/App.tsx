@@ -37,12 +37,19 @@ import CashierLayout from "./components/cashier/CashierLayout";
 import CashierDashboard from "./pages/cashier/CashierDashboard";
 import CashierFinance from "./pages/cashier/CashierFinance";
 import CashierDues from "./pages/cashier/CashierDues";
+import React, { useEffect } from "react";
 import CashierYearlyAccounts from "./pages/cashier/CashierYearlyAccounts";
 import CashierPaymentVerification from "./pages/cashier/CashierPaymentVerification";
+import { initAutoKeepAlive } from "./services/keepAliveService";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    initAutoKeepAlive();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <AuthProvider>
@@ -99,6 +106,7 @@ const App = () => (
       </AuthProvider>
     </LanguageProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
