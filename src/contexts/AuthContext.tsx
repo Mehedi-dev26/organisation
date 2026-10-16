@@ -31,17 +31,22 @@ const ADMIN_PHONES = [
   '01700000000',
 ];
 
+const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+export const toEnDigits = (str: string = ''): string => {
+  return str.replace(/[০-৯]/g, (d) => String(BN_DIGITS.indexOf(d)));
+};
+
 export const isUserAdmin = (user: User | null, roles: string[] = []): boolean => {
   if (!user) return false;
   if (roles.includes('admin')) return true;
 
   const email = (user.email || '').toLowerCase().trim();
-  const phone = (user.phone || (user.user_metadata?.phone as string) || '').replace(/\D/g, '');
-  const localPhone = phone.length === 11 
-    ? phone 
-    : (phone.length === 13 && phone.startsWith('88')) 
-      ? phone.slice(2) 
-      : phone;
+  const rawPhone = toEnDigits(user.phone || (user.user_metadata?.phone as string) || '').replace(/\D/g, '');
+  const localPhone = rawPhone.length === 11 
+    ? rawPhone 
+    : (rawPhone.length === 13 && rawPhone.startsWith('88')) 
+      ? rawPhone.slice(2) 
+      : rawPhone;
 
   if (ADMIN_EMAILS.some(e => e.toLowerCase() === email)) return true;
   if (email.startsWith('admin@')) return true;
@@ -208,8 +213,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    const cleanEmail = (email || '').toLowerCase().trim();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password,
     });
     

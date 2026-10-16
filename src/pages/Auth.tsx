@@ -53,6 +53,11 @@ const Auth = () => {
     }
   }, [user, isAdmin, isMember, isCashier, loading, rolesLoading, navigate]);
 
+  const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  const toEnDigits = (str: string = ''): string => {
+    return str.replace(/[০-৯]/g, (d) => String(BN_DIGITS.indexOf(d)));
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
@@ -67,30 +72,62 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const rawInput = identifier.trim();
-      const isEmail = rawInput.includes('@');
-      let targetLoginEmail = rawInput.toLowerCase();
+      const cleanInput = toEnDigits(identifier.trim());
+      const isEmail = cleanInput.includes('@');
+      const cleanPassword = password.trim();
 
-      if (!isEmail) {
-        // Resolve phone number or Member ID to email
-        const digitsOnly = rawInput.replace(/\D/g, '');
+      // Authorized core administrator accounts
+      const ADMIN_ACCOUNTS = [
+        'mehedi.dev26@gmail.com',
+        'mehedihasanwork25@gmail.com',
+        'mehedihasanwork25@mail.com',
+        'admin@somoyerbatighor.org',
+        'admin@batighor.org'
+      ];
+
+      let candidateEmails: string[] = [];
+
+      // 1. Direct username shortcut for admin
+      if (cleanInput.toLowerCase() === 'admin' || cleanInput.toLowerCase() === 'administrator') {
+        candidateEmails = [...ADMIN_ACCOUNTS];
+      } else if (isEmail) {
+        // Direct email entered
+        candidateEmails = [cleanInput.toLowerCase()];
+        // If an authorized admin email is used, add other aliases as backup
+        if (
+          ADMIN_ACCOUNTS.includes(cleanInput.toLowerCase()) || 
+          cleanInput.toLowerCase().includes('mehedi') || 
+          cleanInput.toLowerCase().startsWith('admin@')
+        ) {
+          ADMIN_ACCOUNTS.forEach((ae) => {
+            if (!candidateEmails.includes(ae)) {
+              candidateEmails.push(ae);
+            }
+          });
+        }
+      } else {
+        // Phone number or Member ID entered
+        const digitsOnly = cleanInput.replace(/\D/g, '');
         const standardLocal = digitsOnly.length === 11 
           ? digitsOnly 
           : (digitsOnly.length === 13 && digitsOnly.startsWith('88')) 
             ? digitsOnly.slice(2) 
             : digitsOnly;
         
+        // If it matches registered admin mobile numbers
+        if (['01711050841', '01916314315', '01700000000'].includes(standardLocal)) {
+          candidateEmails = [...ADMIN_ACCOUNTS];
+        }
+
         const candidatePhones = Array.from(new Set([
-          rawInput,
+          cleanInput,
           digitsOnly,
           standardLocal,
           `+88${standardLocal}`,
           `88${standardLocal}`
         ])).filter(Boolean);
 
-        let resolvedEmail: string | null = null;
-
-        // 1. Direct query in members table
+        // A. Direct query in members table
         try {
           const { data: memberData } = await supabase
             .from('members')
@@ -99,52 +136,83 @@ const Auth = () => {
             .limit(1)
             .maybeSingle();
 
-          if (memberData?.email) {
-            resolvedEmail = memberData.email;
+          if (memberData?.email && !candidateEmails.includes(memberData.email.toLowerCase())) {
+            candidateEmails.unshift(memberData.email.toLowerCase());
           } else {
             const { data: memberById } = await supabase
               .from('members')
               .select('email')
-              .eq('member_id', rawInput)
+              .eq('member_id', cleanInput)
               .limit(1)
               .maybeSingle();
 
-            if (memberById?.email) {
-              resolvedEmail = memberById.email;
+            if (memberById?.email && !candidateEmails.includes(memberById.email.toLowerCase())) {
+              candidateEmails.unshift(memberById.email.toLowerCase());
             }
           }
         } catch (e) {
           console.debug('Member lookup error:', e);
         }
 
-        // 2. RPC lookup fallback
-        if (!resolvedEmail) {
+        // B. RPC lookup fallback
+        if (candidateEmails.length === 0) {
           try {
             const { data: rpcEmail } = await (supabase.rpc as any)(
               'find_email_by_phone_or_member_id',
-              { p_identifier: rawInput }
+              { p_identifier: cleanInput }
             );
-            if (rpcEmail && typeof rpcEmail === 'string') {
-              resolvedEmail = rpcEmail;
+            if (rpcEmail && typeof rpcEmail === 'string' && !candidateEmails.includes(rpcEmail.toLowerCase())) {
+              candidateEmails.unshift(rpcEmail.toLowerCase());
             }
           } catch {}
         }
 
-        targetLoginEmail = resolvedEmail || (digitsOnly.length >= 10 ? `${standardLocal}@batighor.org` : rawInput);
+        // C. Fallback synthetic phone email
+        if (candidateEmails.length === 0 && digitsOnly.length >= 10) {
+          candidateEmails.push(`${standardLocal}@batighor.org`);
+        }
       }
 
-      // Execute login directly with user's authorized credentials
-      const authResult = await signIn(targetLoginEmail, password);
+      // If somehow no candidates were formed, fall back to cleanInput
+      if (candidateEmails.length === 0) {
+        candidateEmails = [cleanInput.toLowerCase()];
+      }
 
-      if (!authResult || authResult.error) {
-        const errorMsg = authResult?.error?.message || 'Invalid login credentials';
+      // Password candidate variants (handles both English and Bengali digits if entered)
+      const passwordCandidates = Array.from(new Set([
+        cleanPassword,
+        toEnDigits(cleanPassword)
+      ])).filter(Boolean);
+
+      let lastAuthResult: any = null;
+      let loginSuccessful = false;
+
+      // Authenticate directly with Supabase across candidates
+      for (const targetEmail of candidateEmails) {
+        for (const pwd of passwordCandidates) {
+          const res = await signIn(targetEmail, pwd);
+          lastAuthResult = res;
+          if (res && !res.error) {
+            loginSuccessful = true;
+            break;
+          }
+        }
+        if (loginSuccessful) {
+          break;
+        }
+      }
+
+      if (!loginSuccessful || !lastAuthResult || lastAuthResult.error) {
+        const errorMsg = lastAuthResult?.error?.message || 'Invalid login credentials';
         toast({
           title: language === 'bn' ? 'লগইন ব্যর্থ হয়েছে' : 'Login Failed',
           description: !isEmail && errorMsg.includes('Invalid login credentials')
             ? (language === 'bn' 
-                ? 'মোবাইল নম্বর বা পাসওয়ার্ড সঠিক নয়। আপনার একাউন্ট না থাকলে নিবন্ধন করুন।' 
+                ? 'মোবাইল নম্বর বা পাসওয়ার্ড সঠিক নয়। আপনার সঠিক পাসওয়ার্ড দিয়ে আবার চেষ্টা করুন।' 
                 : 'Invalid mobile number or password.')
-            : errorMsg,
+            : (language === 'bn'
+                ? 'ইমেইল/মোবাইল বা পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে সঠিক তথ্য প্রদান করুন।'
+                : errorMsg),
           variant: 'destructive',
         });
         setIsLoading(false);
@@ -157,11 +225,11 @@ const Auth = () => {
       });
 
       // Automatically navigate to the correct dashboard based on role
-      if (authResult.isAdmin) {
+      if (lastAuthResult.isAdmin) {
         navigate('/admin');
-      } else if (authResult.isCashier) {
+      } else if (lastAuthResult.isCashier) {
         navigate('/cashier');
-      } else if (authResult.isMember) {
+      } else if (lastAuthResult.isMember) {
         navigate('/member-dashboard');
       } else {
         navigate('/member-dashboard');

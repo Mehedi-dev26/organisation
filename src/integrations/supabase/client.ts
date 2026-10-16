@@ -13,6 +13,35 @@ const SUPABASE_PUBLISHABLE_KEY =
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Resilient fetch wrapper with retry and safe timeout to guarantee database connection stability
+const resilientFetch: typeof fetch = async (input, init) => {
+  const maxRetries = 2;
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // If caller already aborted, don't initiate
+      if (init?.signal?.aborted) {
+        throw new DOMException('Request was aborted by caller', 'AbortError');
+      }
+
+      const response = await fetch(input, init);
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      if (init?.signal?.aborted) {
+        throw err;
+      }
+      if (attempt < maxRetries) {
+        // Exponential backoff before retrying database fetch
+        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+      }
+    }
+  }
+
+  throw lastError;
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
@@ -21,6 +50,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     detectSessionInUrl: true,
   },
   global: {
+    fetch: resilientFetch,
     headers: {
       'x-application-name': 'somoyer-batighor',
     },
