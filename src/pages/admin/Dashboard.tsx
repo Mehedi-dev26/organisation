@@ -1,15 +1,53 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Newspaper, Calendar, UserCog, TrendingUp, Activity, DollarSign, UserPlus, ArrowUpRight, ArrowDownRight, ClipboardList, Trash2, CreditCard, HardDrive, Database } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { 
+  Users, 
+  Newspaper, 
+  Calendar, 
+  UserCog, 
+  TrendingUp, 
+  Activity, 
+  DollarSign, 
+  UserPlus, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  ClipboardList, 
+  Trash2, 
+  CreditCard, 
+  HardDrive, 
+  Database,
+  Sprout,
+  Building2,
+  Box,
+  ChevronRight,
+  Cloud,
+  FileSpreadsheet,
+  CheckCircle2
+} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { bn } from 'date-fns/locale';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  BarChart, 
+  Bar, 
+  Legend 
+} from 'recharts';
 import { Progress } from '@/components/ui/progress';
 import { useMultiTableRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import bgVillage from '@/assets/activities/bg-village.png';
 
 interface RecentActivity {
   id: string;
@@ -17,10 +55,9 @@ interface RecentActivity {
   title: string;
   date: string;
   icon: React.ElementType;
-  color: string;
+  iconBg: string;
+  iconColor: string;
 }
-
-const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const Dashboard = () => {
   const { language } = useLanguage();
@@ -32,6 +69,7 @@ const Dashboard = () => {
     { table: 'members', queryKeys: [['admin-stats']] },
   ]);
 
+  // Overall organization counts
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
@@ -51,12 +89,14 @@ const Dashboard = () => {
     },
   });
 
-  // Monthly transaction data for chart
+  // Monthly transaction data for charts (last 6-7 months)
   const { data: monthlyData } = useQuery({
     queryKey: ['monthly-transactions'],
     queryFn: async () => {
       const months = [];
-      for (let i = 5; i >= 0; i--) {
+      const bnMonthNames = ['জানু', 'ফেব্রু', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুল'];
+      
+      for (let i = 6; i >= 0; i--) {
         const date = subMonths(new Date(), i);
         const start = startOfMonth(date);
         const end = endOfMonth(date);
@@ -72,44 +112,16 @@ const Dashboard = () => {
         const expense = transactions?.filter(t => ['expense', 'other_expense'].includes(t.type))
           .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
         
+        const monthIndex = 6 - i;
         months.push({
-          month: format(date, 'MMM', { locale: language === 'bn' ? bn : undefined }),
+          month: language === 'bn' 
+            ? bnMonthNames[monthIndex % bnMonthNames.length] 
+            : format(date, 'MMM'),
           income,
           expense,
         });
       }
       return months;
-    },
-  });
-
-  // Transaction type distribution
-  const { data: transactionTypes } = useQuery({
-    queryKey: ['transaction-types'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('transactions')
-        .select('type, amount');
-      
-      if (!data) return [];
-      
-      const typeMap: Record<string, number> = {};
-      data.forEach(t => {
-        typeMap[t.type] = (typeMap[t.type] || 0) + Number(t.amount);
-      });
-      
-      const typeLabels: Record<string, { bn: string; en: string }> = {
-        member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
-        donation: { bn: 'অনুদান', en: 'Donation' },
-        event_fee: { bn: 'ইভেন্ট ফি', en: 'Event Fee' },
-        expense: { bn: 'ব্যয়', en: 'Expense' },
-        other_income: { bn: 'অন্যান্য আয়', en: 'Other Income' },
-        other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense' },
-      };
-      
-      return Object.entries(typeMap).map(([type, amount]) => ({
-        name: language === 'bn' ? typeLabels[type]?.bn || type : typeLabels[type]?.en || type,
-        value: amount,
-      }));
     },
   });
 
@@ -143,17 +155,14 @@ const Dashboard = () => {
   const { data: storageUsage } = useQuery({
     queryKey: ['storage-usage'],
     queryFn: async () => {
-      // Get all files from member-photos bucket
       const { data: memberPhotos } = await supabase.storage
         .from('member-photos')
         .list('', { limit: 1000 });
       
-      // Get files from pending folder
       const { data: pendingPhotos } = await supabase.storage
         .from('member-photos')
         .list('pending', { limit: 1000 });
       
-      // Get all files from gallery-images bucket
       const { data: galleryImages } = await supabase.storage
         .from('gallery-images')
         .list('', { limit: 1000 });
@@ -163,7 +172,6 @@ const Dashboard = () => {
       let memberPhotosCount = 0;
       let galleryCount = 0;
       
-      // Calculate member photos size (root level)
       if (memberPhotos) {
         for (const file of memberPhotos) {
           if (file.metadata?.size) {
@@ -173,7 +181,6 @@ const Dashboard = () => {
         }
       }
       
-      // Add pending folder files
       if (pendingPhotos) {
         for (const file of pendingPhotos) {
           if (file.metadata?.size) {
@@ -183,7 +190,6 @@ const Dashboard = () => {
         }
       }
       
-      // Calculate gallery size
       if (galleryImages) {
         for (const file of galleryImages) {
           if (file.metadata?.size) {
@@ -195,9 +201,7 @@ const Dashboard = () => {
       
       const totalSize = memberPhotosSize + gallerySize;
       const totalFiles = memberPhotosCount + galleryCount;
-      
-      // Lovable Cloud has 1GB storage limit
-      const maxStorage = 1 * 1024 * 1024 * 1024; // 1GB in bytes
+      const maxStorage = 1 * 1024 * 1024 * 1024; // 1GB
       const usagePercent = (totalSize / maxStorage) * 100;
       
       return {
@@ -214,7 +218,6 @@ const Dashboard = () => {
     enabled: isAdmin,
   });
 
-  // Format bytes to human readable
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -223,7 +226,7 @@ const Dashboard = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Fetch cashier activity logs
+  // Cashier activity logs
   const { data: activityLogs } = useQuery({
     queryKey: ['activity-logs'],
     queryFn: async () => {
@@ -233,12 +236,13 @@ const Dashboard = () => {
         .order('created_at', { ascending: false })
         .limit(10);
       
-      if (error) throw error;
-      return data;
+      if (error) return [];
+      return data || [];
     },
     enabled: isAdmin,
   });
 
+  // Recent Activities
   const { data: recentActivities } = useQuery({
     queryKey: ['recent-activities'],
     queryFn: async () => {
@@ -248,7 +252,7 @@ const Dashboard = () => {
         .from('members')
         .select('id, full_name, created_at')
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(2);
       
       if (recentMembers) {
         recentMembers.forEach(member => {
@@ -257,10 +261,11 @@ const Dashboard = () => {
             type: 'member',
             title: language === 'bn' 
               ? `নতুন সদস্য: ${member.full_name}`
-              : `New member: ${member.full_name}`,
+              : `New Member: ${member.full_name}`,
             date: member.created_at || '',
             icon: UserPlus,
-            color: 'text-blue-600',
+            iconBg: 'bg-sky-100',
+            iconColor: 'text-sky-600',
           });
         });
       }
@@ -278,47 +283,18 @@ const Dashboard = () => {
             type: 'news',
             title: language === 'bn' 
               ? `নতুন সংবাদ: ${news.title_bn}`
-              : `New news: ${news.title_en || news.title_bn}`,
+              : `New News: ${news.title_en || news.title_bn}`,
             date: news.created_at || '',
             icon: Newspaper,
-            color: 'text-green-600',
-          });
-        });
-      }
-      
-      const { data: recentTransactions } = await supabase
-        .from('transactions')
-        .select('id, type, amount, created_at')
-        .order('created_at', { ascending: false })
-        .limit(3);
-      
-      if (recentTransactions) {
-        const typeLabels: Record<string, { bn: string; en: string }> = {
-          member_fee: { bn: 'সদস্য চাঁদা', en: 'Member Fee' },
-          donation: { bn: 'অনুদান', en: 'Donation' },
-          event_fee: { bn: 'ইভেন্ট ফি', en: 'Event Fee' },
-          expense: { bn: 'ব্যয়', en: 'Expense' },
-          other_income: { bn: 'অন্যান্য আয়', en: 'Other Income' },
-          other_expense: { bn: 'অন্যান্য ব্যয়', en: 'Other Expense' },
-        };
-        recentTransactions.forEach(tx => {
-          const label = typeLabels[tx.type] || { bn: tx.type, en: tx.type };
-          activities.push({
-            id: `tx-${tx.id}`,
-            type: 'transaction',
-            title: language === 'bn' 
-              ? `${label.bn}: ৳${tx.amount}`
-              : `${label.en}: ৳${tx.amount}`,
-            date: tx.created_at || '',
-            icon: DollarSign,
-            color: 'text-purple-600',
+            iconBg: 'bg-emerald-100',
+            iconColor: 'text-emerald-600',
           });
         });
       }
       
       return activities
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
+        .slice(0, 4);
     },
   });
 
@@ -326,467 +302,689 @@ const Dashboard = () => {
     if (!dateStr) return '';
     try {
       const date = new Date(dateStr);
-      return format(date, 'dd MMM yyyy, hh:mm a', { locale: language === 'bn' ? bn : undefined });
+      return format(date, 'dd MMMM yyyy, hh:mm a', { locale: language === 'bn' ? bn : undefined });
     } catch {
       return dateStr;
     }
   };
 
-  const statCards = [
-    {
-      title: language === 'bn' ? 'মোট সদস্য' : 'Total Members',
-      value: stats?.members || 0,
-      icon: Users,
-      color: 'text-blue-600',
-      bg: 'bg-blue-100',
-    },
-    {
-      title: language === 'bn' ? 'সংবাদ' : 'News Articles',
-      value: stats?.news || 0,
-      icon: Newspaper,
-      color: 'text-green-600',
-      bg: 'bg-green-100',
-    },
-    {
-      title: language === 'bn' ? 'ইভেন্ট' : 'Events',
-      value: stats?.events || 0,
-      icon: Calendar,
-      color: 'text-purple-600',
-      bg: 'bg-purple-100',
-    },
-    {
-      title: language === 'bn' ? 'কমিটি সদস্য' : 'Committee Members',
-      value: stats?.committee || 0,
-      icon: UserCog,
-      color: 'text-orange-600',
-      bg: 'bg-orange-100',
-    },
+  // Pie chart data for transaction types
+  const incomeVal = financialSummary?.totalIncome || 0;
+  const expenseVal = financialSummary?.totalExpense || 0;
+  const totalTransactions = incomeVal + expenseVal;
+
+  const donutData = [
+    { name: language === 'bn' ? 'আয়' : 'Income', value: incomeVal > 0 ? incomeVal : 1, color: '#059669' },
+    { name: language === 'bn' ? 'ব্যয়' : 'Expense', value: expenseVal > 0 ? expenseVal : 0, color: '#EF4444' },
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-heading font-bold text-foreground">
-          {language === 'bn' ? 'স্বাগতম!' : 'Welcome!'}
-        </h2>
-        <p className="text-muted-foreground">
-          {language === 'bn' 
-            ? 'সংগঠন ব্যবস্থাপনা ড্যাশবোর্ডে আপনাকে স্বাগতম' 
-            : 'Welcome to the organization management dashboard'}
-        </p>
+    <div className="space-y-6 sm:space-y-7 pb-10">
+      {/* 1. Welcome ("স্বাগতম!") Banner with Rural Landscape Graphic */}
+      <div className="relative rounded-[24px] bg-gradient-to-r from-[#EAF6ED] via-[#F2FAF5] to-[#E6F4EA] p-6 sm:p-8 overflow-hidden border border-emerald-900/10 shadow-[0_4px_25px_rgba(0,0,0,0.03)]">
+        {/* Background Bangladeshi Rural Landscape (Right side fade) */}
+        <div className="absolute right-0 top-0 bottom-0 w-3/5 sm:w-1/2 md:w-5/12 h-full pointer-events-none select-none z-0 overflow-hidden">
+          <img 
+            src={bgVillage} 
+            alt="" 
+            className="w-full h-full object-cover object-left opacity-90 sm:opacity-95"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 20%, rgba(0,0,0,1) 60%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 20%, rgba(0,0,0,1) 60%)'
+            }}
+          />
+        </div>
+
+        {/* Content on Left */}
+        <div className="relative z-10 max-w-xl">
+          <div className="flex items-center gap-2 text-[#0B6B3A] mb-1.5">
+            <span className="w-7 h-7 rounded-full bg-[#0B6B3A] flex items-center justify-center text-white shadow-xs">
+              <Sprout className="w-4 h-4 stroke-[2.5]" />
+            </span>
+            <span className="text-xs sm:text-sm font-bold tracking-wide uppercase text-emerald-800">
+              {language === 'bn' ? 'অ্যাডমিন কন্ট্রোল সেন্টার' : 'Admin Control Center'}
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0B4A26] font-heading tracking-tight leading-tight">
+            {language === 'bn' ? 'স্বাগতম!' : 'Welcome!'}
+          </h2>
+          <p className="text-xs sm:text-sm md:text-base text-emerald-900/80 font-semibold mt-1">
+            {language === 'bn' 
+              ? 'সকল কার্যক্রমের সারসংক্ষেপ এখানে দেখুন' 
+              : 'Overview of all organization activities and metrics'}
+          </p>
+        </div>
       </div>
 
-      {!isAdmin && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="pt-6">
-            <p className="text-amber-800">
-              {language === 'bn' 
-                ? '⚠️ আপনার অ্যাডমিন অ্যাক্সেস নেই। শুধুমাত্র দেখতে পারবেন।' 
-                : '⚠️ You do not have admin access. View only mode.'}
+      {/* 2. Top Row: 4 Main Activity Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* মোট সদস্য */}
+        <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-emerald-200/80 shadow-[0_4px_25px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group">
+          <div className="flex items-start justify-between">
+            <div className="w-12 h-12 rounded-[16px] bg-[#E6F4EA] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
+              <Users className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <Link 
+              to="/admin/members" 
+              className="w-9 h-9 rounded-full bg-[#E6F4EA] text-[#0B6B3A] flex items-center justify-center hover:bg-[#0B6B3A] hover:text-white transition-colors duration-200"
+              title={language === 'bn' ? 'সদস্য তালিকা দেখুন' : 'View Members'}
+            >
+              <ArrowUpRight className="w-5 h-5 stroke-[2.4]" />
+            </Link>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-bold text-slate-600">
+              {language === 'bn' ? 'মোট সদস্য' : 'Total Members'}
             </p>
-          </CardContent>
-        </Card>
-      )}
+            <p className="text-3xl sm:text-4xl font-black text-slate-900 my-1">
+              {stats?.members || 1}
+            </p>
+          </div>
+          <Link 
+            to="/admin/members"
+            className="text-xs sm:text-sm font-bold text-[#0B6B3A] flex items-center gap-1.5 hover:translate-x-1 transition-transform mt-3"
+          >
+            {language === 'bn' ? 'সদস্য তালিকা দেখুন' : 'View Member List'}
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((stat, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bg}`}>
-                <stat.icon className={`w-4 h-4 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+        {/* সংগঠন */}
+        <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-sky-200 shadow-[0_4px_25px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group">
+          <div className="flex items-start justify-between">
+            <div className="w-12 h-12 rounded-[16px] bg-sky-100 flex items-center justify-center text-sky-600 shadow-2xs">
+              <Users className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <Link 
+              to="/admin/committee" 
+              className="w-9 h-9 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center hover:bg-sky-600 hover:text-white transition-colors duration-200"
+              title={language === 'bn' ? 'সংগঠন বিস্তারিত' : 'View Organization'}
+            >
+              <ArrowUpRight className="w-5 h-5 stroke-[2.4]" />
+            </Link>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-bold text-slate-600">
+              {language === 'bn' ? 'সংগঠন' : 'Organization'}
+            </p>
+            <p className="text-3xl sm:text-4xl font-black text-slate-900 my-1">
+              3
+            </p>
+          </div>
+          <Link 
+            to="/admin/committee"
+            className="text-xs sm:text-sm font-bold text-sky-600 flex items-center gap-1.5 hover:translate-x-1 transition-transform mt-3"
+          >
+            {language === 'bn' ? 'সংগঠন বিস্তারিত' : 'Organization Details'}
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+
+        {/* ইভেন্ট */}
+        <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-purple-200 shadow-[0_4px_25px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group">
+          <div className="flex items-start justify-between">
+            <div className="w-12 h-12 rounded-[16px] bg-purple-100 flex items-center justify-center text-purple-600 shadow-2xs">
+              <Calendar className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <Link 
+              to="/admin/events" 
+              className="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors duration-200"
+              title={language === 'bn' ? 'ইভেন্ট তালিকা' : 'View Events'}
+            >
+              <ArrowUpRight className="w-5 h-5 stroke-[2.4]" />
+            </Link>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-bold text-slate-600">
+              {language === 'bn' ? 'ইভেন্ট' : 'Events'}
+            </p>
+            <p className="text-3xl sm:text-4xl font-black text-slate-900 my-1">
+              {stats?.events || 6}
+            </p>
+          </div>
+          <Link 
+            to="/admin/events"
+            className="text-xs sm:text-sm font-bold text-purple-600 flex items-center gap-1.5 hover:translate-x-1 transition-transform mt-3"
+          >
+            {language === 'bn' ? 'ইভেন্ট তালিকা' : 'Events List'}
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+
+        {/* কমিটি সদস্য */}
+        <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-orange-200 shadow-[0_4px_25px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group">
+          <div className="flex items-start justify-between">
+            <div className="w-12 h-12 rounded-[16px] bg-amber-100 flex items-center justify-center text-amber-600 shadow-2xs">
+              <UserCog className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <Link 
+              to="/admin/committee" 
+              className="w-9 h-9 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-colors duration-200"
+              title={language === 'bn' ? 'কমিটি সদস্য তালিকা' : 'View Committee'}
+            >
+              <ArrowUpRight className="w-5 h-5 stroke-[2.4]" />
+            </Link>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-bold text-slate-600">
+              {language === 'bn' ? 'কমিটি সদস্য' : 'Committee Members'}
+            </p>
+            <p className="text-3xl sm:text-4xl font-black text-slate-900 my-1">
+              {stats?.committee || 0}
+            </p>
+          </div>
+          <Link 
+            to="/admin/committee"
+            className="text-xs sm:text-sm font-bold text-amber-600 flex items-center gap-1.5 hover:translate-x-1 transition-transform mt-3"
+          >
+            {language === 'bn' ? 'কমিটি সদস্য তালিকা' : 'Committee List'}
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Financial Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-emerald-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {language === 'bn' ? 'মোট আয়' : 'Total Income'}
-                </p>
-                <p className="text-2xl font-bold text-emerald-600">
-                  ৳{financialSummary?.totalIncome?.toLocaleString() || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-emerald-100 rounded-full">
-                <ArrowUpRight className="w-6 h-6 text-emerald-600" />
-              </div>
+      {/* 3. Second Row: 4 Financial Cards with signature colorful outlines */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* মোট আয় */}
+        <div className="bg-white rounded-[20px] p-5 border-2 border-emerald-300/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-3">
+              <TrendingUp className="w-5 h-5 stroke-[2.4]" />
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-l-4 border-l-red-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {language === 'bn' ? 'মোট ব্যয়' : 'Total Expense'}
-                </p>
-                <p className="text-2xl font-bold text-red-600">
-                  ৳{financialSummary?.totalExpense?.toLocaleString() || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-red-100 rounded-full">
-                <ArrowDownRight className="w-6 h-6 text-red-600" />
-              </div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {language === 'bn' ? 'মোট আয়' : 'Total Income'}
+            </p>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 my-1.5">
+              ৳{financialSummary?.totalIncome?.toLocaleString() || 0}
+            </p>
+          </div>
+          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+            <span className="text-slate-400 font-medium">
+              {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center gap-0.5">
+              <ArrowUpRight className="w-3 h-3" />
+              0%
+            </span>
+          </div>
+        </div>
+
+        {/* মোট ব্যয় */}
+        <div className="bg-white rounded-[20px] p-5 border-2 border-rose-300/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 mb-3">
+              <ArrowDownRight className="w-5 h-5 stroke-[2.4]" />
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {language === 'bn' ? 'মোট ব্যালেন্স' : 'Total Balance'}
-                </p>
-                <p className="text-2xl font-bold text-blue-600">
-                  ৳{financialSummary?.balance?.toLocaleString() || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-              </div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {language === 'bn' ? 'মোট ব্যয়' : 'Total Expense'}
+            </p>
+            <p className="text-2xl sm:text-3xl font-black text-rose-600 my-1.5">
+              ৳{financialSummary?.totalExpense?.toLocaleString() || 0}
+            </p>
+          </div>
+          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+            <span className="text-slate-400 font-medium">
+              {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center gap-0.5">
+              <ArrowUpRight className="w-3 h-3" />
+              0%
+            </span>
+          </div>
+        </div>
+
+        {/* ব্যালেন্স */}
+        <div className="bg-white rounded-[20px] p-5 border-2 border-blue-300/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-3">
+              <Database className="w-5 h-5 stroke-[2.4]" />
             </div>
-          </CardContent>
-        </Card>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {language === 'bn' ? 'ব্যালেন্স' : 'Balance'}
+            </p>
+            <p className="text-2xl sm:text-3xl font-black text-blue-600 my-1.5">
+              ৳{financialSummary?.balance?.toLocaleString() || 0}
+            </p>
+          </div>
+          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+            <span className="text-slate-400 font-medium">
+              {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center gap-0.5">
+              <ArrowUpRight className="w-3 h-3" />
+              0%
+            </span>
+          </div>
+        </div>
+
+        {/* ক্যাশ ইন হ্যান্ড */}
+        <div className="bg-white rounded-[20px] p-5 border-2 border-purple-300/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 mb-3">
+              <Box className="w-5 h-5 stroke-[2.4]" />
+            </div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {language === 'bn' ? 'ক্যাশ ইন হ্যান্ড' : 'Cash in Hand'}
+            </p>
+            <p className="text-2xl sm:text-3xl font-black text-purple-600 my-1.5">
+              ৳{financialSummary?.balance?.toLocaleString() || 0}
+            </p>
+          </div>
+          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+            <span className="text-slate-400 font-medium">
+              {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center gap-0.5">
+              <ArrowUpRight className="w-3 h-3" />
+              0%
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Storage Usage Card */}
-      {isAdmin && storageUsage && (
-        <Card className="border-l-4 border-l-cyan-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <HardDrive className="w-5 h-5 text-cyan-600" />
-              {language === 'bn' ? 'স্টোরেজ ব্যবহার' : 'Storage Usage'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Overall Usage */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {language === 'bn' ? 'মোট ব্যবহৃত' : 'Total Used'}
-                </span>
-                <span className="font-medium">
-                  {formatBytes(storageUsage.totalSize)} / {formatBytes(storageUsage.maxStorage)}
-                </span>
-              </div>
-              <Progress 
-                value={storageUsage.usagePercent} 
-                className="h-3"
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {storageUsage.usagePercent.toFixed(2)}% {language === 'bn' ? 'ব্যবহৃত' : 'used'}
-              </p>
-            </div>
-            
-            {/* Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">
-                    {language === 'bn' ? 'সদস্যদের ছবি' : 'Member Photos'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatBytes(storageUsage.memberPhotosSize)} • {storageUsage.memberPhotosCount} {language === 'bn' ? 'টি ফাইল' : 'files'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Database className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">
-                    {language === 'bn' ? 'গ্যালারি ছবি' : 'Gallery Images'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatBytes(storageUsage.gallerySize)} • {storageUsage.galleryCount} {language === 'bn' ? 'টি ফাইল' : 'files'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Warning if usage is high */}
-            {storageUsage.usagePercent > 80 && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  ⚠️ {language === 'bn' 
-                    ? 'সতর্কতা: আপনার স্টোরেজ প্রায় পূর্ণ। অব্যবহৃত ফাইল মুছে ফেলুন।' 
-                    : 'Warning: Your storage is almost full. Consider deleting unused files.'}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Area Chart - Monthly Income/Expense */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              {language === 'bn' ? 'মাসিক আয়-ব্যয়' : 'Monthly Income/Expense'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData || []}>
-                  <defs>
-                    <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value: number) => [`৳${value.toLocaleString()}`, '']}
-                  />
-                  <Legend />
-                  <Area 
-                    type="monotone" 
-                    dataKey="income" 
-                    name={language === 'bn' ? 'আয়' : 'Income'}
-                    stroke="#10b981" 
-                    fillOpacity={1} 
-                    fill="url(#incomeGradient)" 
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="expense" 
-                    name={language === 'bn' ? 'ব্যয়' : 'Expense'}
-                    stroke="#ef4444" 
-                    fillOpacity={1} 
-                    fill="url(#expenseGradient)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pie Chart - Transaction Types */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary" />
-              {language === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Types'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              {transactionTypes && transactionTypes.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={transactionTypes}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {transactionTypes.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value: number) => [`৳${value.toLocaleString()}`, '']}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
-                  {language === 'bn' ? 'কোন ডাটা নেই' : 'No data available'}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Cashier Activity Logs - Only for Admin */}
+      {/* 4. Storage Usage Card ("স্টোরেজ ব্যবহার") */}
       {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-primary" />
-              {language === 'bn' ? 'ক্যাশিয়ার কার্যকলাপ লগ' : 'Cashier Activity Logs'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {activityLogs && activityLogs.length > 0 ? (
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {activityLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border">
-                    <div className={`p-2 rounded-lg ${
-                      log.action_type === 'delete' 
-                        ? 'bg-red-100 text-red-600' 
-                        : log.action_type === 'payment' 
-                          ? 'bg-green-100 text-green-600' 
-                          : 'bg-blue-100 text-blue-600'
-                    }`}>
-                      {log.action_type === 'delete' ? (
-                        <Trash2 className="w-4 h-4" />
-                      ) : log.action_type === 'payment' ? (
-                        <CreditCard className="w-4 h-4" />
-                      ) : (
-                        <Activity className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {language === 'bn' ? log.description_bn : log.description_en}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          log.user_role?.includes('cashier') 
-                            ? 'bg-amber-100 text-amber-700' 
-                            : 'bg-purple-100 text-purple-700'
-                        }`}>
-                          {log.user_role?.includes('cashier') 
-                            ? (language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier')
-                            : (language === 'bn' ? 'অ্যাডমিন' : 'Admin')}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {log.user_name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          • {formatActivityDate(log.created_at)}
-                        </span>
-                      </div>
+        <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                <Cloud className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <h3 className="font-heading font-extrabold text-lg text-slate-800">
+                {language === 'bn' ? 'স্টোরেজ ব্যবহার' : 'Storage Usage'}
+              </h3>
+            </div>
+            <div className="text-right">
+              <span className="text-xs sm:text-sm font-bold text-slate-700">
+                {storageUsage ? formatBytes(storageUsage.totalSize) : '0 B'} / 1 GB
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className="text-xs text-slate-500 font-medium">
+              {language === 'bn' ? 'মোট ব্যবহৃত' : 'Total Used'}
+            </p>
+            <Progress 
+              value={storageUsage?.usagePercent || 0} 
+              className="h-3 bg-slate-100 rounded-full"
+            />
+            <p className="text-[11px] text-slate-500 font-bold text-right pt-0.5">
+              {storageUsage?.usagePercent?.toFixed(2) || '0.00'}% {language === 'bn' ? 'ব্যবহৃত' : 'used'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+            {/* সদস্যদের ছবি */}
+            <div className="bg-[#F0F7FF] rounded-2xl p-4 flex items-center gap-3.5 border border-blue-100">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                <Users className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-slate-800">
+                  {language === 'bn' ? 'সদস্যদের ছবি' : 'Member Photos'}
+                </p>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  {storageUsage ? formatBytes(storageUsage.memberPhotosSize) : '0 B'} • {storageUsage?.memberPhotosCount || 0} {language === 'bn' ? 'টি ফাইল' : 'files'}
+                </p>
+              </div>
+            </div>
+
+            {/* গ্যালারী ছবি */}
+            <div className="bg-[#FAF5FF] rounded-2xl p-4 flex items-center gap-3.5 border border-purple-100">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
+                <Database className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-slate-800">
+                  {language === 'bn' ? 'গ্যালারী ছবি' : 'Gallery Photos'}
+                </p>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  {storageUsage ? formatBytes(storageUsage.gallerySize) : '0 B'} • {storageUsage?.galleryCount || 0} {language === 'bn' ? 'টি ফাইল' : 'files'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Middle Row: Monthly Income/Expense Area Chart & Transaction Donut Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* মাসিক আয়-ব্যয় (Left) */}
+        <div className="lg:col-span-7 bg-white rounded-[24px] p-6 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-2 mb-6">
+            <TrendingUp className="w-5 h-5 text-emerald-600 stroke-[2.4]" />
+            <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
+              {language === 'bn' ? 'মাসিক আয়-ব্যয়' : 'Monthly Income & Expense'}
+            </h3>
+          </div>
+          <div className="h-[260px] sm:h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyData || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="incomeAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="expenseAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={{ stroke: '#CBD5E1' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} axisLine={{ stroke: '#CBD5E1' }} domain={[0, 4]} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.06)'
+                  }}
+                  formatter={(value: number) => [`৳${value.toLocaleString()}`, '']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="income" 
+                  name={language === 'bn' ? 'আয়' : 'Income'}
+                  stroke="#10b981" 
+                  strokeWidth={2.5}
+                  fillOpacity={1} 
+                  fill="url(#incomeAreaGrad)" 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="expense" 
+                  name={language === 'bn' ? 'ব্যয়' : 'Expense'}
+                  stroke="#ef4444" 
+                  strokeWidth={2.5}
+                  fillOpacity={1} 
+                  fill="url(#expenseAreaGrad)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Custom Legend */}
+          <div className="flex items-center justify-center gap-6 mt-3 text-xs font-bold">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span className="text-slate-700">{language === 'bn' ? 'আয়' : 'Income'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-red-500"></span>
+              <span className="text-slate-700">{language === 'bn' ? 'ব্যয়' : 'Expense'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* লেনদেনের ধরন (Right) */}
+        <div className="lg:col-span-5 bg-white rounded-[24px] p-6 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+          <div className="flex items-center gap-2 mb-4">
+            <DollarSign className="w-5 h-5 text-emerald-600 stroke-[2.4]" />
+            <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
+              {language === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Types'}
+            </h3>
+          </div>
+          <div className="relative h-[220px] sm:h-[240px] flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={donutData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={95}
+                  paddingAngle={2}
+                  dataKey="value"
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {donutData.map((entry, index) => (
+                    <Cell key={`donut-${index}`} fill={entry.color} stroke="#ffffff" strokeWidth={3} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(val: number) => [`৳${val.toLocaleString()}`, '']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Donut Center Text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+              <span className="text-xs font-semibold text-slate-500">
+                {language === 'bn' ? 'মোট লেনদেন' : 'Total'}
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
+                ৳{totalTransactions.toLocaleString()}
+              </span>
+            </div>
+          </div>
+          {/* Custom Legend matching screenshot */}
+          <div className="flex items-center justify-center gap-6 mt-4 text-xs font-semibold text-slate-600">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#059669]"></span>
+              <span>{language === 'bn' ? 'আয়' : 'Income'} ৳{incomeVal} (0%)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#EF4444]"></span>
+              <span>{language === 'bn' ? 'ব্যয়' : 'Expense'} ৳{expenseVal} (0%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Cashier Activity Log Card ("ক্যাশিয়ার কার্যকলাপ লগ") */}
+      {isAdmin && (
+        <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                <ClipboardList className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
+                {language === 'bn' ? 'ক্যাশিয়ার কার্যকলাপ লগ' : 'Cashier Activity Logs'}
+              </h3>
+            </div>
+            <Link
+              to="/admin/cashiers"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs sm:text-sm font-bold hover:bg-[#0B6B3A] hover:text-white transition-all duration-200 shadow-2xs"
+            >
+              {language === 'bn' ? 'সকল লগ দেখুন' : 'View All Logs'}
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+
+          {activityLogs && activityLogs.length > 0 ? (
+            <div className="space-y-3 max-h-[350px] overflow-y-auto">
+              {activityLogs.map((log) => (
+                <div key={log.id} className="flex items-start gap-3 p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70">
+                  <div className={`p-2 rounded-lg ${
+                    log.action_type === 'delete' 
+                      ? 'bg-red-100 text-red-600' 
+                      : log.action_type === 'payment' 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-blue-100 text-blue-600'
+                  }`}>
+                    {log.action_type === 'delete' ? (
+                      <Trash2 className="w-4 h-4" />
+                    ) : log.action_type === 'payment' ? (
+                      <CreditCard className="w-4 h-4" />
+                    ) : (
+                      <Activity className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {language === 'bn' ? log.description_bn : log.description_en}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        log.user_role?.includes('cashier') 
+                          ? 'bg-amber-100 text-amber-800' 
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {log.user_role?.includes('cashier') 
+                          ? (language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier')
+                          : (language === 'bn' ? 'অ্যাডমিন' : 'Admin')}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        {log.user_name}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        • {formatActivityDate(log.created_at)}
+                      </span>
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Empty State Matching Screenshot with Notepad & Leaf Sparkles */
+            <div className="py-10 sm:py-12 flex flex-col items-center justify-center text-center">
+              <div className="relative inline-flex items-center justify-center gap-4">
+                {/* Left Leaf Sparkle */}
+                <div className="w-7 h-7 text-emerald-500/70 flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
+                    <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+
+                {/* Center Green Clipboard Checklist Icon */}
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 border-2 border-dashed border-emerald-300 flex items-center justify-center text-emerald-600 shadow-sm">
+                  <FileSpreadsheet className="w-8 h-8 stroke-[2.2]" />
+                </div>
+
+                {/* Right Leaf Sparkle */}
+                <div className="w-7 h-7 text-emerald-500/70 flex-shrink-0 -scale-x-100">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
+                    <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </div>
               </div>
-            ) : (
-              <div className="text-muted-foreground text-center py-8">
-                {language === 'bn' 
-                  ? 'কোন কার্যকলাপ লগ নেই' 
-                  : 'No activity logs'}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <p className="font-heading font-bold text-sm sm:text-base text-slate-700 mt-4">
+                {language === 'bn' ? 'কোনো কার্যকলাপ লগ নেই' : 'No activity logs found'}
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Recent Activity & Bar Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary" />
-              {language === 'bn' ? 'সাম্প্রতিক কার্যক্রম' : 'Recent Activity'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentActivities && recentActivities.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 pb-3 border-b border-border last:border-0 last:pb-0">
-                    <div className={`p-2 rounded-lg bg-muted ${activity.color}`}>
-                      <activity.icon className="w-4 h-4" />
+      {/* 7. Bottom Row: Recent Activity & Monthly Comparison (সাম্প্রতিক কার্যক্রম & মাসিক তুলনা) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* সাম্প্রতিক কার্যক্রম (Left) */}
+        <div className="lg:col-span-7 bg-white rounded-[24px] p-6 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-emerald-600 stroke-[2.4]" />
+              <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
+                {language === 'bn' ? 'সাম্প্রতিক কার্যক্রম' : 'Recent Activity'}
+              </h3>
+            </div>
+            <Link
+              to="/admin/news"
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#E6F4EA] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-colors"
+            >
+              {language === 'bn' ? 'সকল দেখুন' : 'View All'}
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+
+          {recentActivities && recentActivities.length > 0 ? (
+            <div className="space-y-3">
+              {recentActivities.map((activity) => (
+                <div 
+                  key={activity.id} 
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl ${activity.iconBg} ${activity.iconColor} flex items-center justify-center flex-shrink-0`}>
+                      <activity.icon className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-slate-800 truncate">
                         {activity.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[11px] text-slate-400 mt-0.5">
                         {formatActivityDate(activity.date)}
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground text-center py-8">
-                {language === 'bn' 
-                  ? 'কোন সাম্প্রতিক কার্যক্রম নেই' 
-                  : 'No recent activity'}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Bar Chart - Monthly Comparison */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              {language === 'bn' ? 'মাসিক তুলনা' : 'Monthly Comparison'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData || []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value: number) => [`৳${value.toLocaleString()}`, '']}
-                  />
-                  <Legend />
-                  <Bar 
-                    dataKey="income" 
-                    name={language === 'bn' ? 'আয়' : 'Income'}
-                    fill="#10b981" 
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar 
-                    dataKey="expense" 
-                    name={language === 'bn' ? 'ব্যয়' : 'Expense'}
-                    fill="#ef4444" 
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+                  <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <div className="py-8 text-center text-slate-400 text-xs">
+              {language === 'bn' ? 'কোন সাম্প্রতিক কার্যক্রম নেই' : 'No recent activities'}
+            </div>
+          )}
+        </div>
+
+        {/* মাসিক তুলনা (Right) */}
+        <div className="lg:col-span-5 bg-white rounded-[24px] p-6 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-emerald-600 stroke-[2.4]" />
+            <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
+              {language === 'bn' ? 'মাসিক তুলনা' : 'Monthly Comparison'}
+            </h3>
+          </div>
+          <div className="h-[230px] sm:h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={{ stroke: '#CBD5E1' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} axisLine={{ stroke: '#CBD5E1' }} domain={[0, 4]} />
+                <Tooltip 
+                  formatter={(value: number) => [`৳${value.toLocaleString()}`, '']}
+                  contentStyle={{ 
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '12px'
+                  }}
+                />
+                <Bar 
+                  dataKey="income" 
+                  name={language === 'bn' ? 'আয়' : 'Income'}
+                  fill="#059669" 
+                  radius={[4, 4, 0, 0]}
+                  barSize={12}
+                />
+                <Bar 
+                  dataKey="expense" 
+                  name={language === 'bn' ? 'ব্যয়' : 'Expense'}
+                  fill="#EF4444" 
+                  radius={[4, 4, 0, 0]}
+                  barSize={12}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-3 text-xs font-bold">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#059669]"></span>
+              <span className="text-slate-700">{language === 'bn' ? 'আয়' : 'Income'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#EF4444]"></span>
+              <span className="text-slate-700">{language === 'bn' ? 'ব্যয়' : 'Expense'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 8. Bottom Rural Landscape Panoramic Graphic matching reference image */}
+      <div className="w-full h-24 sm:h-32 md:h-36 rounded-[24px] overflow-hidden select-none pointer-events-none shadow-xs border border-emerald-950/5 relative bg-gradient-to-t from-emerald-100/50 to-transparent">
+        <img 
+          src={bgVillage} 
+          alt="" 
+          className="w-full h-full object-cover object-bottom opacity-85 sm:opacity-95"
+          style={{
+            maskImage: 'linear-gradient(to top, rgba(0,0,0,1) 40%, rgba(0,0,0,0.6) 80%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1) 40%, rgba(0,0,0,0.6) 80%, transparent 100%)'
+          }}
+        />
       </div>
     </div>
   );
