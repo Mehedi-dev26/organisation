@@ -4,7 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
-import { Loader2, Bell, ChevronDown, User as UserIcon } from 'lucide-react';
+import { Loader2, Bell, ChevronDown, User as UserIcon, LogOut } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const AdminLayout = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -90,21 +96,37 @@ const AdminLayout = () => {
                 </span>
               </button>
 
-              {/* User Avatar & Name */}
-              <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
-                <div className="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 font-bold text-sm shadow-xs overflow-hidden flex-shrink-0">
-                  <UserIcon className="w-5 h-5 text-emerald-700" />
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">
-                    {displayName}
-                  </p>
-                  <p className="text-[11px] text-emerald-600 font-medium leading-none mt-0.5">
-                    {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
-                  </p>
-                </div>
-                <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
-              </div>
+              {/* User Avatar & Name with Dropdown Menu (Only Logout option) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    type="button"
+                    className="flex items-center gap-2.5 pl-3 border-l border-slate-200 hover:opacity-85 transition-opacity cursor-pointer text-left focus:outline-none"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 font-bold text-sm shadow-xs overflow-hidden flex-shrink-0">
+                      <UserIcon className="w-5 h-5 text-emerald-700" />
+                    </div>
+                    <div className="hidden sm:block text-left">
+                      <p className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">
+                        {displayName}
+                      </p>
+                      <p className="text-[11px] text-emerald-600 font-medium leading-none mt-0.5">
+                        {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
+                      </p>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border border-slate-200">
+                  <DropdownMenuItem 
+                    onClick={signOut}
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer font-semibold py-2.5 px-3 flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>{language === 'bn' ? 'লগআউট' : 'Logout'}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 

@@ -15,6 +15,13 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
   Plus,
   Edit,
   Trash2,
@@ -43,6 +50,9 @@ import {
   Sparkles,
   QrCode,
   RotateCcw,
+  MoreVertical,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
 import { useReactToPrint } from 'react-to-print';
@@ -92,6 +102,18 @@ const MembersManagement: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState<string | null>(null);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+
+  const handleCopyPhone = (phone: string) => {
+    if (!phone) return;
+    navigator.clipboard.writeText(phone);
+    setCopiedPhone(true);
+    toast({
+      title: language === 'bn' ? 'কপি হয়েছে' : 'Copied',
+      description: language === 'bn' ? `মোবাইল নম্বর ${phone} কপি করা হয়েছে` : `Phone number ${phone} copied to clipboard`,
+    });
+    setTimeout(() => setCopiedPhone(false), 2000);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -1005,109 +1027,110 @@ const MembersManagement: React.FC = () => {
                         {getStatusBadge(member.status)}
                       </TableCell>
 
-                      {/* Actions */}
+                      {/* Actions Menu */}
                       <TableCell className="text-right py-3 pr-4">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Approve/Reject for pending */}
-                          {member.status === 'pending' && (
-                            <>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
-                                onClick={() => approveMutation.mutate(member.id)}
-                                disabled={!isAdmin || approveMutation.isPending}
-                                title={language === 'bn' ? 'অনুমোদন করুন' : 'Approve'}
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="w-8 h-8 rounded-lg text-rose-600 hover:bg-rose-100 hover:text-rose-700"
-                                onClick={() => rejectMutation.mutate(member.id)}
-                                disabled={!isAdmin || rejectMutation.isPending}
-                                title={language === 'bn' ? 'প্রত্যাখ্যান / স্থগিত করুন' : 'Reject / Suspend'}
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-
-                          {/* Login Account generator */}
-                          {member.status === 'approved' && !member.user_id && member.email && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <Button
-                              size="icon"
                               variant="ghost"
-                              className="w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-100 hover:text-blue-700"
-                              onClick={() => handleCreateMemberAccount(member)}
-                              disabled={!isAdmin || isCreatingAccount === member.id}
-                              title={language === 'bn' ? 'লগইন অ্যাকাউন্ট তৈরি করুন' : 'Create Login'}
+                              size="icon"
+                              className="w-8 h-8 rounded-lg hover:bg-emerald-50 text-slate-600 hover:text-[#0B6B3A] border border-slate-200/80 shadow-2xs"
+                              title={language === 'bn' ? 'অপশন দেখুন' : 'View options'}
                             >
-                              {isCreatingAccount === member.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Key className="w-4 h-4" />
-                              )}
+                              <MoreVertical className="w-4 h-4" />
                             </Button>
-                          )}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border border-slate-200 p-1.5 space-y-1">
+                            {/* 1. Preview Profile */}
+                            <DropdownMenuItem
+                              onClick={() => setViewingMember(member)}
+                              className="cursor-pointer py-2 px-2.5 rounded-lg text-emerald-800 hover:bg-emerald-50 font-medium text-xs flex items-center gap-2"
+                            >
+                              <Eye className="w-4 h-4 text-emerald-600" />
+                              <span>{language === 'bn' ? 'প্রোফাইল প্রিভিউ দেখুন' : 'Preview Profile'}</span>
+                            </DropdownMenuItem>
 
-                          {/* ID Card Generator Button */}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700"
-                            onClick={() => setIdCardMember(member)}
-                            title={language === 'bn' ? 'অফিসিয়াল আইডি কার্ড' : 'Generate ID Card'}
-                          >
-                            <CreditCard className="w-4 h-4" />
-                          </Button>
+                            {/* 2. Official ID Card */}
+                            <DropdownMenuItem
+                              onClick={() => setIdCardMember(member)}
+                              className="cursor-pointer py-2 px-2.5 rounded-lg text-amber-800 hover:bg-amber-50 font-medium text-xs flex items-center gap-2"
+                            >
+                              <CreditCard className="w-4 h-4 text-amber-600" />
+                              <span>{language === 'bn' ? 'অফিসিয়াল আইডি কার্ড' : 'Generate ID Card'}</span>
+                            </DropdownMenuItem>
 
-                          {/* View Profile Button */}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 rounded-lg text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
-                            onClick={() => setViewingMember(member)}
-                            title={language === 'bn' ? 'প্রোফাইল দেখুন' : 'View Profile'}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                            {/* 3. Edit Member */}
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(member)}
+                              disabled={!isAdmin}
+                              className="cursor-pointer py-2 px-2.5 rounded-lg text-slate-700 hover:bg-slate-100 font-medium text-xs flex items-center gap-2"
+                            >
+                              <Edit className="w-4 h-4 text-slate-500" />
+                              <span>{language === 'bn' ? 'তথ্য সম্পাদনা' : 'Edit Member'}</span>
+                            </DropdownMenuItem>
 
-                          {/* Edit Button */}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                            onClick={() => handleEdit(member)}
-                            disabled={!isAdmin}
-                            title={language === 'bn' ? 'সম্পাদনা' : 'Edit'}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
+                            {/* 4. Conditional: Pending Approve/Reject */}
+                            {member.status === 'pending' && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => approveMutation.mutate(member.id)}
+                                  disabled={!isAdmin || approveMutation.isPending}
+                                  className="cursor-pointer py-2 px-2.5 rounded-lg text-emerald-700 hover:bg-emerald-50 font-medium text-xs flex items-center gap-2"
+                                >
+                                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                                  <span>{language === 'bn' ? 'অনুমোদন করুন' : 'Approve Member'}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => rejectMutation.mutate(member.id)}
+                                  disabled={!isAdmin || rejectMutation.isPending}
+                                  className="cursor-pointer py-2 px-2.5 rounded-lg text-rose-700 hover:bg-rose-50 font-medium text-xs flex items-center gap-2"
+                                >
+                                  <XCircle className="w-4 h-4 text-rose-600" />
+                                  <span>{language === 'bn' ? 'প্রত্যাখ্যান / স্থগিত' : 'Reject / Suspend'}</span>
+                                </DropdownMenuItem>
+                              </>
+                            )}
 
-                          {/* Delete Button */}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 rounded-lg text-rose-500 hover:bg-rose-100 hover:text-rose-600"
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  language === 'bn'
-                                    ? `আপনি কি নিশ্চিতভাবে "${member.full_name}" সদস্যের তথ্য মুছে ফেলতে চান?`
-                                    : `Are you sure you want to delete "${member.full_name}"?`
-                                )
-                              ) {
-                                deleteMutation.mutate(member.id);
-                              }
-                            }}
-                            disabled={!isAdmin}
-                            title={language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                            {/* 5. Conditional: Login Account Generation */}
+                            {member.status === 'approved' && !member.user_id && member.email && (
+                              <DropdownMenuItem
+                                onClick={() => handleCreateMemberAccount(member)}
+                                disabled={!isAdmin || isCreatingAccount === member.id}
+                                className="cursor-pointer py-2 px-2.5 rounded-lg text-blue-700 hover:bg-blue-50 font-medium text-xs flex items-center gap-2"
+                              >
+                                {isCreatingAccount === member.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                ) : (
+                                  <Key className="w-4 h-4 text-blue-600" />
+                                )}
+                                <span>{language === 'bn' ? 'লগইন অ্যাকাউন্ট তৈরি' : 'Create Login'}</span>
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+
+                            {/* 6. Delete Action */}
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    language === 'bn'
+                                      ? `আপনি কি নিশ্চিতভাবে "${member.full_name}" সদস্যের তথ্য মুছে ফেলতে চান?`
+                                      : `Are you sure you want to delete "${member.full_name}"?`
+                                  )
+                                ) {
+                                  deleteMutation.mutate(member.id);
+                                }
+                              }}
+                              disabled={!isAdmin}
+                              className="cursor-pointer py-2 px-2.5 rounded-lg text-rose-600 hover:bg-rose-50 font-semibold text-xs flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4 text-rose-500" />
+                              <span>{language === 'bn' ? 'সদস্য মুছে ফেলুন' : 'Delete Member'}</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1140,16 +1163,16 @@ const MembersManagement: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5 pt-2">
             {/* 1. Basic Information */}
-            <div className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
+            <div className="bg-slate-50 dark:bg-card/70 p-4 sm:p-5 rounded-2xl border border-slate-200/90 space-y-4">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
                 {language === 'bn' ? 'মৌলিক তথ্য ও পরিচিতি' : 'Basic Information'}
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Member ID */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'সদস্য আইডি' : 'Member ID'} *
                   </Label>
                   <Input
@@ -1157,10 +1180,10 @@ const MembersManagement: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
                     required
                     readOnly={!editingMember}
-                    className={`font-mono h-9 text-sm ${!editingMember ? 'bg-muted/60' : ''}`}
+                    className={`font-mono h-10 text-sm font-bold ${!editingMember ? 'bg-muted/70' : ''}`}
                   />
                   {!editingMember && (
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground font-medium">
                       {language === 'bn'
                         ? 'আইডি স্বয়ংক্রিয়ভাবে তৈরি হয়েছে'
                         : 'Auto-generated ID'}
@@ -1170,7 +1193,7 @@ const MembersManagement: React.FC = () => {
 
                 {/* Full Name */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'পুরো নাম' : 'Full Name'} *
                   </Label>
                   <Input
@@ -1178,13 +1201,13 @@ const MembersManagement: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     placeholder={language === 'bn' ? 'যেমন: মো: মেহেদী হাসান' : 'e.g. John Doe'}
                     required
-                    className="h-9 text-sm"
+                    className="h-10 text-sm font-semibold"
                   />
                 </div>
 
                 {/* Phone */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'} *
                   </Label>
                   <Input
@@ -1192,13 +1215,13 @@ const MembersManagement: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="017XXXXXXXX"
                     required
-                    className="h-9 text-sm font-mono"
+                    className="h-10 text-sm font-mono font-bold"
                   />
                 </div>
 
                 {/* Email */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'ইমেইল অ্যাড্রেস' : 'Email Address'}
                   </Label>
                   <Input
@@ -1206,25 +1229,25 @@ const MembersManagement: React.FC = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="member@example.com"
-                    className="h-9 text-sm"
+                    className="h-10 text-sm font-medium"
                   />
                 </div>
 
                 {/* Profession / Occupation */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'পেশা' : 'Profession / Occupation'}
                   </Label>
                   <Select
                     value={formData.occupation}
                     onValueChange={(v) => setFormData({ ...formData, occupation: v })}
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-10 text-sm font-medium">
                       <SelectValue placeholder={language === 'bn' ? 'পেশা নির্বাচন করুন' : 'Select Profession'} />
                     </SelectTrigger>
-                    <SelectContent className="max-h-56">
+                    <SelectContent className="max-h-60">
                       {professionsList.map((occ) => (
-                        <SelectItem key={occ} value={occ}>
+                        <SelectItem key={occ} value={occ} className="text-sm font-medium">
                           {occ}
                         </SelectItem>
                       ))}
@@ -1234,19 +1257,19 @@ const MembersManagement: React.FC = () => {
 
                 {/* Blood Group */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}
                   </Label>
                   <Select
                     value={formData.blood_group}
                     onValueChange={(v) => setFormData({ ...formData, blood_group: v })}
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-10 text-sm font-bold">
                       <SelectValue placeholder={language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'} />
                     </SelectTrigger>
                     <SelectContent>
                       {BLOOD_GROUPS.map((bg) => (
-                        <SelectItem key={bg} value={bg}>
+                        <SelectItem key={bg} value={bg} className="text-sm font-bold">
                           {bg}
                         </SelectItem>
                       ))}
@@ -1256,40 +1279,40 @@ const MembersManagement: React.FC = () => {
 
                 {/* Member Type */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'সদস্যের ক্যাটাগরি' : 'Member Category'}
                   </Label>
                   <Select
                     value={formData.member_type}
                     onValueChange={(v) => setFormData({ ...formData, member_type: v })}
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-10 text-sm font-semibold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="general">{language === 'bn' ? 'সাধারণ সদস্য' : 'General'}</SelectItem>
-                      <SelectItem value="lifetime">{language === 'bn' ? 'আজীবন সদস্য' : 'Lifetime'}</SelectItem>
-                      <SelectItem value="honorary">{language === 'bn' ? 'সম্মানসূচক সদস্য' : 'Honorary'}</SelectItem>
+                      <SelectItem value="general" className="text-sm font-medium">{language === 'bn' ? 'সাধারণ সদস্য' : 'General'}</SelectItem>
+                      <SelectItem value="lifetime" className="text-sm font-medium">{language === 'bn' ? 'আজীবন সদস্য' : 'Lifetime'}</SelectItem>
+                      <SelectItem value="honorary" className="text-sm font-medium">{language === 'bn' ? 'সম্মানসূচক সদস্য' : 'Honorary'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Status */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'সদস্য স্ট্যাটাস' : 'Member Status'}
                   </Label>
                   <Select
                     value={formData.status}
                     onValueChange={(v) => setFormData({ ...formData, status: v })}
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-10 text-sm font-semibold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="approved">{language === 'bn' ? 'অনুমোদিত / সক্রিয়' : 'Approved'}</SelectItem>
-                      <SelectItem value="pending">{language === 'bn' ? 'অপেক্ষমাণ' : 'Pending'}</SelectItem>
-                      <SelectItem value="rejected">{language === 'bn' ? 'স্থগিত / প্রত্যাখ্যাত' : 'Suspended'}</SelectItem>
+                      <SelectItem value="approved" className="text-sm font-medium">{language === 'bn' ? 'অনুমোদিত / সক্রিয়' : 'Approved'}</SelectItem>
+                      <SelectItem value="pending" className="text-sm font-medium">{language === 'bn' ? 'অপেক্ষমাণ' : 'Pending'}</SelectItem>
+                      <SelectItem value="rejected" className="text-sm font-medium">{language === 'bn' ? 'স্থগিত / প্রত্যাখ্যাত' : 'Suspended'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1297,23 +1320,23 @@ const MembersManagement: React.FC = () => {
             </div>
 
             {/* 2. National Geographic Address Cascading Selection */}
-            <div className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-4">
+            <div className="bg-slate-50 dark:bg-card/70 p-4 sm:p-5 rounded-2xl border border-slate-200/90 space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5" />
+                <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
                   {language === 'bn'
                     ? 'ঠিকানা নির্বাচন (জাতীয় ডেটাবেজ অনুযায়ী)'
                     : 'Address Selection (National Geo Database)'}
                 </h4>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground font-semibold">
                   {language === 'bn' ? 'বিভাগ → জেলা → উপজেলা → ইউনিয়ন' : 'Division → District → Upazila → Union'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
                 {/* Division */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'বিভাগ' : 'Division'}
                   </Label>
                   <Select
@@ -1329,12 +1352,12 @@ const MembersManagement: React.FC = () => {
                       setGeoUnion(unions[0] || 'পৌরসভা');
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-10 text-sm font-semibold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {bangladeshGeoData.map((div) => (
-                        <SelectItem key={div.name} value={div.name}>
+                        <SelectItem key={div.name} value={div.name} className="text-sm font-medium">
                           {div.name}
                         </SelectItem>
                       ))}
@@ -1344,7 +1367,7 @@ const MembersManagement: React.FC = () => {
 
                 {/* District */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'জেলা' : 'District'}
                   </Label>
                   <Select
@@ -1358,12 +1381,12 @@ const MembersManagement: React.FC = () => {
                       setGeoUnion(unions[0] || 'পৌরসভা');
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-10 text-sm font-semibold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {availableDistricts.map((dst) => (
-                        <SelectItem key={dst.name} value={dst.name}>
+                        <SelectItem key={dst.name} value={dst.name} className="text-sm font-medium">
                           {dst.name}
                         </SelectItem>
                       ))}
@@ -1373,7 +1396,7 @@ const MembersManagement: React.FC = () => {
 
                 {/* Upazila */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'উপজেলা' : 'Upazila'}
                   </Label>
                   <Select
@@ -1384,12 +1407,12 @@ const MembersManagement: React.FC = () => {
                       setGeoUnion(unions[0] || 'পৌরসভা');
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-10 text-sm font-semibold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {availableUpazilas.map((upz) => (
-                        <SelectItem key={upz} value={upz}>
+                        <SelectItem key={upz} value={upz} className="text-sm font-medium">
                           {upz}
                         </SelectItem>
                       ))}
@@ -1399,16 +1422,16 @@ const MembersManagement: React.FC = () => {
 
                 {/* Union / Municipality */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'ইউনিয়ন / পৌরসভা' : 'Union / Municipality'}
                   </Label>
                   <Select value={geoUnion} onValueChange={setGeoUnion}>
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-10 text-sm font-semibold">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-56">
+                    <SelectContent className="max-h-60">
                       {availableUnions.map((un) => (
-                        <SelectItem key={un} value={un}>
+                        <SelectItem key={un} value={un} className="text-sm font-medium">
                           {un}
                         </SelectItem>
                       ))}
@@ -1418,21 +1441,21 @@ const MembersManagement: React.FC = () => {
               </div>
 
               {/* Village / Area & Direct Address Input */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'গ্রাম / পাড়া / মহল্লা / রোড' : 'Village / Area / Road'}
                   </Label>
                   <Input
                     value={geoVillage}
                     onChange={(e) => setGeoVillage(e.target.value)}
                     placeholder={language === 'bn' ? 'যেমন: পার-নওগাঁ, চকদেব' : 'e.g. Ward 3, Main road'}
-                    className="h-9 text-sm"
+                    className="h-10 text-sm font-medium"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'সম্পূর্ণ ঠিকানা (কাস্টমাইজ করুন)' : 'Full Address (Customizable)'}
                   </Label>
                   <Input
@@ -1443,11 +1466,12 @@ const MembersManagement: React.FC = () => {
                         ? 'খালি রাখলে ওপরের নির্বাচন অনুযায়ী সেভ হবে'
                         : 'Leave blank to use selected cascading address'
                     }
-                    className="h-9 text-sm"
+                    className="h-10 text-sm font-medium"
                   />
                 </div>
               </div>
             </div>
+
 
             {/* 3. Photo Upload Section */}
             <div className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-3">
@@ -1604,54 +1628,83 @@ const MembersManagement: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-muted/40 rounded-xl border text-xs">
-                  <div className="space-y-0.5">
-                    <p className="text-muted-foreground font-medium flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-emerald-600" />
-                      {language === 'bn' ? 'মোবাইল' : 'Phone'}
+                {/* Details Grid with Enhanced Professional Typography & One-Click Phone Copy */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 bg-slate-50 dark:bg-card/70 rounded-2xl border border-slate-200/90 text-[13px]">
+                  {/* Phone with Copy Action */}
+                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'}
                     </p>
-                    <p className="font-semibold text-foreground font-mono">
-                      {viewingMember.phone || '-'}
-                    </p>
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="font-bold text-slate-800 dark:text-foreground font-mono text-sm">
+                        {viewingMember.phone || '-'}
+                      </p>
+                      {viewingMember.phone && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyPhone(viewingMember.phone!)}
+                          className="h-7 px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg gap-1 border border-emerald-200/60"
+                          title={language === 'bn' ? 'নম্বর কপি করুন' : 'Copy phone number'}
+                        >
+                          {copiedPhone ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span className="text-[11px] font-bold text-emerald-700">{language === 'bn' ? 'কপি হয়েছে' : 'Copied'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-emerald-600" />
+                              <span className="text-[11px] font-bold">{language === 'bn' ? 'কপি' : 'Copy'}</span>
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="space-y-0.5">
-                    <p className="text-muted-foreground font-medium flex items-center gap-1">
-                      <Mail className="w-3 h-3 text-emerald-600" />
-                      {language === 'bn' ? 'ইমেইল' : 'Email'}
+                  {/* Email */}
+                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                      {language === 'bn' ? 'ইমেইল অ্যাড্রেস' : 'Email Address'}
                     </p>
-                    <p className="font-semibold text-foreground truncate">
+                    <p className="font-bold text-slate-800 dark:text-foreground text-[13px] truncate">
                       {viewingMember.email || '-'}
                     </p>
                   </div>
 
-                  <div className="space-y-0.5 sm:col-span-2">
-                    <p className="text-muted-foreground font-medium flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-emerald-600" />
-                      {language === 'bn' ? 'ঠিকানা' : 'Address'}
+                  {/* Address (National Cascading View with Location Icon) */}
+                  <div className="space-y-1 sm:col-span-2 bg-white dark:bg-background p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                      {language === 'bn' ? 'স্থায়ী / বর্তমান ঠিকানা (লোকেশন)' : 'Location & Address'}
                     </p>
-                    <p className="font-medium text-foreground">
-                      {viewingMember.address || (language === 'bn' ? 'নওগাঁ, বাংলাদেশ' : 'Naogaon, Bangladesh')}
+                    <p className="font-bold text-slate-800 dark:text-foreground text-sm leading-relaxed">
+                      {viewingMember.address || (language === 'bn' ? 'নওগাঁ, রাজশাহী, বাংলাদেশ' : 'Naogaon, Rajshahi, Bangladesh')}
                     </p>
                   </div>
 
-                  <div className="space-y-0.5">
-                    <p className="text-muted-foreground font-medium flex items-center gap-1">
-                      <Briefcase className="w-3 h-3 text-emerald-600" />
-                      {language === 'bn' ? 'পেশা' : 'Profession'}
+                  {/* Profession */}
+                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
+                      {language === 'bn' ? 'পেশা / কর্মক্ষেত্র' : 'Profession'}
                     </p>
-                    <p className="font-semibold text-foreground">
+                    <p className="font-bold text-slate-800 dark:text-foreground text-sm">
                       {viewingMember.occupation || '-'}
                     </p>
                   </div>
 
-                  <div className="space-y-0.5">
-                    <p className="text-muted-foreground font-medium flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-emerald-600" />
+                  {/* Joining Date */}
+                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-600" />
                       {language === 'bn' ? 'সদস্য হওয়ার তারিখ' : 'Joining Date'}
                     </p>
-                    <p className="font-semibold text-foreground">
+                    <p className="font-bold text-slate-800 dark:text-foreground text-sm">
                       {viewingMember.joining_date
                         ? new Date(viewingMember.joining_date).toLocaleDateString('bn-BD')
                         : language === 'bn'

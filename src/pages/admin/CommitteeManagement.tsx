@@ -979,20 +979,20 @@ const CommitteeManagement: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5 pt-2">
             {/* 1. Committee Tenure Section (কমিটির মেয়াদ সেকশন) */}
-            <div className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-3">
+            <div className="bg-slate-50 dark:bg-card/70 p-4 sm:p-5 rounded-2xl border border-slate-200/90 space-y-3.5">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
+                <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
                   {language === 'bn' ? 'কমিটির মেয়াদ ও সাল' : 'Committee Tenure & Period'}
                 </h4>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground font-semibold">
                   {language === 'bn' ? 'মেয়াদ অনুযায়ী স্বয়ংক্রিয় ফিল্টার হবে' : 'Governs active period'}
                 </span>
               </div>
 
               {/* Quick Preset Selector */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">
+                <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                   {language === 'bn' ? 'দ্রুত মেয়াদ নির্বাচন (প্রিসেট)' : 'Quick Tenure Preset'}
                 </Label>
                 <Select
@@ -1007,12 +1007,12 @@ const CommitteeManagement: React.FC = () => {
                     }
                   }}
                 >
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-10 text-sm font-semibold">
                     <SelectValue placeholder={language === 'bn' ? 'মেয়াদ প্রিসেট বেছে নিন' : 'Select Tenure Preset'} />
                   </SelectTrigger>
                   <SelectContent>
                     {TENURE_PRESETS.map((preset) => (
-                      <SelectItem key={preset.label} value={preset.label}>
+                      <SelectItem key={preset.label} value={preset.label} className="text-sm font-medium">
                         {preset.label}
                       </SelectItem>
                     ))}
@@ -1021,86 +1021,86 @@ const CommitteeManagement: React.FC = () => {
               </div>
 
               {/* Start Date and End Date Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'মেয়াদ শুরু (Term Start)' : 'Term Start Date'}
                   </Label>
                   <Input
                     type="date"
                     value={formData.term_start}
                     onChange={(e) => setFormData({ ...formData, term_start: e.target.value })}
-                    className="h-9 text-sm font-mono"
+                    className="h-10 text-sm font-mono font-bold"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'মেয়াদ শেষ (Term End)' : 'Term End Date'}
                   </Label>
                   <Input
                     type="date"
                     value={formData.term_end}
                     onChange={(e) => setFormData({ ...formData, term_end: e.target.value })}
-                    className="h-9 text-sm font-mono"
+                    className="h-10 text-sm font-mono font-bold"
                   />
                 </div>
               </div>
             </div>
 
             {/* 2. Portfolio Selection with Automatic Bangla & English Designation */}
-            <div className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-3">
+            <div className="bg-slate-50 dark:bg-card/70 p-4 sm:p-5 rounded-2xl border border-slate-200/90 space-y-3.5">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-1.5">
-                  <Briefcase className="w-3.5 h-3.5" />
+                <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" />
                   {language === 'bn'
                     ? 'দায়িত্ব ও পদবি নির্বাচন (স্বয়ংক্রিয় বাংলা ও ইংরেজি)'
                     : 'Portfolio & Automatic Designation'}
                 </h4>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground font-semibold">
                   {language === 'bn' ? 'বাংলাদেশ সামাজিক সংগঠন নীতিমালা' : 'Standard BD NGO Roles'}
                 </span>
               </div>
 
               {/* Predefined Role Selector */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">
+                <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                   {language === 'bn' ? 'দায়িত্বের ক্যাটাগরি ও পদবি নির্বাচন করুন' : 'Select Standard Role'} *
                 </Label>
                 <Select value={selectedRolePreset} onValueChange={handleRoleSelection}>
-                  <SelectTrigger className="h-10 text-sm border-emerald-200">
+                  <SelectTrigger className="h-10 text-sm border-emerald-300 font-semibold">
                     <SelectValue placeholder={language === 'bn' ? 'কমিটির দায়িত্ব / ক্যাটাগরি বেছে নিন...' : 'Choose portfolio role...'} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
-                    <div className="px-2 py-1.5 text-[11px] font-bold text-muted-foreground bg-muted">
+                    <div className="px-2 py-1.5 text-xs font-bold text-muted-foreground bg-muted">
                       কার্যনির্বাহী পরিষদ (Executive Council)
                     </div>
                     {PREDEFINED_ROLES.filter((r) => r.category === 'executive').map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
+                      <SelectItem key={r.id} value={r.id} className="text-sm font-medium">
                         {r.title_bn} ({r.title_en})
                       </SelectItem>
                     ))}
 
-                    <div className="px-2 py-1.5 text-[11px] font-bold text-muted-foreground bg-muted mt-2">
+                    <div className="px-2 py-1.5 text-xs font-bold text-muted-foreground bg-muted mt-2">
                       উপদেষ্টা পরিষদ (Advisory Council)
                     </div>
                     {PREDEFINED_ROLES.filter((r) => r.category === 'advisory').map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
+                      <SelectItem key={r.id} value={r.id} className="text-sm font-medium">
                         {r.title_bn} ({r.title_en})
                       </SelectItem>
                     ))}
 
-                    <div className="px-2 py-1.5 text-[11px] font-bold text-muted-foreground bg-muted mt-2">
+                    <div className="px-2 py-1.5 text-xs font-bold text-muted-foreground bg-muted mt-2">
                       বিশেষ উইং / উপ-কমিটি (Sub-Committees)
                     </div>
                     {PREDEFINED_ROLES.filter((r) => r.category === 'subcommittee').map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
+                      <SelectItem key={r.id} value={r.id} className="text-sm font-medium">
                         {r.title_bn} ({r.title_en})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground font-medium">
                   {language === 'bn'
                     ? 'ক্যাটাগরি নির্বাচন করলে পদবির বাংলা, ইংরেজি ও ক্রম সংখ্যা স্বয়ংক্রিয়ভাবে চলে আসবে।'
                     : 'Selecting a role automatically populates Bengali and English titles and priority rank.'}
@@ -1108,9 +1108,9 @@ const CommitteeManagement: React.FC = () => {
               </div>
 
               {/* Auto Populated Designation Fields (Editable for custom tweaks) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'পদবি (বাংলা)' : 'Position (Bengali)'} *
                   </Label>
                   <Input
@@ -1118,35 +1118,35 @@ const CommitteeManagement: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, position_bn: e.target.value })}
                     placeholder={language === 'bn' ? 'যেমন: সাধারণ সম্পাদক' : 'e.g. General Secretary'}
                     required
-                    className="h-9 text-sm"
+                    className="h-10 text-sm font-bold text-[#0B6B3A]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'পদবি (ইংরেজি)' : 'Position (English)'}
                   </Label>
                   <Input
                     value={formData.position_en}
                     onChange={(e) => setFormData({ ...formData, position_en: e.target.value })}
                     placeholder="e.g. General Secretary"
-                    className="h-9 text-sm font-sans"
+                    className="h-10 text-sm font-sans font-semibold"
                   />
                 </div>
               </div>
             </div>
 
             {/* 3. Member Personal Details & Contact */}
-            <div className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
+            <div className="bg-slate-50 dark:bg-card/70 p-4 sm:p-5 rounded-2xl border border-slate-200/90 space-y-3.5">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
                 {language === 'bn' ? 'সদস্যের নাম ও যোগাযোগের তথ্য' : 'Personal & Contact Information'}
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Bengali Name */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'সদস্যের নাম (বাংলায়)' : 'Name (Bengali)'} *
                   </Label>
                   <Input
@@ -1154,39 +1154,39 @@ const CommitteeManagement: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, name_bn: e.target.value })}
                     placeholder={language === 'bn' ? 'যেমন: মো: মেহেদী হাসান' : 'Bengali Name'}
                     required
-                    className="h-9 text-sm"
+                    className="h-10 text-sm font-bold"
                   />
                 </div>
 
                 {/* English Name */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'সদস্যের নাম (ইংরেজিতে)' : 'Name (English)'}
                   </Label>
                   <Input
                     value={formData.name_en}
                     onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                     placeholder="e.g. Md. Mehedi Hasan"
-                    className="h-9 text-sm font-sans"
+                    className="h-10 text-sm font-sans font-semibold"
                   />
                 </div>
 
                 {/* Phone */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'}
                   </Label>
                   <Input
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="017XXXXXXXX"
-                    className="h-9 text-sm font-mono"
+                    className="h-10 text-sm font-mono font-bold"
                   />
                 </div>
 
                 {/* Email */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'ইমেইল অ্যাড্রেস' : 'Email Address'}
                   </Label>
                   <Input
@@ -1194,13 +1194,13 @@ const CommitteeManagement: React.FC = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="leader@example.com"
-                    className="h-9 text-sm"
+                    className="h-10 text-sm font-medium"
                   />
                 </div>
 
                 {/* Sort Order Rank */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">
+                  <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
                     {language === 'bn' ? 'ক্রম সংখ্যা (র‍্যাংক / সিরিয়াল)' : 'Sort Order Rank'}
                   </Label>
                   <Input
@@ -1208,9 +1208,9 @@ const CommitteeManagement: React.FC = () => {
                     value={formData.sort_order}
                     onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
                     placeholder="1"
-                    className="h-9 text-sm font-mono"
+                    className="h-10 text-sm font-mono font-bold"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground font-medium">
                     {language === 'bn' ? '১ = সভাপতি, ৪ = সাধারণ সম্পাদক ইত্যাদি' : '1 = President, 4 = General Secretary'}
                   </p>
                 </div>
@@ -1222,7 +1222,7 @@ const CommitteeManagement: React.FC = () => {
                     onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                     id="member-active-toggle"
                   />
-                  <Label htmlFor="member-active-toggle" className="text-sm font-semibold cursor-pointer">
+                  <Label htmlFor="member-active-toggle" className="text-sm font-bold text-slate-800 dark:text-foreground cursor-pointer">
                     {formData.is_active
                       ? language === 'bn'
                         ? 'সক্রিয় কমিটি সদস্য'
