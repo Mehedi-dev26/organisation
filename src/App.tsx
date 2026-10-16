@@ -42,7 +42,18 @@ import CashierYearlyAccounts from "./pages/cashier/CashierYearlyAccounts";
 import CashierPaymentVerification from "./pages/cashier/CashierPaymentVerification";
 import { initAutoKeepAlive } from "./services/keepAliveService";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 3, // 3 minutes fresh cache
+      gcTime: 1000 * 60 * 15, // 15 minutes garbage collection
+      refetchOnWindowFocus: false, // Prevent continuous refetching on window focus
+      refetchOnReconnect: true, // Auto-reconnect when network restores
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 4000),
+    },
+  },
+});
 
 const App = () => {
   useEffect(() => {

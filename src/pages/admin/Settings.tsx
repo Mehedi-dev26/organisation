@@ -171,6 +171,12 @@ const Settings = () => {
 
       if (error) throw error;
 
+      try {
+        localStorage.removeItem('batighor_site_settings_cache');
+        localStorage.removeItem('batighor_hero_banners_cache');
+      } catch {}
+
+      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
       queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
       queryClient.invalidateQueries({ queryKey: ['site-settings-about'] });
       queryClient.invalidateQueries({ queryKey: ['site-settings-cta'] });

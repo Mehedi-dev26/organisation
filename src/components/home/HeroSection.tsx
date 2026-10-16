@@ -11,42 +11,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-
-interface BannerSlide {
-  id: string;
-  image: string;
-  titleBn: string;
-  titleEn: string;
-  subtitleBn: string;
-  subtitleEn: string;
-  tagBn: string;
-  tagEn: string;
-}
-
-const DEFAULT_SLIDES: BannerSlide[] = [
-  {
-    id: 'default-1',
-    image: '/images/banner1.jpg',
-    tagBn: 'মানবসেবায় নিবেদিত সামাজিক সংগঠন',
-    tagEn: 'Non-profit Social Welfare Organization',
-    titleBn: 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় নিবেদিত',
-    titleEn: 'Unity is Strength, Service is Religion',
-    subtitleBn: 'সমাজের পিছিয়ে পড়া মানুষের পাশে দাঁড়ানো, অসহায়দের মুখে হাসি ফোটানো এবং একটি আত্মনির্ভর সমাজ গড়ার অঙ্গীকার।',
-    subtitleEn: 'Dedicated to empowering the underprivileged and standing by vulnerable families across the community.',
-  },
-  {
-    id: 'default-2',
-    image: '/images/banner2.jpg',
-    tagBn: '২৪ ঘণ্টা জরুরি স্বাস্থ্য ও রক্তদান সহায়তা',
-    tagEn: '24/7 Emergency Blood & Healthcare Aid',
-    titleBn: 'জরুরি রক্তদান ও বিনামূল্যে চিকিৎসা সহায়তা কার্যক্রম',
-    titleEn: 'Emergency Blood Donation & Free Health Camps',
-    subtitleBn: 'মুমূর্ষু রোগীর রক্তের প্রয়োজনে কিংবা চিকিৎসায় সহায়তা দিতে আমাদের স্বেচ্ছাসেবক দল সদাপ্রস্তুত।',
-    subtitleEn: 'Our volunteer network is always ready to assist patients with blood donation and medical support.',
-  },
-];
+import { useState, useEffect, useRef } from 'react';
+import { 
+  Users, 
+  ChevronLeft, 
+  ChevronRight, 
+  HeartHandshake, 
+  Sparkles,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Link } from 'react-router-dom';
+import { useHeroBanners, BannerSlide } from '@/services/siteSettingsService';
 
 const HeroSection = () => {
   const { language } = useLanguage();
@@ -54,62 +30,21 @@ const HeroSection = () => {
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  // Fetch dynamic banner from Supabase database (site_settings or gallery_images)
-  const { data: dbBanners } = useQuery({
-    queryKey: ['hero-banners'],
-    queryFn: async () => {
-      // 1. Check site_settings table first
-      const { data: settingData } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'hero_banner')
-        .maybeSingle();
+  // Fetch dynamic banner directly from Supabase database with instant local-first cache
+  const { data: dbBanners, isLoading } = useHeroBanners();
 
-      const settingBanner = settingData?.value as any;
-
-      // 2. Also check gallery_images category=banner
-      const { data: galleryData } = await supabase
-        .from('gallery_images')
-        .select('*')
-        .eq('category', 'banner')
-        .eq('is_published', true)
-        .order('sort_order', { ascending: true });
-
-      const list: BannerSlide[] = [];
-
-      if (settingBanner) {
-        list.push({
-          id: 'site-setting-hero',
-          image: settingBanner.image_url || '/images/banner1.jpg',
-          tagBn: settingBanner.tagline_bn || 'মানবসেবায় নিবেদিত সামাজিক সংগঠন',
-          tagEn: settingBanner.tagline_en || 'Non-profit Social Welfare Organization',
-          titleBn: settingBanner.title_bn || 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় নিবেদিত',
-          titleEn: settingBanner.title_en || 'Unity is Strength, Service is Religion',
-          subtitleBn: settingBanner.subtitle_bn || 'সমাজের পিছিয়ে পড়া মানুষের পাশে দাঁড়ানো, অসহায়দের মুখে হাসি ফোটানো এবং একটি আত্মনির্ভর সমাজ গড়ার অঙ্গীকার।',
-          subtitleEn: settingBanner.subtitle_en || 'Dedicated to empowering the underprivileged and standing by vulnerable families.',
-        });
-      }
-
-      if (galleryData && galleryData.length > 0) {
-        galleryData.forEach((item) => {
-          list.push({
-            id: item.id,
-            image: item.image_url,
-            tagBn: item.title_bn || 'জনকল্যাণমূলক সামাজিক উদ্যোগ',
-            tagEn: item.title_en || 'Community Welfare Initiative',
-            titleBn: item.title_bn || 'সময়ের বাতিঘর — একতাই শক্তি',
-            titleEn: item.title_en || 'Samoyer Batighor',
-            subtitleBn: item.description_bn || 'মানবসেবায় নিবেদিত একদল স্বপ্নবাজ তরুণ ও সামাজিক নেতৃত্ব।',
-            subtitleEn: item.description_en || 'Dedicated to social welfare and community empowerment.',
-          });
-        });
-      }
-
-      return list.length > 0 ? list : null;
-    },
-  });
-
-  const slides: BannerSlide[] = dbBanners && dbBanners.length > 0 ? dbBanners : DEFAULT_SLIDES;
+  const slides: BannerSlide[] = dbBanners && dbBanners.length > 0 ? dbBanners : [
+    {
+      id: 'fallback-1',
+      image: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=1600&q=80',
+      tagBn: 'সবসময় আপনার পাশে - একটি স্বেচ্ছাসেবী সংগঠন',
+      tagEn: 'Always by your side - A voluntary welfare organization',
+      titleBn: 'সময়ের বাতিঘর — মানবতার সেবায় নিবেদিত',
+      titleEn: 'Samoyer Batighor',
+      subtitleBn: 'একটি অরাজনৈতিক, অলাভজনক ও সামাজিক স্বেচ্ছাসেবী সংগঠন। নওগাঁ জেলাসহ সমগ্র দেশের অসহায় ও সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানোই আমাদের অঙ্গীকার।',
+      subtitleEn: 'A non-political, non-profit voluntary humanitarian organization committed to serving underprivileged people in Naogaon and across Bangladesh.',
+    }
+  ];
 
   // Auto-play slide rotation
   useEffect(() => {

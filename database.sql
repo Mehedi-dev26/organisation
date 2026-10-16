@@ -242,6 +242,14 @@ CREATE TABLE IF NOT EXISTS public.blood_donors (
   updated_at timestamp with time zone NOT NULL DEFAULT now()
 );
 
+-- Table 14: site_settings (ওয়েবসাইটের ব্যানার, হিরো সেকশন ও কন্টেন্ট সেটিংস)
+CREATE TABLE IF NOT EXISTS public.site_settings (
+  id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  key text NOT NULL UNIQUE,
+  value jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
 -- ----------------------------------------------------------------------------
 -- ৪. INDEXES (পারফরম্যান্স ইনডেক্সসমূহ)
 -- ----------------------------------------------------------------------------
@@ -597,6 +605,15 @@ DROP POLICY IF EXISTS "Admins and Cashiers can insert logs" ON public.activity_l
 CREATE POLICY "Admins and Cashiers can insert logs" ON public.activity_logs FOR INSERT WITH CHECK (
   has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'cashier'::app_role)
 );
+
+-- === site_settings policies ===
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can view site settings" ON public.site_settings;
+CREATE POLICY "Public can view site settings" ON public.site_settings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage site settings" ON public.site_settings;
+CREATE POLICY "Admins can manage site settings" ON public.site_settings FOR ALL USING (has_role(auth.uid(), 'admin'::app_role));
 
 -- ----------------------------------------------------------------------------
 -- ৮. REALTIME PUBLICATIONS (রিয়েলটাইম পাবলিকেশন)

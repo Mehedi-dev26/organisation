@@ -55,7 +55,13 @@ export const isUserAdmin = (user: User | null, roles: string[] = []): boolean =>
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      return sessionStorage.getItem('batighor_auth_admin') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isMember, setIsMember] = useState(false);
   const [isCashier, setIsCashier] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,19 +81,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let userIsMember = roles.includes('member');
       let userIsCashier = roles.includes('cashier');
 
-      // Check members table if not explicitly present in user_roles
-      if (!userIsMember && targetUser) {
+      // Check members table if executive/admin or general member
+      if (targetUser) {
         try {
           const email = targetUser.email || '';
           const phone = (targetUser.phone || (targetUser.user_metadata?.phone as string) || '').replace(/\D/g, '');
           const { data: memberData } = await supabase
             .from('members')
-            .select('id')
+            .select('id, member_type')
             .or(`user_id.eq.${userId},email.eq.${email},phone.eq.${phone}`)
             .limit(1);
 
           if (memberData && memberData.length > 0) {
             userIsMember = true;
+            if (['executive', 'admin'].includes(memberData[0].member_type)) {
+              // Executive members are core leaders with admin dashboard access
+              setIsAdmin(true);
+              try { sessionStorage.setItem('batighor_auth_admin', 'true'); } catch {}
+            }
           }
         } catch {
           // ignore
@@ -115,6 +126,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsMember(userIsMember);
       setIsCashier(userIsCashier);
 
+      try {
+        if (userIsAdmin) {
+          sessionStorage.setItem('batighor_auth_admin', 'true');
+        } else {
+          sessionStorage.removeItem('batighor_auth_admin');
+        }
+      } catch {}
+
       // Proactively ensure admin role is stored in user_roles table for Postgres RLS policies
       if (userIsAdmin && !roles.includes('admin')) {
         supabase
@@ -127,6 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Error checking roles:', err);
       if (currentUser && isUserAdmin(currentUser)) {
         setIsAdmin(true);
+        try { sessionStorage.setItem('batighor_auth_admin', 'true'); } catch {}
       } else {
         setIsAdmin(false);
       }
@@ -267,6 +287,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.warn('SignOut error handled safely:', err);
     } finally {
+      try { sessionStorage.removeItem('batighor_auth_admin'); } catch {}
       setUser(null);
       setSession(null);
       setIsAdmin(false);

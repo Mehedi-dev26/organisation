@@ -163,6 +163,7 @@ const GalleryManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-gallery-images'] });
+      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
       toast.success(
         editingImage 
           ? (language === 'bn' ? 'ছবি আপডেট হয়েছে' : 'Image updated successfully')
@@ -191,6 +192,7 @@ const GalleryManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-gallery-images'] });
+      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
       toast.success(language === 'bn' ? 'ছবি মুছে ফেলা হয়েছে' : 'Image deleted successfully');
     },
     onError: (error: Error) => {
@@ -215,6 +217,7 @@ const GalleryManagement = () => {
   // Categories
   const categories = [
     { value: 'general', label: language === 'bn' ? 'সাধারণ' : 'General' },
+    { value: 'banner', label: language === 'bn' ? 'হোমপেজ ব্যানার (Hero Banner)' : 'Homepage Hero Banner' },
     { value: 'event', label: language === 'bn' ? 'অনুষ্ঠান' : 'Event' },
     { value: 'charity', label: language === 'bn' ? 'দাতব্য' : 'Charity' },
     { value: 'meeting', label: language === 'bn' ? 'সভা' : 'Meeting' },

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { UserPlus, Heart, Phone, Sparkles } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useSiteSettings } from '@/services/siteSettingsService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 
@@ -10,20 +8,9 @@ const CTASection = () => {
   const { language } = useLanguage();
   const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState(false);
 
-  // Fetch dynamic CTA settings from Supabase
-  const { data: ctaSettings } = useQuery({
-    queryKey: ['cta-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'cta_section')
-        .maybeSingle();
-
-      if (error || !data) return null;
-      return data.value as any;
-    },
-  });
+  // Fetch dynamic CTA settings from shared site settings query
+  const { data: siteSettings } = useSiteSettings();
+  const ctaSettings = siteSettings?.cta_section;
 
   const title = ctaSettings?.title_bn || 'আসুন, আমরা সবাই মিলে একটি মানবিক ও সুন্দর সমাজ গড়ে তুলি';
   const titleEn = ctaSettings?.title_en || 'Let us unite to build a humanitarian and compassionate society';

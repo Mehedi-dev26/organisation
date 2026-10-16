@@ -12,24 +12,12 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useSiteSettings } from '@/services/siteSettingsService';
 
 const AboutPreview = () => {
   const { language } = useLanguage();
-
-  const { data: aboutSettings, isLoading } = useQuery({
-    queryKey: ['site-settings-about'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'about_section')
-        .single();
-      if (error || !data) return null;
-      return data.value;
-    },
-  });
+  const { data: siteSettings } = useSiteSettings();
+  const aboutSettings = siteSettings?.about_section;
 
   const title = (aboutSettings && (language === 'bn' ? aboutSettings.title_bn : aboutSettings.title_en))
     || (language === 'bn' ? 'আমাদের সম্পর্কে ও সাংগঠনিক পরিচয়' : 'About Us & Organizational Profile');

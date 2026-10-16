@@ -68,21 +68,11 @@ const Auth = () => {
 
     try {
       const rawInput = identifier.trim();
-      let loginEmail = rawInput;
       const isEmail = rawInput.includes('@');
-      let candidateEmails: string[] = [];
+      let targetLoginEmail = rawInput.toLowerCase();
 
-      // 1. Shortcut for admin username
-      if (rawInput.toLowerCase() === 'admin' || rawInput.toLowerCase() === 'administrator') {
-        candidateEmails = [
-          'mehedihasanwork25@mail.com',
-          'mehedihasanwork25@gmail.com',
-          'mehedi.dev26@gmail.com',
-          'admin@batighor.org',
-          'admin@somoyerbatighor.org'
-        ];
-      } else if (!isEmail) {
-        // Phone number or Member ID resolution
+      if (!isEmail) {
+        // Resolve phone number or Member ID to email
         const digitsOnly = rawInput.replace(/\D/g, '');
         const standardLocal = digitsOnly.length === 11 
           ? digitsOnly 
@@ -98,84 +88,53 @@ const Auth = () => {
           `88${standardLocal}`
         ])).filter(Boolean);
 
-        // A. Secure RPC lookup (bypasses RLS safely on server)
         let resolvedEmail: string | null = null;
+
+        // 1. Direct query in members table
         try {
-          const { data: rpcEmail, error: rpcErr } = await supabase.rpc(
-            'find_email_by_phone_or_member_id',
-            { p_identifier: rawInput }
-          );
-          if (!rpcErr && rpcEmail) {
-            resolvedEmail = rpcEmail;
+          const { data: memberData } = await supabase
+            .from('members')
+            .select('email, phone')
+            .in('phone', candidatePhones)
+            .limit(1)
+            .maybeSingle();
+
+          if (memberData?.email) {
+            resolvedEmail = memberData.email;
+          } else {
+            const { data: memberById } = await supabase
+              .from('members')
+              .select('email')
+              .eq('member_id', rawInput)
+              .limit(1)
+              .maybeSingle();
+
+            if (memberById?.email) {
+              resolvedEmail = memberById.email;
+            }
           }
         } catch (e) {
-          console.debug('RPC lookup error:', e);
+          console.debug('Member lookup error:', e);
         }
 
-        // B. Search in members table by phone or member_id
+        // 2. RPC lookup fallback
         if (!resolvedEmail) {
           try {
-            const { data: memberData } = await supabase
-              .from('members')
-              .select('email, phone')
-              .in('phone', candidatePhones)
-              .limit(1);
-
-            if (memberData && memberData.length > 0 && memberData[0].email) {
-              resolvedEmail = memberData[0].email;
-            } else {
-              const { data: memberById } = await supabase
-                .from('members')
-                .select('email')
-                .eq('member_id', rawInput)
-                .limit(1);
-
-              if (memberById && memberById.length > 0 && memberById[0].email) {
-                resolvedEmail = memberById[0].email;
-              }
+            const { data: rpcEmail } = await supabase.rpc(
+              'find_email_by_phone_or_member_id',
+              { p_identifier: rawInput }
+            );
+            if (rpcEmail) {
+              resolvedEmail = rpcEmail;
             }
           } catch {}
         }
 
-        // C. Direct fallback for registered admin phone numbers
-        if (candidatePhones.some(p => ['01711050841', '01916314315', '01700000000'].includes(p))) {
-          candidateEmails = [
-            'mehedihasanwork25@mail.com',
-            'mehedihasanwork25@gmail.com',
-            'mehedi.dev26@gmail.com',
-            'admin@batighor.org',
-            'admin@somoyerbatighor.org'
-          ];
-          if (resolvedEmail && !candidateEmails.includes(resolvedEmail)) {
-            candidateEmails.unshift(resolvedEmail);
-          }
-        } else if (resolvedEmail) {
-          candidateEmails = [resolvedEmail];
-        } else if (digitsOnly.length >= 10) {
-          candidateEmails = [`${standardLocal}@batighor.org`];
-        }
-      } else {
-        // Direct email entered
-        candidateEmails = [rawInput.toLowerCase()];
-        if (rawInput.toLowerCase().includes('mehedi')) {
-          candidateEmails.push(
-            'mehedihasanwork25@mail.com',
-            'mehedihasanwork25@gmail.com',
-            'mehedi.dev26@gmail.com'
-          );
-        }
+        targetLoginEmail = resolvedEmail || (digitsOnly.length >= 10 ? `${standardLocal}@batighor.org` : rawInput);
       }
 
-      // Execute login across candidate emails until success
-      let authResult: { error: any; isAdmin: boolean; isMember: boolean; isCashier: boolean } | null = null;
-      const emailsToAttempt = Array.from(new Set(candidateEmails.length > 0 ? candidateEmails : [loginEmail]));
-
-      for (const emailToTry of emailsToAttempt) {
-        authResult = await signIn(emailToTry, password);
-        if (!authResult.error) {
-          break;
-        }
-      }
+      // Execute login directly with user's authorized credentials
+      const authResult = await signIn(targetLoginEmail, password);
 
       if (!authResult || authResult.error) {
         const errorMsg = authResult?.error?.message || 'Invalid login credentials';
@@ -488,49 +447,12 @@ const Auth = () => {
                     </div>
 
                     {/* Support Help */}
-                    <div className="text-center pt-1">
+                    <div className="text-center pt-2">
                       <p className="text-[11px] text-slate-400">
                         {language === 'bn' 
                           ? 'পাসওয়ার্ড ভুলে গেলে বা প্রবেশ করতে সমস্যা হলে অ্যাডমিনের সাথে যোগাযোগ করুন' 
                           : 'Contact administrator if you forgot your password or need assistance'}
                       </p>
-                    </div>
-
-                    {/* Quick Admin Access Helper */}
-                    <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50/50 to-emerald-50 dark:from-emerald-950/40 dark:to-slate-900 border border-emerald-300/60 shadow-xs">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                          <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                          {language === 'bn' ? 'অ্যাডমিন কুইক লগইন' : 'Admin Quick Access'}
-                        </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-semibold">
-                          {language === 'bn' ? 'ভেরিফাইড' : 'Verified'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIdentifier('mehedi.dev26@gmail.com');
-                            setPassword('admin123456');
-                          }}
-                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/60 text-left hover:border-emerald-400 hover:shadow-xs transition-all cursor-pointer group"
-                        >
-                          <p className="text-[10px] text-slate-400 font-medium">Email / Admin</p>
-                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate group-hover:text-emerald-600">mehedi.dev26@gmail.com</p>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIdentifier('01711050841');
-                            setPassword('admin123456');
-                          }}
-                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800/60 text-left hover:border-emerald-400 hover:shadow-xs transition-all cursor-pointer group"
-                        >
-                          <p className="text-[10px] text-slate-400 font-medium">Mobile / Phone</p>
-                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate group-hover:text-emerald-600">01711050841</p>
-                        </button>
-                      </div>
                     </div>
                   </form>
                 </CardContent>

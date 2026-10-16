@@ -18,5 +18,25 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+  },
+  global: {
+    headers: {
+      'x-application-name': 'somoyer-batighor',
+    },
+    fetch: (url, options = {}) => {
+      // 12s timeout controller to avoid indefinite hanging connections
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000);
+
+      if (options.signal) {
+        options.signal.addEventListener('abort', () => controller.abort());
+      }
+
+      return fetch(url, {
+        ...options,
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timer));
+    },
+  },
 });
