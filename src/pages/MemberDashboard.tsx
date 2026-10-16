@@ -71,9 +71,15 @@ interface NewsData {
 
 const MemberDashboard = () => {
   const { language } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
   
   // Password change state
   const [newPassword, setNewPassword] = useState('');
@@ -233,7 +239,7 @@ const MemberDashboard = () => {
   const unpaidDues = totalDues - paidDues;
   const unpaidMonths = duesData?.filter(d => !d.is_paid) || [];
 
-  if (memberLoading) {
+  if (loading || memberLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

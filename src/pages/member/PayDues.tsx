@@ -56,11 +56,17 @@ interface DueWithStatus {
 
 const PayDues = () => {
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
   
   const [selectedDue, setSelectedDue] = useState<DueWithStatus | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
@@ -336,7 +342,7 @@ const PayDues = () => {
   const submittedDues = duesData?.filter(d => d.payment_status === 'submitted' || d.payment_status === 'piprapay_pending') || [];
   const paidDues = duesData?.filter(d => d.is_paid) || [];
 
-  if (methodsLoading || duesLoading) {
+  if (loading || methodsLoading || duesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

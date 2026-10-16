@@ -13,13 +13,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const AdminLayout = () => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, rolesLoading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isAuthLoading = loading || rolesLoading;
+
   useEffect(() => {
-    if (!loading) {
+    if (!isAuthLoading) {
       if (!user) {
         navigate('/auth');
       } else if (!isAdmin) {
@@ -27,9 +29,9 @@ const AdminLayout = () => {
         navigate('/');
       }
     }
-  }, [user, isAdmin, loading, navigate]);
+  }, [user, isAdmin, isAuthLoading, navigate]);
 
-  if (loading) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
