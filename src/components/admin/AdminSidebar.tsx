@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -30,9 +30,15 @@ import logoRound from '@/assets/logo-round.png';
 const AdminSidebar = () => {
   const { language } = useLanguage();
   const { signOut } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   // Original menu items restored with exact original names and icons
   const menuItems = [
@@ -187,7 +193,7 @@ const AdminSidebar = () => {
             <nav className="space-y-1">
               <button
                 type="button"
-                onClick={signOut}
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl transition-all duration-150 text-[14.5px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold group text-left cursor-pointer border border-transparent hover:border-rose-100"
               >
                 <LogOut className="w-5 h-5 flex-shrink-0 stroke-[2.2] text-rose-500 group-hover:text-rose-600" />

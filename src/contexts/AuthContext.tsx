@@ -262,11 +262,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setIsAdmin(false);
-    setIsMember(false);
-    setIsCashier(false);
-    setRolesLoading(false);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('SignOut error handled safely:', err);
+    } finally {
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      setIsMember(false);
+      setIsCashier(false);
+      setRolesLoading(false);
+      setLoading(false);
+    }
   };
 
   return (

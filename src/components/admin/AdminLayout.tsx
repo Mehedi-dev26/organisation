@@ -32,6 +32,11 @@ const AdminLayout = () => {
     }
   }, [user, effectiveIsAdmin, isAuthLoading, navigate]);
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
   if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -122,7 +127,7 @@ const AdminLayout = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border border-slate-200">
                   <DropdownMenuItem 
-                    onClick={signOut}
+                    onClick={handleLogout}
                     className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer font-semibold py-2.5 px-3 flex items-center gap-2"
                   >
                     <LogOut className="w-4 h-4 text-rose-500" />
