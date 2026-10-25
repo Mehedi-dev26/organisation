@@ -48,11 +48,21 @@ import {
   MapPin, 
   Coins, 
   RotateCcw,
-  BadgeCheck
+  BadgeCheck,
+  Crop,
+  Monitor,
+  Smartphone,
+  Plus,
+  Trash2,
+  Layers,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sendKeepAlivePing, getKeepAliveStats, KeepAliveStats } from '@/services/keepAliveService';
 import { compressImage } from '@/lib/imageUtils';
+import { LogoCropModal } from '@/components/common/LogoCropModal';
+import { Switch } from '@/components/ui/switch';
 
 const STORAGE_LOGO_KEY = 'batighor_site_logo_url';
 
@@ -99,17 +109,41 @@ const Settings = () => {
     address_en: 'Naogaon, Bangladesh',
   });
 
-  // 3. Website Content Settings States (Hero, About, CTA)
+  // Logo Crop Modal States
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+
+  // 3. Website Content Settings States (Multi-Banner System, About, CTA)
   const [isSavingContent, setIsSavingContent] = useState(false);
-  const [heroBanner, setHeroBanner] = useState({
-    image_url: '/images/banner1.jpg',
-    title_bn: 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় নিবেদিত',
-    title_en: 'Unity is Strength, Service is Religion',
-    tagline_bn: 'মানবসেবায় নিবেদিত সামাজিক সংগঠন',
-    tagline_en: 'Non-profit Social Welfare Organization',
-    subtitle_bn: 'সমাজের পিছিয়ে পড়া মানুষের পাশে দাঁড়ানো, অসহায়দের মুখে হাসি ফোটানো এবং একটি আত্মনির্ভর সমাজ গড়ার অঙ্গীকার।',
-    subtitle_en: 'Dedicated to empowering the underprivileged and standing by vulnerable families.',
-  });
+  const [heroBannersList, setHeroBannersList] = useState<{
+    id: string;
+    image_url: string;
+    image_mobile_url?: string;
+    title_bn: string;
+    title_en: string;
+    tagline_bn: string;
+    tagline_en: string;
+    subtitle_bn: string;
+    subtitle_en: string;
+    show_content: boolean;
+    is_active: boolean;
+  }[]>([
+    {
+      id: 'banner-1',
+      image_url: '/images/banner1.jpg',
+      image_mobile_url: '',
+      title_bn: 'একতাই শক্তি, সেবাই ধর্ম — মানবতার সেবায় নিবেদিত',
+      title_en: 'Unity is Strength, Service is Religion',
+      tagline_bn: 'মানবসেবায় নিবেদিত সামাজিক সংগঠন',
+      tagline_en: 'Non-profit Social Welfare Organization',
+      subtitle_bn: 'সমাজের পিছিয়ে পড়া মানুষের পাশে দাঁড়ানো, অসহায়দের মুখে হাসি ফোটানো এবং একটি আত্মনির্ভর সমাজ গড়ার অঙ্গীকার।',
+      subtitle_en: 'Dedicated to empowering the underprivileged and standing by vulnerable families.',
+      show_content: true,
+      is_active: true,
+    }
+  ]);
+
+  const [uploadingBannerIndex, setUploadingBannerIndex] = useState<{ index: number; type: 'desktop' | 'mobile' } | null>(null);
 
   const [aboutSection, setAboutSection] = useState({
     image_main: '/images/about1.jpg',
@@ -130,7 +164,6 @@ const Settings = () => {
     button_text_bn: 'স্বেচ্ছাসেবক হন',
   });
 
-  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [isUploadingCta, setIsUploadingCta] = useState(false);
 
   // Sync logoUrl with currentGlobalLogo when loaded
@@ -160,8 +193,38 @@ const Settings = () => {
             if (row.key === 'general_settings' && row.value) {
               setGeneralSettings((prev) => ({ ...prev, ...(row.value as any) }));
             }
-            if (row.key === 'hero_banner' && row.value) {
-              setHeroBanner((prev) => ({ ...prev, ...(row.value as any) }));
+            if (row.key === 'hero_banners' && Array.isArray(row.value) && row.value.length > 0) {
+              setHeroBannersList(row.value.map((b: any, i: number) => ({
+                id: b.id || `banner-${i + 1}`,
+                image_url: b.image_url || '/images/banner1.jpg',
+                image_mobile_url: b.image_mobile_url || '',
+                title_bn: b.title_bn ?? '',
+                title_en: b.title_en ?? '',
+                tagline_bn: b.tagline_bn ?? '',
+                tagline_en: b.tagline_en ?? '',
+                subtitle_bn: b.subtitle_bn ?? '',
+                subtitle_en: b.subtitle_en ?? '',
+                show_content: b.show_content !== false,
+                is_active: b.is_active !== false,
+              })));
+            } else if (row.key === 'hero_banner' && row.value) {
+              const hb = row.value as any;
+              setHeroBannersList((prev) => {
+                if (prev.length > 1) return prev;
+                return [{
+                  id: 'banner-1',
+                  image_url: hb.image_url || '/images/banner1.jpg',
+                  image_mobile_url: hb.image_mobile_url || '',
+                  title_bn: hb.title_bn ?? '',
+                  title_en: hb.title_en ?? '',
+                  tagline_bn: hb.tagline_bn ?? '',
+                  tagline_en: hb.tagline_en ?? '',
+                  subtitle_bn: hb.subtitle_bn ?? '',
+                  subtitle_en: hb.subtitle_en ?? '',
+                  show_content: hb.show_content !== false,
+                  is_active: true,
+                }];
+              });
             }
             if (row.key === 'about_section' && row.value) {
               const aboutVal = row.value as any;
@@ -183,24 +246,40 @@ const Settings = () => {
     fetchSettings();
   }, []);
 
-  // Handler: Main Logo Upload
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler: Select logo image file and open interactive cropper modal
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(language === 'bn' ? 'লোগো ফাইল ৫MB এর কম হতে হবে' : 'Logo file must be under 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(language === 'bn' ? 'লোগো ফাইল ১০MB এর কম হতে হবে' : 'Logo file must be under 10MB');
       return;
     }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // Handler: Re-crop current active logo
+  const handleCropCurrentLogo = () => {
+    if (logoUrl) {
+      setImageToCrop(logoUrl);
+      setCropModalOpen(true);
+    }
+  };
+
+  // Handler: Save cropped logo blob to database
+  const handleCroppedLogoSave = async (croppedBlob: Blob) => {
     setIsUploadingLogo(true);
     try {
-      // Compress and preserve clean transparency
-      const compressedBlob = await compressImage(file, 512, 512, 0.95);
-      const fileName = `site/logo-${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
-      
+      const fileName = `site/logo-${Date.now()}.png`;
       const { data, error } = await supabase.storage
         .from('gallery-images')
-        .upload(fileName, compressedBlob, {
-          contentType: file.type || 'image/png',
+        .upload(fileName, croppedBlob, {
+          contentType: 'image/png',
           upsert: true,
         });
 
@@ -210,11 +289,117 @@ const Settings = () => {
 
       setLogoUrl(publicUrl);
       await saveLogoToDatabase(publicUrl);
-      toast.success(language === 'bn' ? 'নতুন লোগো সফলভাবে আপলোড ও কার্যকর হয়েছে!' : 'New logo uploaded and activated successfully!');
+      toast.success(language === 'bn' ? 'লোগো নিখুঁতভাবে ক্রপ ও সর্বত্র কার্যকর হয়েছে!' : 'Logo cropped and updated across website!');
     } catch (err: any) {
-      toast.error(err.message || 'লোগো আপলোড ব্যর্থ হয়েছে');
+      toast.error(err.message || 'লোগো সংরক্ষণ ব্যর্থ হয়েছে');
     } finally {
       setIsUploadingLogo(false);
+    }
+  };
+
+  // Handler: Add New Banner to Multi-Banner List
+  const handleAddBanner = () => {
+    const newId = `banner-${Date.now()}`;
+    setHeroBannersList((prev) => [
+      ...prev,
+      {
+        id: newId,
+        image_url: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=1600&q=80',
+        image_mobile_url: '',
+        title_bn: 'নতুন ব্যানার শিরোনাম',
+        title_en: 'New Banner Title',
+        tagline_bn: 'সবসময় আপনার পাশে - একটি স্বেচ্ছাসেবী সংগঠন',
+        tagline_en: 'Always by your side',
+        subtitle_bn: 'মানবসেবায় নিবেদিত একটি স্বেচ্ছাসেবী পরিবার।',
+        subtitle_en: 'A voluntary organization dedicated to humanity.',
+        show_content: true,
+        is_active: true,
+      }
+    ]);
+    toast.info(language === 'bn' ? 'নতুন ব্যানার যুক্ত হয়েছে। ছবি ও টেক্সট কাস্টমাইজ করুন।' : 'New banner added. Customize images and text.');
+  };
+
+  // Handler: Remove Banner from Multi-Banner List
+  const handleRemoveBanner = (index: number) => {
+    if (heroBannersList.length <= 1) {
+      toast.error(language === 'bn' ? 'কমপক্ষে একটি ব্যানার থাকা আবশ্যক' : 'At least one banner is required');
+      return;
+    }
+    setHeroBannersList((prev) => prev.filter((_, i) => i !== index));
+    toast.success(language === 'bn' ? 'ব্যানার সরানো হয়েছে' : 'Banner removed');
+  };
+
+  // Handler: Clear text content from banner so only graphic shows
+  const handleClearBannerContent = (index: number) => {
+    setHeroBannersList((prev) => {
+      const next = [...prev];
+      if (next[index]) {
+        next[index] = {
+          ...next[index],
+          title_bn: '',
+          title_en: '',
+          tagline_bn: '',
+          tagline_en: '',
+          subtitle_bn: '',
+          subtitle_en: '',
+          show_content: false,
+        };
+      }
+      return next;
+    });
+    toast.info(language === 'bn' ? 'কন্টেন্ট সরানো হয়েছে (শুধু ব্যানার ছবি প্রদর্শিত হবে)' : 'Content cleared. Banner image will show cleanly without text.');
+  };
+
+  // Handler: Upload Banner Image (Desktop vs Mobile)
+  const handleBannerUploadFor = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number,
+    type: 'desktop' | 'mobile'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error(language === 'bn' ? 'ছবি ৮MB এর কম হতে হবে' : 'Photo must be under 8MB');
+      return;
+    }
+    setUploadingBannerIndex({ index, type });
+    try {
+      const width = type === 'desktop' ? 1600 : 800;
+      const height = type === 'desktop' ? 900 : 1000;
+      const compressedBlob = await compressImage(file, width, height, 0.9);
+      const fileName = `site/hero-${type}-${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      const { data, error } = await supabase.storage
+        .from('gallery-images')
+        .upload(fileName, compressedBlob, {
+          contentType: file.type || 'image/jpeg',
+          upsert: true,
+        });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('gallery-images').getPublicUrl(data.path);
+      const publicUrl = urlData.publicUrl;
+
+      setHeroBannersList((prev) => {
+        const next = [...prev];
+        if (next[index]) {
+          if (type === 'desktop') {
+            next[index] = { ...next[index], image_url: publicUrl };
+          } else {
+            next[index] = { ...next[index], image_mobile_url: publicUrl };
+          }
+        }
+        return next;
+      });
+
+      toast.success(
+        language === 'bn'
+          ? `${type === 'desktop' ? 'ডেস্কটপ' : 'মোবাইল'} ব্যানার ছবি সফলভাবে আপলোড হয়েছে`
+          : `${type === 'desktop' ? 'Desktop' : 'Mobile'} banner uploaded`
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'আপলোড ব্যর্থ');
+    } finally {
+      setUploadingBannerIndex(null);
+      e.target.value = '';
     }
   };
 
@@ -376,8 +561,14 @@ const Settings = () => {
       let value: any = {};
 
       if (section === 'hero') {
-        key = 'hero_banner';
-        value = heroBanner;
+        key = 'hero_banners';
+        value = heroBannersList;
+        // Also sync first banner to hero_banner for backwards compatibility
+        if (heroBannersList.length > 0) {
+          await supabase
+            .from('site_settings')
+            .upsert({ key: 'hero_banner', value: heroBannersList[0], updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        }
       } else if (section === 'about') {
         key = 'about_section';
         value = aboutSection;
@@ -619,22 +810,38 @@ const Settings = () => {
                     </p>
                   </div>
 
-                  {/* Upload Button */}
-                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-all shadow-md hover:shadow-lg w-fit">
-                    {isUploadingLogo ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Upload className="w-4 h-4" />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Crop Current Logo Button */}
+                    {logoUrl && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCropCurrentLogo}
+                        disabled={isUploadingLogo || isSavingLogo}
+                        className="rounded-xl border-[#11DFC0]/60 bg-[#11DFC0]/15 hover:bg-[#11DFC0]/30 text-teal-950 dark:text-teal-200 text-xs font-bold gap-1.5 shadow-2xs h-10 px-3.5"
+                      >
+                        <Crop className="w-4 h-4 text-teal-700 dark:text-teal-300 stroke-[2.4]" />
+                        <span>{language === 'bn' ? 'বর্তমান লোগো ক্রপ করুন' : 'Crop & Adjust Logo'}</span>
+                      </Button>
                     )}
-                    <span>{language === 'bn' ? 'ডিভাইস থেকে লোগো বাছাই করুন' : 'Choose Logo File'}</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                      onChange={handleLogoUpload}
-                      disabled={isUploadingLogo || isSavingLogo}
-                      className="hidden"
-                    />
-                  </label>
+
+                    {/* Choose Logo File (Opens Cropper Modal immediately) */}
+                    <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-all shadow-md hover:shadow-lg w-fit h-10">
+                      {isUploadingLogo ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{language === 'bn' ? 'ডিভাইস থেকে বাছাই ও ক্রপ করুন' : 'Choose Logo & Crop'}</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        onChange={handleLogoSelect}
+                        disabled={isUploadingLogo || isSavingLogo}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="relative flex items-center gap-2 pt-2">
@@ -680,13 +887,22 @@ const Settings = () => {
                 <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-slate-800 block">
-                    {language === 'bn' ? 'স্বয়ংক্রিয় ক্যাশিং এবং দ্রুত লোডিং নিশ্চয়তা:' : 'Automatic Caching & Zero-Lag Guarantee:'}
+                    {language === 'bn' ? 'স্বয়ংক্রিয় ক্রপিং, পারফেক্ট সাইজিং ও দ্রুত লোডিং নিশ্চয়তা:' : 'Auto Sizing & Zero-Lag Guarantee:'}
                   </span>
                   {language === 'bn'
-                    ? 'লোগোটি ডাটাবেসে সেভ হওয়ার সাথে সাথে ব্রাউজারের লোকাল স্টোরেজে স্বয়ংক্রিয়ভাবে ক্যাশ হয়ে যায়। এর ফলে ওয়েবসাইট রিলোড করলেও কোনো ফ্লিকারিং বা দেরি ছাড়াই ১ মিলিসেকেন্ডে লোগো লোড হবে।'
-                    : 'The logo is securely cached in local storage upon saving, ensuring 1ms zero-flicker loading across all page visits and tab switches.'}
+                    ? 'লোগোটি ক্রপ করার পর স্বয়ংক্রিয়ভাবে ওয়েবসাইটের হেডার, ফুটার, মেম্বার আইডি কার্ড ও ক্যাশিয়ার ভাউচারে সুন্দরভাবে অ্যাডজাস্ট হয়ে যায়।'
+                    : 'The cropped logo automatically scales and fits proportionally on navbar, vouchers, cards and footers without distortion.'}
                 </div>
               </div>
+
+              {/* Logo Cropper Modal */}
+              <LogoCropModal
+                isOpen={cropModalOpen}
+                onClose={() => setCropModalOpen(false)}
+                imageSrc={imageToCrop}
+                onCropSave={handleCroppedLogoSave}
+                isSaving={isUploadingLogo}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -865,81 +1081,321 @@ const Settings = () => {
             TAB 3: WEBSITE BANNERS & CONTENT (HERO, ABOUT, CTA)
         ══════════════════════════════════════════════════════════ */}
         <TabsContent value="website_content" className="space-y-6">
-          {/* Hero Banner Card */}
-          <Card className="border-emerald-200/80 shadow-sm">
-            <CardHeader className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100">
-              <CardTitle className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold">
-                <ImageIcon className="w-5 h-5 text-emerald-600" />
-                {language === 'bn' ? 'হোমপেজ হিরো ব্যানার সেটিংস' : 'Hero Banner Settings'}
-              </CardTitle>
-              <CardDescription>
-                {language === 'bn'
-                  ? 'ওয়েবসাইটের প্রধান ব্যানার ছবি ও লেখা পরিবর্তন করুন (সরাসরি ডাটাবেস থেকে লোড হবে)'
-                  : 'Customize homepage hero slider image and texts directly loaded from the database'}
-              </CardDescription>
+          {/* Multi-Hero Banner System Card */}
+          <Card className="border-emerald-200/80 shadow-sm overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-transparent dark:bg-emerald-950/20 border-b border-emerald-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-emerald-950 dark:text-emerald-300 text-lg sm:text-xl font-bold">
+                    <Layers className="w-5 h-5 text-emerald-700" />
+                    {language === 'bn' ? 'হোমপেজ স্লাইডার ব্যানার ও কন্টেন্ট ব্যবস্থাপনা' : 'Homepage Hero Slider & Banners'}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    {language === 'bn'
+                      ? 'একসাথে একাধিক ব্যানার আপলোড করুন। ডেস্কটপ ও মোবাইলের জন্য আলাদা ব্যানার ইমেজ সেট করতে পারেন এবং প্রয়োজনে কন্টেন্ট সরাতে পারেন।'
+                      : 'Upload multiple banners with separate desktop and mobile views, and toggle/remove text overlays freely.'}
+                  </CardDescription>
+                </div>
+
+                {/* Add New Banner Button */}
+                <Button
+                  type="button"
+                  onClick={handleAddBanner}
+                  className="rounded-xl bg-[#11DFC0] hover:bg-[#0fcab0] text-slate-950 font-black text-xs sm:text-sm px-4 py-2 gap-1.5 shadow-sm transition-all hover:scale-105 w-fit"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>{language === 'bn' ? 'নতুন ব্যানার যোগ করুন' : 'Add New Banner'}</span>
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-3 p-4 rounded-xl border border-slate-200 bg-slate-50/70">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <Label className="font-bold text-xs">{language === 'bn' ? 'ব্যানার ছবি আপলোড বা লিঙ্ক' : 'Banner Image Upload or URL'}</Label>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs w-fit">
-                    {isUploadingBanner ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    <span>{language === 'bn' ? 'ডিভাইস থেকে ছবি আপলোড করুন' : 'Upload from Device'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBannerUpload}
-                      disabled={isUploadingBanner}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                <Input
-                  value={heroBanner.image_url}
-                  onChange={(e) => setHeroBanner({ ...heroBanner, image_url: e.target.value })}
-                  placeholder="/images/banner1.jpg"
-                />
-                {heroBanner.image_url && (
-                  <div className="mt-2 h-44 max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
-                    <img src={heroBanner.image_url} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
+
+            <CardContent className="pt-6 space-y-6">
+              {/* Banner List */}
+              <div className="space-y-6">
+                {heroBannersList.map((banner, index) => {
+                  const isUploadingThisDesktop = uploadingBannerIndex?.index === index && uploadingBannerIndex?.type === 'desktop';
+                  const isUploadingThisMobile = uploadingBannerIndex?.index === index && uploadingBannerIndex?.type === 'mobile';
+
+                  return (
+                    <div 
+                      key={banner.id || `banner-${index}`}
+                      className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs space-y-5"
+                    >
+                      {/* Top Bar of Each Banner Card */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-7 h-7 rounded-lg bg-[#11DFC0]/20 border border-[#11DFC0]/40 text-teal-900 font-extrabold text-xs flex items-center justify-center">
+                            #{index + 1}
+                          </span>
+                          <span className="font-heading font-black text-sm sm:text-base text-slate-800 dark:text-slate-200">
+                            {language === 'bn' ? `ব্যানার স্লাইড ${index + 1}` : `Banner Slide ${index + 1}`}
+                          </span>
+                          {banner.is_active ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                              {language === 'bn' ? 'সক্রিয়' : 'Active'}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600">
+                              {language === 'bn' ? 'নিষ্ক্রিয়' : 'Inactive'}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Controls: Active toggle, Content toggle, Delete */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          {/* Show/Hide Overlay Content Switch */}
+                          <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {language === 'bn' ? 'কন্টেন্ট টেক্সট প্রদর্শন' : 'Show Text Overlay'}
+                            </span>
+                            <Switch
+                              checked={banner.show_content}
+                              onCheckedChange={(checked) => {
+                                setHeroBannersList((prev) => {
+                                  const next = [...prev];
+                                  next[index] = { ...next[index], show_content: checked };
+                                  return next;
+                                });
+                              }}
+                            />
+                          </div>
+
+                          {/* Active Switch */}
+                          <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {language === 'bn' ? 'স্লাইড চালু' : 'Enabled'}
+                            </span>
+                            <Switch
+                              checked={banner.is_active}
+                              onCheckedChange={(checked) => {
+                                setHeroBannersList((prev) => {
+                                  const next = [...prev];
+                                  next[index] = { ...next[index], is_active: checked };
+                                  return next;
+                                });
+                              }}
+                            />
+                          </div>
+
+                          {/* Delete Banner Button */}
+                          {heroBannersList.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveBanner(index)}
+                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 h-8 px-2.5 rounded-xl font-bold text-xs"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-1" />
+                              <span>{language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Dual Upload Section: Desktop Banner vs Mobile Banner */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        
+                        {/* 1. Desktop Banner Upload */}
+                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="font-bold text-xs flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                              <Monitor className="w-4 h-4 text-blue-600" />
+                              <span>{language === 'bn' ? 'ডেস্কটপ ব্যানার (Desktop Banner - 16:9)' : 'Desktop Banner Image (16:9)'}</span>
+                            </Label>
+                            
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs">
+                              {isUploadingThisDesktop ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                              <span>{language === 'bn' ? 'আপলোড' : 'Upload'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleBannerUploadFor(e, index, 'desktop')}
+                                disabled={isUploadingThisDesktop}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+
+                          <Input
+                            value={banner.image_url}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setHeroBannersList((prev) => {
+                                const next = [...prev];
+                                next[index] = { ...next[index], image_url: val };
+                                return next;
+                              });
+                            }}
+                            placeholder="/images/banner1.jpg"
+                            className="bg-white dark:bg-slate-900 text-xs"
+                          />
+
+                          {banner.image_url && (
+                            <div className="h-32 sm:h-36 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xs relative group">
+                              <img src={banner.image_url} alt="Desktop Preview" className="w-full h-full object-cover" />
+                              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-[10px] font-bold text-white flex items-center gap-1">
+                                <Monitor className="w-3 h-3" />
+                                <span>Desktop View</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 2. Mobile Banner Upload */}
+                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="font-bold text-xs flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                              <Smartphone className="w-4 h-4 text-emerald-600" />
+                              <span>{language === 'bn' ? 'মোবাইল ব্যানার (Mobile Banner - Portrait / Fit)' : 'Mobile Banner Image (Mobile Fit)'}</span>
+                            </Label>
+                            
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs">
+                              {isUploadingThisMobile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                              <span>{language === 'bn' ? 'আপলোড' : 'Upload'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleBannerUploadFor(e, index, 'mobile')}
+                                disabled={isUploadingThisMobile}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+
+                          <Input
+                            value={banner.image_mobile_url || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setHeroBannersList((prev) => {
+                                const next = [...prev];
+                                next[index] = { ...next[index], image_mobile_url: val };
+                                return next;
+                              });
+                            }}
+                            placeholder={language === 'bn' ? 'মোবাইল ব্যানার ছবি লিঙ্ক (ঐচ্ছিক)' : 'Mobile image URL (optional)'}
+                            className="bg-white dark:bg-slate-900 text-xs"
+                          />
+
+                          {banner.image_mobile_url ? (
+                            <div className="h-32 sm:h-36 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xs relative group">
+                              <img src={banner.image_mobile_url} alt="Mobile Preview" className="w-full h-full object-cover" />
+                              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-[10px] font-bold text-white flex items-center gap-1">
+                                <Smartphone className="w-3 h-3" />
+                                <span>Mobile View Active</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="h-32 sm:h-36 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-center p-3 bg-white/50 dark:bg-slate-900/20">
+                              <Smartphone className="w-6 h-6 text-slate-400 mb-1" />
+                              <p className="text-[11px] text-slate-500 font-medium">
+                                {language === 'bn' ? 'মোবাইল ব্যানার আপলোড না করলে স্বয়ংক্রিয়ভাবে ডেস্কটপ ব্যানারটি মোবাইলে সুন্দরভাবে ফিট হয়ে যাবে।' : 'If no mobile banner is uploaded, desktop banner will scale for mobile.'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+
+                      {/* Text Content Fields (Only if show_content is enabled) */}
+                      {banner.show_content && (
+                        <div className="p-4 rounded-xl border border-[#11DFC0]/30 bg-[#11DFC0]/5 space-y-4">
+                          <div className="flex items-center justify-between pb-1 border-b border-[#11DFC0]/20">
+                            <span className="text-xs font-bold text-teal-950 dark:text-teal-200 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-[#11DFC0]" />
+                              <span>{language === 'bn' ? 'ব্যানারের টেক্সট কন্টেন্ট ও বিবরণ' : 'Banner Text Content'}</span>
+                            </span>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleClearBannerContent(index)}
+                              className="text-xs text-slate-500 hover:text-slate-800 h-7 px-2"
+                            >
+                              <span>{language === 'bn' ? 'টেক্সট মুছুন' : 'Clear Text'}</span>
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold">{language === 'bn' ? 'ট্যাগলাইন (ছোট ব্যাজ)' : 'Tagline'}</Label>
+                              <Input
+                                value={banner.tagline_bn}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setHeroBannersList((prev) => {
+                                    const next = [...prev];
+                                    next[index] = { ...next[index], tagline_bn: val };
+                                    return next;
+                                  });
+                                }}
+                                className="bg-white dark:bg-slate-900 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold">{language === 'bn' ? 'মূল শিরোনাম (বাংলা)' : 'Main Heading'}</Label>
+                              <Input
+                                value={banner.title_bn}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setHeroBannersList((prev) => {
+                                    const next = [...prev];
+                                    next[index] = { ...next[index], title_bn: val };
+                                    return next;
+                                  });
+                                }}
+                                className="bg-white dark:bg-slate-900 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold">{language === 'bn' ? 'সাবটাইটেল / বিবরণ' : 'Subtitle'}</Label>
+                            <Textarea
+                              value={banner.subtitle_bn}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setHeroBannersList((prev) => {
+                                  const next = [...prev];
+                                  next[index] = { ...next[index], subtitle_bn: val };
+                                  return next;
+                                });
+                              }}
+                              rows={2}
+                              className="bg-white dark:bg-slate-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{language === 'bn' ? 'ট্যাগলাইন (ছোট শিরোনাম)' : 'Tagline'}</Label>
-                  <Input
-                    value={heroBanner.tagline_bn}
-                    onChange={(e) => setHeroBanner({ ...heroBanner, tagline_bn: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{language === 'bn' ? 'মূল শিরোনাম (বাংলা)' : 'Main Heading'}</Label>
-                  <Input
-                    value={heroBanner.title_bn}
-                    onChange={(e) => setHeroBanner({ ...heroBanner, title_bn: e.target.value })}
-                  />
-                </div>
-              </div>
+              {/* Bottom Actions: Add Another Banner & Save All */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddBanner}
+                  className="rounded-xl border-[#11DFC0]/60 bg-[#11DFC0]/15 hover:bg-[#11DFC0]/30 text-teal-950 dark:text-teal-200 font-bold text-xs sm:text-sm px-4 py-2 gap-1.5 w-full sm:w-auto"
+                >
+                  <Plus className="w-4 h-4 text-teal-700 dark:text-teal-300 stroke-[3]" />
+                  <span>{language === 'bn' ? 'আরও ব্যানার যোগ করুন' : 'Add Another Banner'}</span>
+                </Button>
 
-              <div className="space-y-2">
-                <Label>{language === 'bn' ? 'সাবটাইটেল / বিবরণ' : 'Subtitle'}</Label>
-                <Textarea
-                  value={heroBanner.subtitle_bn}
-                  onChange={(e) => setHeroBanner({ ...heroBanner, subtitle_bn: e.target.value })}
-                  rows={2}
-                />
+                <Button
+                  type="button"
+                  onClick={() => handleSaveWebsiteContent('hero')}
+                  disabled={isSavingContent}
+                  className="rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs sm:text-sm px-6 py-2 shadow-md gap-2 w-full sm:w-auto"
+                >
+                  {isSavingContent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>{language === 'bn' ? 'সকল ব্যানার ও কন্টেন্ট সংরক্ষণ করুন' : 'Save All Banners & Content'}</span>
+                </Button>
               </div>
-
-              <Button
-                onClick={() => handleSaveWebsiteContent('hero')}
-                disabled={isSavingContent}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold"
-              >
-                {isSavingContent ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                {language === 'bn' ? 'হিরো ব্যানার সংরক্ষণ করুন' : 'Save Hero Banner'}
-              </Button>
             </CardContent>
           </Card>
 

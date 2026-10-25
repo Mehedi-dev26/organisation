@@ -71,6 +71,7 @@ const HeroSection = () => {
       {/* Slides Rendering */}
       {slides.map((slide, index) => {
         const isActive = index === currentSlide;
+        const hasTextContent = slide.showContent !== false && !!(slide.titleBn || slide.titleEn || slide.subtitleBn || slide.subtitleEn);
 
         return (
           <div
@@ -79,43 +80,70 @@ const HeroSection = () => {
               isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
-            {/* Background Image - Clean and fully visible */}
+            {/* Desktop Background Image */}
             <div 
               className={`absolute inset-0 bg-cover bg-center transition-transform ease-out ${
                 isActive ? 'scale-105' : 'scale-100'
-              }`}
+              } ${slide.imageMobile ? 'hidden sm:block' : 'block'}`}
               style={{ 
                 backgroundImage: `url(${slide.image})`,
                 transitionDuration: '7000ms'
               }}
             />
 
-            {/* Subtle soft gradient sketch on the left for text legibility without blocking the image */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent pointer-events-none" />
-            <div className="absolute inset-y-0 left-0 w-full sm:w-2/3 bg-gradient-to-r from-black/50 via-transparent to-transparent pointer-events-none" />
+            {/* Mobile Background Image (Dedicated mobile banner if uploaded) */}
+            {slide.imageMobile && (
+              <div 
+                className={`sm:hidden absolute inset-0 bg-cover bg-center transition-transform ease-out ${
+                  isActive ? 'scale-105' : 'scale-100'
+                }`}
+                style={{ 
+                  backgroundImage: `url(${slide.imageMobile})`,
+                  transitionDuration: '7000ms'
+                }}
+              />
+            )}
+
+            {/* Subtle soft gradient sketch on the left for text legibility (when text is present) */}
+            {hasTextContent && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-y-0 left-0 w-full sm:w-2/3 bg-gradient-to-r from-black/55 via-transparent to-transparent pointer-events-none" />
+              </>
+            )}
             
             {/* Bottom gradient fade */}
             <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent pointer-events-none" />
 
-            {/* Slide Text Content - No glass card, pure clean readable layout */}
+            {/* Slide Text Content */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full flex items-center relative z-20">
               <div className="max-w-xl md:max-w-2xl text-left py-8 sm:py-12">
                 
-                {/* Floating Tag / Badge */}
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-600/80 backdrop-blur-xs text-white text-xs sm:text-sm font-bold mb-3 sm:mb-4 shadow-sm border border-emerald-400/30">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{language === 'bn' ? slide.tagBn : slide.tagEn}</span>
-                </div>
+                {hasTextContent && (
+                  <>
+                    {/* Floating Tag / Badge */}
+                    {(slide.tagBn || slide.tagEn) && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-600/80 backdrop-blur-xs text-white text-xs sm:text-sm font-bold mb-3 sm:mb-4 shadow-sm border border-emerald-400/30">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>{language === 'bn' ? slide.tagBn : slide.tagEn}</span>
+                      </div>
+                    )}
 
-                {/* Main Heading with Crisp Shadow */}
-                <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight sm:leading-[1.2] mb-3 sm:mb-4 tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                  {language === 'bn' ? slide.titleBn : slide.titleEn}
-                </h1>
+                    {/* Main Heading with Crisp Shadow */}
+                    {(slide.titleBn || slide.titleEn) && (
+                      <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight sm:leading-[1.2] mb-3 sm:mb-4 tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                        {language === 'bn' ? slide.titleBn : slide.titleEn}
+                      </h1>
+                    )}
 
-                {/* Subtitle */}
-                <p className="text-xs sm:text-sm md:text-base text-slate-100 max-w-xl leading-relaxed mb-6 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]">
-                  {language === 'bn' ? slide.subtitleBn : slide.subtitleEn}
-                </p>
+                    {/* Subtitle */}
+                    {(slide.subtitleBn || slide.subtitleEn) && (
+                      <p className="text-xs sm:text-sm md:text-base text-slate-100 max-w-xl leading-relaxed mb-6 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]">
+                        {language === 'bn' ? slide.subtitleBn : slide.subtitleEn}
+                      </p>
+                    )}
+                  </>
+                )}
 
                 {/* Unified Compact Aligned Buttons: সদস্য আবেদন & চাঁদা / অনুদান */}
                 <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2">

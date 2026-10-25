@@ -2,7 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface HeroBannerData {
+  id?: string;
   image_url: string;
+  image_mobile_url?: string;
   title_bn: string;
   title_en: string;
   tagline_bn: string;
@@ -12,17 +14,21 @@ export interface HeroBannerData {
   button_url?: string;
   button_text_bn?: string;
   button_text_en?: string;
+  show_content?: boolean;
+  is_active?: boolean;
 }
 
 export interface BannerSlide {
   id: string;
   image: string;
+  imageMobile?: string;
   titleBn: string;
   titleEn: string;
   subtitleBn: string;
   subtitleEn: string;
   tagBn: string;
   tagEn: string;
+  showContent?: boolean;
 }
 
 export interface AboutSectionData {
@@ -149,33 +155,39 @@ export const useHeroBanners = () => {
 
       const slides: BannerSlide[] = [];
 
-      // Primary database banner
-      if (mainHero) {
+      // If admin configured multiple banners via hero_banners array
+      if (extraBanners && extraBanners.length > 0) {
+        extraBanners
+          .filter((b) => b.is_active !== false)
+          .forEach((b, idx) => {
+            const hasContent = b.show_content !== false;
+            slides.push({
+              id: b.id || `db-hero-${idx}`,
+              image: b.image_url,
+              imageMobile: b.image_mobile_url || undefined,
+              tagBn: hasContent ? (b.tagline_bn || 'সবসময় আপনার পাশে - একটি স্বেচ্ছাসেবী সংগঠন') : '',
+              tagEn: hasContent ? (b.tagline_en || 'Always by your side - A voluntary welfare organization') : '',
+              titleBn: hasContent ? (b.title_bn || '') : '',
+              titleEn: hasContent ? (b.title_en || b.title_bn || '') : '',
+              subtitleBn: hasContent ? (b.subtitle_bn || '') : '',
+              subtitleEn: hasContent ? (b.subtitle_en || b.subtitle_bn || '') : '',
+              showContent: hasContent,
+            });
+          });
+      } else if (mainHero) {
+        // Fallback to single primary database banner
+        const hasContent = (mainHero as any).show_content !== false;
         slides.push({
           id: 'db-main-hero',
           image: (mainHero as any).image_url || 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=1600&q=80',
-          tagBn: (mainHero as any).tagline_bn || 'সবসময় আপনার পাশে - একটি স্বেচ্ছাসেবী সংগঠন',
-          tagEn: (mainHero as any).tagline_en || 'Always by your side - A voluntary welfare organization',
-          titleBn: (mainHero as any).title_bn || 'সময়ের বাতিঘর — মানবতার সেবায় নিবেদিত',
-          titleEn: (mainHero as any).title_en || 'Samoyer Batighor — Dedicated to Humanity',
-          subtitleBn: (mainHero as any).subtitle_bn || 'একটি অরাজনৈতিক, অলাভজনক ও সামাজিক স্বেচ্ছাসেবী সংগঠন। সমাজের সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানোই আমাদের মূল অঙ্গীকার।',
-          subtitleEn: (mainHero as any).subtitle_en || 'A non-political, non-profit humanitarian organization committed to serving underprivileged people.',
-        });
-      }
-
-      // Additional array banners from site_settings (if configured by admin)
-      if (extraBanners && extraBanners.length > 0) {
-        extraBanners.forEach((b, idx) => {
-          slides.push({
-            id: `db-extra-hero-${idx}`,
-            image: b.image_url,
-            tagBn: b.tagline_bn || 'মানবসেবায় নিবেদিত সামাজিক সংগঠন',
-            tagEn: b.tagline_en || 'Non-profit Social Welfare Organization',
-            titleBn: b.title_bn,
-            titleEn: b.title_en || b.title_bn,
-            subtitleBn: b.subtitle_bn,
-            subtitleEn: b.subtitle_en || b.subtitle_bn,
-          });
+          imageMobile: (mainHero as any).image_mobile_url || undefined,
+          tagBn: hasContent ? ((mainHero as any).tagline_bn || 'সবসময় আপনার পাশে - একটি স্বেচ্ছাসেবী সংগঠন') : '',
+          tagEn: hasContent ? ((mainHero as any).tagline_en || 'Always by your side - A voluntary welfare organization') : '',
+          titleBn: hasContent ? ((mainHero as any).title_bn || 'সময়ের বাতিঘর — মানবতার সেবায় নিবেদিত') : '',
+          titleEn: hasContent ? ((mainHero as any).title_en || 'Samoyer Batighor — Dedicated to Humanity') : '',
+          subtitleBn: hasContent ? ((mainHero as any).subtitle_bn || 'একটি অরাজনৈতিক, অলাভজনক ও সামাজিক স্বেচ্ছাসেবী সংগঠন। সমাজের সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানোই আমাদের মূল অঙ্গীকার।') : '',
+          subtitleEn: hasContent ? ((mainHero as any).subtitle_en || 'A non-political, non-profit humanitarian organization committed to serving underprivileged people.') : '',
+          showContent: hasContent,
         });
       }
 

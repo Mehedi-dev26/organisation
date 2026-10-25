@@ -41,6 +41,7 @@ import {
   FileText,
   Phone,
   RefreshCw,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import TransactionVoucher from '@/components/admin/TransactionVoucher';
@@ -723,48 +724,40 @@ const FinanceManagement: React.FC = () => {
           </p>
         </div>
 
-        {/* Action Buttons: New Expense, New Income, All Transactions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="gap-1.5 border-emerald-200 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-300"
-          >
-            <RefreshCw className="w-4 h-4" />
-            {language === 'bn' ? 'রিফ্রেশ' : 'Refresh'}
-          </Button>
+        {/* Unified 1-Lane Action Buttons: নতুন খরচ, নতুন আয়, নতুন লেনদেন (Unbreakable Mobile-Responsive Lane) */}
+        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
+          <div className="inline-flex items-center gap-2 p-1.5 bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-[#11DFC0]/40 shadow-[0_4px_20px_rgba(17,223,192,0.10)] whitespace-nowrap min-w-max">
+            {/* 1. New Expense Button */}
+            <Button
+              size="sm"
+              onClick={() => openAddModal('expense')}
+              className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <MinusCircle className="w-4 h-4 stroke-[2.4]" />
+              {language === 'bn' ? 'নতুন খরচ' : 'New Expense'}
+            </Button>
 
-          {/* New Expense Button (Dedicated Shortcut) */}
-          <Button
-            size="sm"
-            onClick={() => openAddModal('expense')}
-            className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5 shadow-sm font-medium"
-          >
-            <MinusCircle className="w-4 h-4" />
-            {language === 'bn' ? 'নতুন খরচ যোগ করুন' : 'Add Expense'}
-          </Button>
+            {/* 2. New Income Button */}
+            <Button
+              size="sm"
+              onClick={() => openAddModal('donation')}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <PlusCircle className="w-4 h-4 stroke-[2.4]" />
+              {language === 'bn' ? 'নতুন আয়' : 'New Income'}
+            </Button>
 
-          {/* New Income Button (Dedicated Shortcut) */}
-          <Button
-            size="sm"
-            onClick={() => openAddModal('donation')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm font-medium"
-          >
-            <PlusCircle className="w-4 h-4" />
-            {language === 'bn' ? 'নতুন আয় যোগ করুন' : 'Add Income'}
-          </Button>
-
-          {/* Standard Transaction Button */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => openAddModal('member_fee')}
-            className="gap-1.5 border-emerald-300 hover:bg-emerald-50 text-emerald-800"
-          >
-            <Plus className="w-4 h-4" />
-            {language === 'bn' ? 'নতুন লেনদেন' : 'New Transaction'}
-          </Button>
+            {/* 3. New Transaction Button */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openAddModal('member_fee')}
+              className="bg-[#11DFC0]/15 hover:bg-[#11DFC0]/30 border-[#11DFC0]/60 text-teal-950 dark:text-teal-200 gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <ArrowLeftRight className="w-4 h-4 text-teal-700 dark:text-teal-300 stroke-[2.4]" />
+              {language === 'bn' ? 'নতুন লেনদেন' : 'New Transaction'}
+            </Button>
+          </div>
         </div>
       </div>
 
