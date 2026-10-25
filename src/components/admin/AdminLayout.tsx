@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
+import { AdminHeaderSearch } from './AdminHeaderSearch';
 import { AdminNoticeSheet } from './AdminNoticeSheet';
 import { AdminPageErrorBoundary } from './AdminPageErrorBoundary';
 import {
@@ -160,15 +161,20 @@ const AdminLayout = () => {
     <SidebarProvider style={{ "--sidebar-width": "270px" } as React.CSSProperties}>
       <div className="min-h-screen flex w-full bg-[#F4FAF6]">
         <AdminSidebar />
-        <SidebarInset className="flex-1 bg-[#F4FAF6] overflow-x-hidden min-w-0">
-          {/* Header Bar matching reference image */}
-          <header className="h-16 border-b border-emerald-950/10 flex items-center justify-between px-4 sm:px-6 md:px-8 bg-white/95 backdrop-blur-md sticky top-0 z-20 shadow-xs">
+        <SidebarInset className="flex-1 bg-[#F4FAF6] min-w-0 flex flex-col h-screen overflow-hidden">
+          {/* Permanent Sticky Header Bar */}
+          <header className="h-16 shrink-0 border-b border-emerald-950/10 flex items-center justify-between px-4 sm:px-6 md:px-8 bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-xs gap-3">
             {/* Left: Sidebar trigger & Title */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               <SidebarTrigger className="text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg p-2 transition-colors" />
-              <h1 className="font-heading font-extrabold text-lg sm:text-xl text-slate-800 tracking-tight">
+              <h1 className="font-heading font-extrabold text-base sm:text-lg lg:text-xl text-slate-800 tracking-tight whitespace-nowrap">
                 {getHeaderTitle()}
               </h1>
+            </div>
+
+            {/* Middle: Real-time Member Global Search (Member ID, Name, Phone) */}
+            <div className="flex-1 max-w-sm sm:max-w-md lg:max-w-lg mx-2 sm:mx-4 hidden md:block">
+              <AdminHeaderSearch />
             </div>
 
             {/* Right: Notifications & User Profile */}
@@ -319,12 +325,18 @@ const AdminLayout = () => {
             </div>
           </header>
 
-          {/* Main Dashboard / Page Body */}
-          <main className="p-4 sm:p-6 lg:p-8 bg-[#F4FAF6] min-h-[calc(100vh-4rem)]">
-            <AdminPageErrorBoundary key={location.pathname}>
-              <Outlet />
-            </AdminPageErrorBoundary>
-          </main>
+          {/* Main Dashboard / Page Body with independent smooth scroll */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F4FAF6]">
+            {/* Mobile Search Bar visible right under header on small screens */}
+            <div className="p-3 bg-white/90 border-b border-slate-200/60 md:hidden sticky top-0 z-20 backdrop-blur-sm">
+              <AdminHeaderSearch />
+            </div>
+            <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+              <AdminPageErrorBoundary key={location.pathname}>
+                <Outlet />
+              </AdminPageErrorBoundary>
+            </main>
+          </div>
         </SidebarInset>
       </div>
 

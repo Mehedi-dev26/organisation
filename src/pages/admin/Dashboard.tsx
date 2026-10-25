@@ -388,15 +388,15 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 2. Top Row: 4 Main Activity Stat Buttons/Cards (Wider width, compact height) */}
+      {/* 2. Top Row: 4 Main Activity Stat Buttons/Cards with Soft Light Emerald Tint */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* মোট সদস্য */}
         <Link 
           to="/admin/members" 
-          className="group bg-white rounded-[18px] p-3.5 sm:p-4 border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
               <Users className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div className="min-w-0">
@@ -408,30 +408,30 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
 
-        {/* সংগঠন */}
+        {/* সংগঠন / সংগঠক */}
         <Link 
           to="/admin/committee" 
-          className="group bg-white rounded-[18px] p-3.5 sm:p-4 border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-sky-50 flex items-center justify-center text-sky-600 shrink-0 group-hover:scale-105 transition-transform">
-              <Users className="w-5 h-5 stroke-[2.2]" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <Building2 className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-500 truncate">
-                {language === 'bn' ? 'সংগঠন' : 'Organization'}
+                {language === 'bn' ? 'সংগঠন ও শাখা' : 'Organization'}
               </p>
               <p className="text-2xl font-black text-slate-900 leading-tight">
                 3
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 group-hover:bg-sky-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
@@ -439,10 +439,10 @@ const Dashboard = () => {
         {/* ইভেন্ট */}
         <Link 
           to="/admin/events" 
-          className="group bg-white rounded-[18px] p-3.5 sm:p-4 border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-purple-50 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
               <Calendar className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div className="min-w-0">
@@ -454,7 +454,7 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
@@ -462,10 +462,10 @@ const Dashboard = () => {
         {/* কমিটি সদস্য */}
         <Link 
           to="/admin/committee" 
-          className="group bg-white rounded-[18px] p-3.5 sm:p-4 border border-slate-100/90 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
               <UserCog className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div className="min-w-0">
@@ -477,27 +477,27 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
       </div>
 
-      {/* 3. Second Row: 4 Financial Cards (Borderless, Compact Height) */}
+      {/* 3. Second Row: 4 Financial Cards with Unified Soft Light Emerald Palette */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* মোট আয় */}
-        <div className="bg-white rounded-[18px] p-3.5 sm:p-4 shadow-[0_2px_14px_rgba(0,0,0,0.03)] flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <TrendingUp className="w-4 h-4 stroke-[2.4]" />
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
+                <TrendingUp className="w-4.5 h-4.5 stroke-[2.4]" />
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] flex items-center gap-0.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
                 <ArrowUpRight className="w-3 h-3" />
                 0%
               </span>
             </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               {language === 'bn' ? 'মোট আয়' : 'Total Income'}
             </p>
             <p className="text-xl sm:text-2xl font-black text-slate-900 my-1 leading-tight">
@@ -510,21 +510,21 @@ const Dashboard = () => {
         </div>
 
         {/* মোট ব্যয় */}
-        <div className="bg-white rounded-[18px] p-3.5 sm:p-4 shadow-[0_2px_14px_rgba(0,0,0,0.03)] flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
-                <ArrowDownRight className="w-4 h-4 stroke-[2.4]" />
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
+                <ArrowDownRight className="w-4.5 h-4.5 stroke-[2.4]" />
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-bold text-[10px] flex items-center gap-0.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
                 <ArrowDownRight className="w-3 h-3" />
                 0%
               </span>
             </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               {language === 'bn' ? 'মোট ব্যয়' : 'Total Expense'}
             </p>
-            <p className="text-xl sm:text-2xl font-black text-rose-600 my-1 leading-tight">
+            <p className="text-xl sm:text-2xl font-black text-slate-900 my-1 leading-tight">
               ৳{financialSummary?.totalExpense?.toLocaleString() || 0}
             </p>
           </div>
@@ -534,21 +534,21 @@ const Dashboard = () => {
         </div>
 
         {/* ব্যালেন্স */}
-        <div className="bg-white rounded-[18px] p-3.5 sm:p-4 shadow-[0_2px_14px_rgba(0,0,0,0.03)] flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                <Database className="w-4 h-4 stroke-[2.4]" />
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
+                <Database className="w-4.5 h-4.5 stroke-[2.4]" />
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] flex items-center gap-0.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
                 <ArrowUpRight className="w-3 h-3" />
                 0%
               </span>
             </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              {language === 'bn' ? 'ব্যালেন্স' : 'Balance'}
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              {language === 'bn' ? 'বর্তমান ব্যালেন্স' : 'Current Balance'}
             </p>
-            <p className="text-xl sm:text-2xl font-black text-blue-600 my-1 leading-tight">
+            <p className="text-xl sm:text-2xl font-black text-[#0B6B3A] my-1 leading-tight">
               ৳{financialSummary?.balance?.toLocaleString() || 0}
             </p>
           </div>
@@ -557,37 +557,37 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* ক্যাশ ইন হ্যান্ড */}
-        <div className="bg-white rounded-[18px] p-3.5 sm:p-4 shadow-[0_2px_14px_rgba(0,0,0,0.03)] flex flex-col justify-between hover:shadow-md transition-shadow">
+        {/* ক্যাশ ইন হ্যান্ড / ক্যাশিয়ার ব্যালেন্স */}
+        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                <Box className="w-4 h-4 stroke-[2.4]" />
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
+                <Box className="w-4.5 h-4.5 stroke-[2.4]" />
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold text-[10px] flex items-center gap-0.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
                 <ArrowUpRight className="w-3 h-3" />
                 0%
               </span>
             </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               {language === 'bn' ? 'ক্যাশ ইন হ্যান্ড' : 'Cash in Hand'}
             </p>
-            <p className="text-xl sm:text-2xl font-black text-purple-600 my-1 leading-tight">
+            <p className="text-xl sm:text-2xl font-black text-[#0B6B3A] my-1 leading-tight">
               ৳{financialSummary?.balance?.toLocaleString() || 0}
             </p>
           </div>
           <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50">
-            {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+            {language === 'bn' ? 'ক্যাশিয়ার ও ফান্ড মোট' : 'Cashiers & funds'}
           </div>
         </div>
       </div>
 
-      {/* 4. Storage Usage Card ("স্টোরেজ ব্যবহার") */}
+      {/* 4. Storage Usage Card ("স্টোরেজ ব্যবহার") with Soft Emerald Palette */}
       {isAdmin && (
-        <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+        <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#C8E6C9]/60 shadow-[0_4px_25px_rgba(11,107,58,0.03)]">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
                 <Cloud className="w-5 h-5 stroke-[2.2]" />
               </div>
               <h3 className="font-heading font-extrabold text-lg text-slate-800">
@@ -616,8 +616,8 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
             {/* সদস্যদের ছবি */}
-            <div className="bg-[#F0F7FF] rounded-2xl p-4 flex items-center gap-3.5 border border-blue-100">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+            <div className="bg-[#E6F4EA]/40 rounded-2xl p-4 flex items-center gap-3.5 border border-[#C8E6C9]/60 hover:bg-[#E6F4EA]/70 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] flex-shrink-0 shadow-2xs">
                 <Users className="w-5 h-5 stroke-[2.2]" />
               </div>
               <div>
@@ -631,8 +631,8 @@ const Dashboard = () => {
             </div>
 
             {/* গ্যালারী ছবি */}
-            <div className="bg-[#FAF5FF] rounded-2xl p-4 flex items-center gap-3.5 border border-purple-100">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
+            <div className="bg-[#E6F4EA]/40 rounded-2xl p-4 flex items-center gap-3.5 border border-[#C8E6C9]/60 hover:bg-[#E6F4EA]/70 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] flex-shrink-0 shadow-2xs">
                 <Database className="w-5 h-5 stroke-[2.2]" />
               </div>
               <div>
@@ -777,10 +777,10 @@ const Dashboard = () => {
         const totalPendingRequests = (pendingMembers?.length || 0) + (pendingPayments?.length || 0);
 
         return (
-          <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+          <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#C8E6C9]/60 shadow-[0_4px_25px_rgba(11,107,58,0.03)]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
                   <ClipboardList className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
@@ -795,22 +795,22 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Action Buttons & Tabs */}
+              {/* Action Buttons & Tabs with Soft Light Emerald Tint */}
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/80">
+                <div className="inline-flex p-1 bg-[#E6F4EA]/50 rounded-xl border border-[#C8E6C9]/80 shadow-2xs">
                   <button
                     type="button"
                     onClick={() => setActiveLogTab('requests')}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       activeLogTab === 'requests'
-                        ? 'bg-white text-emerald-700 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white text-[#0B6B3A] shadow-xs border border-[#C8E6C9]'
+                        : 'text-slate-600 hover:text-[#0B6B3A] hover:bg-[#E6F4EA]/60'
                     }`}
                   >
-                    <Clock className="w-3.5 h-3.5" />
+                    <Clock className="w-3.5 h-3.5 text-[#0B6B3A]" />
                     {language === 'bn' ? 'অপেক্ষমাণ আবেদন' : 'Pending Requests'}
                     {totalPendingRequests > 0 && (
-                      <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
+                      <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-[#0B6B3A] text-white">
                         {totalPendingRequests}
                       </span>
                     )}
@@ -818,13 +818,13 @@ const Dashboard = () => {
                   <button
                     type="button"
                     onClick={() => setActiveLogTab('logs')}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       activeLogTab === 'logs'
-                        ? 'bg-white text-emerald-700 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white text-[#0B6B3A] shadow-xs border border-[#C8E6C9]'
+                        : 'text-slate-600 hover:text-[#0B6B3A] hover:bg-[#E6F4EA]/60'
                     }`}
                   >
-                    <Activity className="w-3.5 h-3.5" />
+                    <Activity className="w-3.5 h-3.5 text-[#0B6B3A]" />
                     {language === 'bn' ? 'কার্যকলাপ ইতিহাস' : 'Activity History'}
                   </button>
                 </div>
@@ -832,7 +832,7 @@ const Dashboard = () => {
                 {activeLogTab === 'requests' ? (
                   <Link
                     to="/admin/payment-verification"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs hover:shadow-sm"
                   >
                     {language === 'bn' ? 'পেমেন্ট যাচাই' : 'Verify Payments'}
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -840,7 +840,7 @@ const Dashboard = () => {
                 ) : (
                   <Link
                     to="/admin/cashiers"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs hover:shadow-sm"
                   >
                     {language === 'bn' ? 'ক্যাশিয়ার লগ' : 'Cashier Logs'}
                     <ArrowRight className="w-3.5 h-3.5" />

@@ -123,21 +123,21 @@ const AdminSidebar = () => {
         <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 left-0 w-36 h-36 bg-emerald-300/10 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Top Header: Dynamic Organization Logo & Admin Badge in Luminous Emerald Gradient */}
-        <div className="p-4 sm:p-5 border-b border-emerald-500/25 flex items-center gap-3.5 bg-gradient-to-r from-emerald-800/50 via-emerald-700/25 to-transparent relative z-10 backdrop-blur-xs">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 p-0.5 shadow-md shadow-emerald-950/30 flex items-center justify-center flex-shrink-0">
+        {/* Top Header: Dynamic Organization Logo & Admin Badge aligned with Header Bar (h-16) */}
+        <div className="h-16 px-4 border-b border-emerald-500/25 flex items-center gap-3 bg-gradient-to-r from-emerald-800/40 via-emerald-700/20 to-transparent relative z-10 shrink-0">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 p-0.5 shadow-md shadow-emerald-950/30 flex items-center justify-center flex-shrink-0">
             <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden p-0.5">
               <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
             </div>
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <h2 className="font-heading font-extrabold text-lg text-white leading-tight tracking-wide flex items-center gap-1.5">
+              <h2 className="font-heading font-bold text-sm text-white leading-tight tracking-wide flex items-center gap-1.5">
                 {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
-                <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
               </h2>
-              <p className="text-xs text-emerald-200/90 font-medium">
-                {language === 'bn' ? 'এডমিন প্যানেল' : 'Management Panel'}
+              <p className="text-[11px] text-emerald-200/90 font-medium leading-none mt-0.5">
+                {language === 'bn' ? 'এডমিন প্যানেল' : 'Admin Panel'}
               </p>
             </div>
           )}

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -93,8 +94,16 @@ const MembersManagement: React.FC = () => {
   const [idCardSide, setIdCardSide] = useState<'both' | 'front' | 'back'>('both');
 
   // Filtering & Search
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+    }
+  }, [urlSearch]);
   const [selectedMemberType, setSelectedMemberType] = useState<string>('all');
   const [selectedBloodGroup, setSelectedBloodGroup] = useState<string>('all');
 
