@@ -388,16 +388,16 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 2. Top Row: 4 Main Activity Stat Buttons/Cards with Soft Light Emerald Tint */}
+      {/* 2. Top Row: 4 Main Activity Stat Buttons/Cards with Light #11DFC0 Color Coding & Colorful Icons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* মোট সদস্য */}
         <Link 
           to="/admin/members" 
-          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Users className="w-5 h-5 stroke-[2.2]" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <Users className="w-5 h-5 stroke-[2.4] text-blue-600 drop-shadow-xs" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-500 truncate">
@@ -408,7 +408,7 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 group-hover:bg-[#11DFC0] group-hover:text-slate-950 group-hover:shadow-[0_2px_10px_rgba(17,223,192,0.4)] flex items-center justify-center transition-all shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
@@ -416,11 +416,11 @@ const Dashboard = () => {
         {/* সংগঠন / সংগঠক */}
         <Link 
           to="/admin/committee" 
-          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Building2 className="w-5 h-5 stroke-[2.2]" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <Building2 className="w-5 h-5 stroke-[2.4] text-purple-600 drop-shadow-xs" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-500 truncate">
@@ -431,7 +431,7 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 group-hover:bg-[#11DFC0] group-hover:text-slate-950 group-hover:shadow-[0_2px_10px_rgba(17,223,192,0.4)] flex items-center justify-center transition-all shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
@@ -439,11 +439,11 @@ const Dashboard = () => {
         {/* ইভেন্ট */}
         <Link 
           to="/admin/events" 
-          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Calendar className="w-5 h-5 stroke-[2.2]" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <Calendar className="w-5 h-5 stroke-[2.4] text-amber-500 drop-shadow-xs" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-500 truncate">
@@ -454,7 +454,7 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 group-hover:bg-[#11DFC0] group-hover:text-slate-950 group-hover:shadow-[0_2px_10px_rgba(17,223,192,0.4)] flex items-center justify-center transition-all shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
@@ -462,11 +462,11 @@ const Dashboard = () => {
         {/* কমিটি সদস্য */}
         <Link 
           to="/admin/committee" 
-          className="group bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] hover:shadow-md hover:border-[#0B6B3A]/40 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-[14px] bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <UserCog className="w-5 h-5 stroke-[2.2]" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <UserCog className="w-5 h-5 stroke-[2.4] text-rose-500 drop-shadow-xs" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-500 truncate">
@@ -477,23 +477,26 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-[#E6F4EA] border border-[#C8E6C9]/70 text-[#0B6B3A] group-hover:bg-[#0B6B3A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 group-hover:bg-[#11DFC0] group-hover:text-slate-950 group-hover:shadow-[0_2px_10px_rgba(17,223,192,0.4)] flex items-center justify-center transition-all shrink-0">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
       </div>
 
-      {/* 3. Second Row: 4 Financial Cards with Unified Soft Light Emerald Palette */}
+      {/* 3. Second Row: 4 Financial Cards with Light #11DFC0 Color Coding & Colorful Icons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* মোট আয় */}
-        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
+        <Link 
+          to="/admin/finance"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] flex flex-col justify-between hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+        >
           <div>
             <div className="flex items-center justify-between mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
-                <TrendingUp className="w-4.5 h-4.5 stroke-[2.4]" />
+              <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                <TrendingUp className="w-5 h-5 stroke-[2.4] text-emerald-600 drop-shadow-xs" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
-                <ArrowUpRight className="w-3 h-3" />
+              <span className="px-2.5 py-0.5 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs group-hover:bg-[#11DFC0] transition-colors">
+                <ArrowUpRight className="w-3 h-3 text-emerald-700" />
                 0%
               </span>
             </div>
@@ -504,20 +507,24 @@ const Dashboard = () => {
               ৳{financialSummary?.totalIncome?.toLocaleString() || 0}
             </p>
           </div>
-          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50">
-            {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50 flex items-center justify-between">
+            <span>{language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}</span>
+            <span className="text-[10px] font-bold text-teal-700 group-hover:underline">বিস্তারিত →</span>
           </div>
-        </div>
+        </Link>
 
         {/* মোট ব্যয় */}
-        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
+        <Link 
+          to="/admin/finance"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] flex flex-col justify-between hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+        >
           <div>
             <div className="flex items-center justify-between mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
-                <ArrowDownRight className="w-4.5 h-4.5 stroke-[2.4]" />
+              <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                <ArrowDownRight className="w-5 h-5 stroke-[2.4] text-red-500 drop-shadow-xs" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
-                <ArrowDownRight className="w-3 h-3" />
+              <span className="px-2.5 py-0.5 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs group-hover:bg-[#11DFC0] transition-colors">
+                <ArrowDownRight className="w-3 h-3 text-red-600" />
                 0%
               </span>
             </div>
@@ -528,67 +535,76 @@ const Dashboard = () => {
               ৳{financialSummary?.totalExpense?.toLocaleString() || 0}
             </p>
           </div>
-          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50">
-            {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50 flex items-center justify-between">
+            <span>{language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}</span>
+            <span className="text-[10px] font-bold text-teal-700 group-hover:underline">বিস্তারিত →</span>
           </div>
-        </div>
+        </Link>
 
         {/* ব্যালেন্স */}
-        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
+        <Link 
+          to="/admin/finance"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] flex flex-col justify-between hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+        >
           <div>
             <div className="flex items-center justify-between mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
-                <Database className="w-4.5 h-4.5 stroke-[2.4]" />
+              <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                <Database className="w-5 h-5 stroke-[2.4] text-cyan-600 drop-shadow-xs" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
-                <ArrowUpRight className="w-3 h-3" />
+              <span className="px-2.5 py-0.5 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs group-hover:bg-[#11DFC0] transition-colors">
+                <ArrowUpRight className="w-3 h-3 text-cyan-700" />
                 0%
               </span>
             </div>
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               {language === 'bn' ? 'বর্তমান ব্যালেন্স' : 'Current Balance'}
             </p>
-            <p className="text-xl sm:text-2xl font-black text-[#0B6B3A] my-1 leading-tight">
+            <p className="text-xl sm:text-2xl font-black text-slate-900 my-1 leading-tight">
               ৳{financialSummary?.balance?.toLocaleString() || 0}
             </p>
           </div>
-          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50">
-            {language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}
+          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50 flex items-center justify-between">
+            <span>{language === 'bn' ? 'গত মাসে: ৳০' : 'Last month: ৳0'}</span>
+            <span className="text-[10px] font-bold text-teal-700 group-hover:underline">বিস্তারিত →</span>
           </div>
-        </div>
+        </Link>
 
         {/* ক্যাশ ইন হ্যান্ড / ক্যাশিয়ার ব্যালেন্স */}
-        <div className="bg-white rounded-[20px] p-4 border border-[#C8E6C9]/50 shadow-[0_4px_16px_rgba(11,107,58,0.03)] flex flex-col justify-between hover:shadow-md hover:border-[#0B6B3A]/30 transition-all">
+        <Link 
+          to="/admin/cashiers"
+          className="group bg-white rounded-[20px] p-4 border border-[#11DFC0]/40 shadow-[0_4px_16px_rgba(17,223,192,0.06)] flex flex-col justify-between hover:shadow-lg hover:border-[#11DFC0] transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+        >
           <div>
             <div className="flex items-center justify-between mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
-                <Box className="w-4.5 h-4.5 stroke-[2.4]" />
+              <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                <Box className="w-5 h-5 stroke-[2.4] text-amber-500 drop-shadow-xs" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs">
-                <ArrowUpRight className="w-3 h-3" />
+              <span className="px-2.5 py-0.5 rounded-full bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-900 font-extrabold text-[10px] flex items-center gap-0.5 shadow-2xs group-hover:bg-[#11DFC0] transition-colors">
+                <ArrowUpRight className="w-3 h-3 text-amber-600" />
                 0%
               </span>
             </div>
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               {language === 'bn' ? 'ক্যাশ ইন হ্যান্ড' : 'Cash in Hand'}
             </p>
-            <p className="text-xl sm:text-2xl font-black text-[#0B6B3A] my-1 leading-tight">
+            <p className="text-xl sm:text-2xl font-black text-slate-900 my-1 leading-tight">
               ৳{financialSummary?.balance?.toLocaleString() || 0}
             </p>
           </div>
-          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50">
-            {language === 'bn' ? 'ক্যাশিয়ার ও ফান্ড মোট' : 'Cashiers & funds'}
+          <div className="pt-2 text-[11px] text-slate-400 font-medium border-t border-slate-50 flex items-center justify-between">
+            <span>{language === 'bn' ? 'ক্যাশিয়ার ও ফান্ড মোট' : 'Cashiers & funds'}</span>
+            <span className="text-[10px] font-bold text-teal-700 group-hover:underline">লগ দেখুন →</span>
           </div>
-        </div>
+        </Link>
       </div>
 
-      {/* 4. Storage Usage Card ("স্টোরেজ ব্যবহার") with Soft Emerald Palette */}
+      {/* 4. Storage Usage Card ("স্টোরেজ ব্যবহার") with Light #11DFC0 Color Coding */}
       {isAdmin && (
-        <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#C8E6C9]/60 shadow-[0_4px_25px_rgba(11,107,58,0.03)]">
+        <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#11DFC0]/30 shadow-[0_4px_25px_rgba(17,223,192,0.06)]">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
-                <Cloud className="w-5 h-5 stroke-[2.2]" />
+              <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center shadow-2xs">
+                <Cloud className="w-5 h-5 stroke-[2.4] text-sky-500" />
               </div>
               <h3 className="font-heading font-extrabold text-lg text-slate-800">
                 {language === 'bn' ? 'স্টোরেজ ব্যবহার' : 'Storage Usage'}
@@ -616,9 +632,9 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
             {/* সদস্যদের ছবি */}
-            <div className="bg-[#E6F4EA]/40 rounded-2xl p-4 flex items-center gap-3.5 border border-[#C8E6C9]/60 hover:bg-[#E6F4EA]/70 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] flex-shrink-0 shadow-2xs">
-                <Users className="w-5 h-5 stroke-[2.2]" />
+            <div className="bg-[#11DFC0]/10 rounded-2xl p-4 flex items-center gap-3.5 border border-[#11DFC0]/30 hover:bg-[#11DFC0]/20 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/20 border border-[#11DFC0]/40 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                <Users className="w-5 h-5 stroke-[2.4] text-blue-600" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-bold text-slate-800">
@@ -631,9 +647,9 @@ const Dashboard = () => {
             </div>
 
             {/* গ্যালারী ছবি */}
-            <div className="bg-[#E6F4EA]/40 rounded-2xl p-4 flex items-center gap-3.5 border border-[#C8E6C9]/60 hover:bg-[#E6F4EA]/70 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] flex-shrink-0 shadow-2xs">
-                <Database className="w-5 h-5 stroke-[2.2]" />
+            <div className="bg-[#11DFC0]/10 rounded-2xl p-4 flex items-center gap-3.5 border border-[#11DFC0]/30 hover:bg-[#11DFC0]/20 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/20 border border-[#11DFC0]/40 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                <Database className="w-5 h-5 stroke-[2.4] text-teal-600" />
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-bold text-slate-800">
@@ -777,11 +793,11 @@ const Dashboard = () => {
         const totalPendingRequests = (pendingMembers?.length || 0) + (pendingPayments?.length || 0);
 
         return (
-          <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#C8E6C9]/60 shadow-[0_4px_25px_rgba(11,107,58,0.03)]">
+          <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#11DFC0]/30 shadow-[0_4px_25px_rgba(17,223,192,0.06)]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] flex items-center justify-center text-[#0B6B3A] shadow-2xs">
-                  <ClipboardList className="w-5 h-5 stroke-[2.2]" />
+                <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/15 border border-[#11DFC0]/40 flex items-center justify-center text-teal-800 shadow-2xs">
+                  <ClipboardList className="w-5 h-5 stroke-[2.4] text-teal-600 drop-shadow-xs" />
                 </div>
                 <div>
                   <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
@@ -795,22 +811,22 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Action Buttons & Tabs with Soft Light Emerald Tint */}
+              {/* Action Buttons & Tabs with Soft Light #11DFC0 Tint */}
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex p-1 bg-[#E6F4EA]/50 rounded-xl border border-[#C8E6C9]/80 shadow-2xs">
+                <div className="inline-flex p-1 bg-[#11DFC0]/10 rounded-xl border border-[#11DFC0]/30 shadow-2xs">
                   <button
                     type="button"
                     onClick={() => setActiveLogTab('requests')}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       activeLogTab === 'requests'
-                        ? 'bg-white text-[#0B6B3A] shadow-xs border border-[#C8E6C9]'
-                        : 'text-slate-600 hover:text-[#0B6B3A] hover:bg-[#E6F4EA]/60'
+                        ? 'bg-[#11DFC0] text-slate-950 font-black shadow-xs border border-[#11DFC0]'
+                        : 'text-slate-600 hover:text-teal-950 hover:bg-[#11DFC0]/20'
                     }`}
                   >
-                    <Clock className="w-3.5 h-3.5 text-[#0B6B3A]" />
+                    <Clock className="w-3.5 h-3.5 text-blue-600 stroke-[2.4]" />
                     {language === 'bn' ? 'অপেক্ষমাণ আবেদন' : 'Pending Requests'}
                     {totalPendingRequests > 0 && (
-                      <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-[#0B6B3A] text-white">
+                      <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-slate-950 text-white">
                         {totalPendingRequests}
                       </span>
                     )}
@@ -820,11 +836,11 @@ const Dashboard = () => {
                     onClick={() => setActiveLogTab('logs')}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       activeLogTab === 'logs'
-                        ? 'bg-white text-[#0B6B3A] shadow-xs border border-[#C8E6C9]'
-                        : 'text-slate-600 hover:text-[#0B6B3A] hover:bg-[#E6F4EA]/60'
+                        ? 'bg-[#11DFC0] text-slate-950 font-black shadow-xs border border-[#11DFC0]'
+                        : 'text-slate-600 hover:text-teal-950 hover:bg-[#11DFC0]/20'
                     }`}
                   >
-                    <Activity className="w-3.5 h-3.5 text-[#0B6B3A]" />
+                    <Activity className="w-3.5 h-3.5 text-purple-600 stroke-[2.4]" />
                     {language === 'bn' ? 'কার্যকলাপ ইতিহাস' : 'Activity History'}
                   </button>
                 </div>
@@ -832,18 +848,18 @@ const Dashboard = () => {
                 {activeLogTab === 'requests' ? (
                   <Link
                     to="/admin/payment-verification"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs hover:shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-950 text-xs font-bold hover:bg-[#11DFC0] hover:text-slate-950 transition-all shadow-2xs hover:shadow-sm"
                   >
                     {language === 'bn' ? 'পেমেন্ট যাচাই' : 'Verify Payments'}
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-700 stroke-[2.4]" />
                   </Link>
                 ) : (
                   <Link
                     to="/admin/cashiers"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-all shadow-2xs hover:shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-950 text-xs font-bold hover:bg-[#11DFC0] hover:text-slate-950 transition-all shadow-2xs hover:shadow-sm"
                   >
                     {language === 'bn' ? 'ক্যাশিয়ার লগ' : 'Cashier Logs'}
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 text-amber-600 stroke-[2.4]" />
                   </Link>
                 )}
               </div>
@@ -858,11 +874,11 @@ const Dashboard = () => {
                     {pendingMembers.map((member: any) => (
                       <div 
                         key={`member-${member.id}`} 
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/80 hover:bg-emerald-50/40 rounded-xl border border-slate-200/80 transition-all duration-150"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/80 hover:bg-[#11DFC0]/10 rounded-xl border border-slate-200/80 hover:border-[#11DFC0]/40 transition-all duration-150"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700 mt-0.5">
-                            <UserPlus className="w-4 h-4" />
+                          <div className="p-2 rounded-lg bg-[#11DFC0]/15 text-blue-600 border border-[#11DFC0]/30 mt-0.5">
+                            <UserPlus className="w-4 h-4 stroke-[2.4]" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -881,10 +897,10 @@ const Dashboard = () => {
 
                         <Link
                           to={`/admin/members?search=${encodeURIComponent(member.full_name)}`}
-                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shadow-2xs"
+                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-950 text-xs font-bold hover:bg-[#11DFC0] hover:text-slate-950 transition-all shadow-2xs"
                         >
                           {language === 'bn' ? 'অনুমোদন করুন' : 'Approve'}
-                          <ArrowRight className="w-3 h-3" />
+                          <ArrowRight className="w-3 h-3 text-teal-700 stroke-[2.4]" />
                         </Link>
                       </div>
                     ))}
@@ -893,11 +909,11 @@ const Dashboard = () => {
                     {pendingPayments.map((payment: any) => (
                       <div 
                         key={`payment-${payment.id}`} 
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/80 hover:bg-amber-50/40 rounded-xl border border-slate-200/80 transition-all duration-150"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/80 hover:bg-[#11DFC0]/10 rounded-xl border border-slate-200/80 hover:border-[#11DFC0]/40 transition-all duration-150"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-amber-100 text-amber-700 mt-0.5">
-                            <CreditCard className="w-4 h-4" />
+                          <div className="p-2 rounded-lg bg-[#11DFC0]/15 text-amber-600 border border-[#11DFC0]/30 mt-0.5">
+                            <CreditCard className="w-4 h-4 stroke-[2.4]" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -919,10 +935,10 @@ const Dashboard = () => {
 
                         <Link
                           to="/admin/payment-verification"
-                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-colors shadow-2xs"
+                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-[#11DFC0]/20 border border-[#11DFC0]/50 text-teal-950 text-xs font-bold hover:bg-[#11DFC0] hover:text-slate-950 transition-all shadow-2xs"
                         >
                           {language === 'bn' ? 'যাচাই করুন' : 'Verify'}
-                          <ArrowRight className="w-3 h-3" />
+                          <ArrowRight className="w-3 h-3 text-amber-700 stroke-[2.4]" />
                         </Link>
                       </div>
                     ))}
@@ -1063,14 +1079,14 @@ const Dashboard = () => {
         <div className="lg:col-span-7 bg-white rounded-[24px] p-6 border border-slate-200/90 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-600 stroke-[2.4]" />
+              <Activity className="w-5 h-5 text-indigo-600 stroke-[2.4]" />
               <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-800">
                 {language === 'bn' ? 'সাম্প্রতিক কার্যক্রম' : 'Recent Activity'}
               </h3>
             </div>
             <Link
               to="/admin/news"
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#E6F4EA] text-[#0B6B3A] text-xs font-bold hover:bg-[#0B6B3A] hover:text-white transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#11DFC0]/20 text-teal-950 border border-[#11DFC0]/40 text-xs font-bold hover:bg-[#11DFC0] hover:text-slate-950 transition-colors"
             >
               {language === 'bn' ? 'সকল দেখুন' : 'View All'}
               <span aria-hidden="true">→</span>
