@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { format } from 'date-fns';
 import { bn } from 'date-fns/locale';
-import logo from '@/assets/logo.png';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
 
 interface VoucherProps {
   transaction: {
@@ -41,6 +41,7 @@ const paymentMethodLabels: Record<string, { bn: string; en: string }> = {
 
 const TransactionVoucher = forwardRef<HTMLDivElement, VoucherProps>(
   ({ transaction, language }, ref) => {
+    const { logoUrl } = useSiteLogo();
     const isIncome = ['member_fee', 'donation', 'event_fee', 'other_income'].includes(transaction.type);
     const voucherType = isIncome ? (language === 'bn' ? 'জমা রশিদ' : 'Receipt Voucher') : (language === 'bn' ? 'খরচ রশিদ' : 'Payment Voucher');
     
@@ -75,7 +76,7 @@ const TransactionVoucher = forwardRef<HTMLDivElement, VoucherProps>(
         {/* Header with Logo */}
         <div className="text-center border-b-2 border-black pb-4 mb-6">
           <div className="flex justify-center mb-3">
-            <img src={logo} alt="সময়ের বাতিঘর" className="w-20 h-20 object-contain" />
+            <img src={logoUrl} alt="সময়ের বাতিঘর" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-2xl font-bold mb-1">সময়ের বাতিঘর</h1>
           <p className="text-sm text-gray-600">Samoyer Batighor</p>

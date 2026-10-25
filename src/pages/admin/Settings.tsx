@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,17 +10,57 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Key, User, Shield, Bell, LayoutTemplate, Image, Save, Loader2, Sparkles, Heart, Activity, Database, CheckCircle2, Clock, RefreshCw, Server, Zap, Check, Upload } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import { 
+  Eye, 
+  EyeOff, 
+  Key, 
+  User, 
+  Shield, 
+  Bell, 
+  LayoutTemplate, 
+  Image as ImageIcon, 
+  Save, 
+  Loader2, 
+  Sparkles, 
+  Heart, 
+  Activity, 
+  Database, 
+  CheckCircle2, 
+  Clock, 
+  RefreshCw, 
+  Server, 
+  Zap, 
+  Check, 
+  Upload, 
+  Globe, 
+  Sliders, 
+  Building2, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Coins, 
+  RotateCcw,
+  BadgeCheck
+} from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sendKeepAlivePing, getKeepAliveStats, KeepAliveStats } from '@/services/keepAliveService';
 import { compressImage } from '@/lib/imageUtils';
+
+const STORAGE_LOGO_KEY = 'batighor_site_logo_url';
 
 const Settings = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { logoUrl: currentGlobalLogo, defaultLogo } = useSiteLogo();
   
   // Supabase Keep-Alive state
   const [keepAliveStats, setKeepAliveStats] = useState<KeepAliveStats>(getKeepAliveStats());
@@ -37,11 +78,28 @@ const Settings = () => {
   // Profile state
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  
-  // Notification settings
-  const [emailNotifications, setEmailNotifications] = useState(true);
 
-  // Website Content Settings States
+  // 1. Branding & Logo State
+  const [logoUrl, setLogoUrl] = useState<string>(currentGlobalLogo || defaultLogo);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isSavingLogo, setIsSavingLogo] = useState(false);
+
+  // 2. General Settings State (Timezone, Names, Helpline, Address)
+  const [isSavingGeneral, setIsSavingGeneral] = useState(false);
+  const [generalSettings, setGeneralSettings] = useState({
+    site_name_bn: 'সময়ের বাতিঘর',
+    site_name_en: 'Samoyer Batighor',
+    slogan_bn: 'একতাই শক্তি, সেবাই ধর্ম',
+    slogan_en: 'Unity is Strength, Service is Religion',
+    timezone: 'Asia/Dhaka',
+    currency: 'BDT (৳)',
+    contact_email: 'contact@somoyerbatighor.org',
+    contact_phone: '01916314315',
+    address_bn: 'নওগাঁ, বাংলাদেশ',
+    address_en: 'Naogaon, Bangladesh',
+  });
+
+  // 3. Website Content Settings States (Hero, About, CTA)
   const [isSavingContent, setIsSavingContent] = useState(false);
   const [heroBanner, setHeroBanner] = useState({
     image_url: '/images/banner1.jpg',
@@ -73,7 +131,165 @@ const Settings = () => {
   });
 
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingCta, setIsUploadingCta] = useState(false);
 
+  // Sync logoUrl with currentGlobalLogo when loaded
+  useEffect(() => {
+    if (currentGlobalLogo) {
+      setLogoUrl(currentGlobalLogo);
+    }
+  }, [currentGlobalLogo]);
+
+  // Fetch current site_settings from Supabase
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data, error } = await supabase.from('site_settings').select('*');
+        if (error) {
+          console.warn('Error fetching site_settings:', error);
+          return;
+        }
+        if (data) {
+          data.forEach((row) => {
+            if (row.key === 'site_logo' && row.value) {
+              const url = (row.value as any)?.logo_url;
+              if (url && typeof url === 'string') {
+                setLogoUrl(url);
+              }
+            }
+            if (row.key === 'general_settings' && row.value) {
+              setGeneralSettings((prev) => ({ ...prev, ...(row.value as any) }));
+            }
+            if (row.key === 'hero_banner' && row.value) {
+              setHeroBanner((prev) => ({ ...prev, ...(row.value as any) }));
+            }
+            if (row.key === 'about_section' && row.value) {
+              const aboutVal = row.value as any;
+              setAboutSection((prev) => ({ 
+                ...prev, 
+                ...aboutVal,
+                stats: typeof aboutVal.stats === 'string' ? aboutVal.stats : '৫+ বছর'
+              }));
+            }
+            if (row.key === 'cta_section' && row.value) {
+              setCtaSection((prev) => ({ ...prev, ...(row.value as any) }));
+            }
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Handler: Main Logo Upload
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(language === 'bn' ? 'লোগো ফাইল ৫MB এর কম হতে হবে' : 'Logo file must be under 5MB');
+      return;
+    }
+    setIsUploadingLogo(true);
+    try {
+      // Compress and preserve clean transparency
+      const compressedBlob = await compressImage(file, 512, 512, 0.95);
+      const fileName = `site/logo-${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      
+      const { data, error } = await supabase.storage
+        .from('gallery-images')
+        .upload(fileName, compressedBlob, {
+          contentType: file.type || 'image/png',
+          upsert: true,
+        });
+
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('gallery-images').getPublicUrl(data.path);
+      const publicUrl = urlData.publicUrl;
+
+      setLogoUrl(publicUrl);
+      await saveLogoToDatabase(publicUrl);
+      toast.success(language === 'bn' ? 'নতুন লোগো সফলভাবে আপলোড ও কার্যকর হয়েছে!' : 'New logo uploaded and activated successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'লোগো আপলোড ব্যর্থ হয়েছে');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  // Helper to persist logo to database and local cache
+  const saveLogoToDatabase = async (urlToSave: string) => {
+    setIsSavingLogo(true);
+    try {
+      const cleanUrl = urlToSave.trim();
+      const payload = {
+        logo_url: cleanUrl,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({ key: 'site_logo', value: payload, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      // Immediately cache to localStorage so subsequent visits load with zero network delay
+      try {
+        localStorage.setItem(STORAGE_LOGO_KEY, cleanUrl);
+      } catch {}
+
+      // Invalidate TanStack query caches to propagate changes instantly across current window
+      queryClient.setQueryData(['site-logo'], cleanUrl);
+      queryClient.invalidateQueries({ queryKey: ['site-logo'] });
+      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+
+      toast.success(language === 'bn' ? 'লোগো ডাটাবেসে সংরক্ষিত হয়েছে এবং সর্বত্র লাইভ হয়েছে!' : 'Logo saved to database and updated across the site!');
+    } catch (err: any) {
+      toast.error(err.message || 'লোগো সংরক্ষণ ব্যর্থ হয়েছে');
+    } finally {
+      setIsSavingLogo(false);
+    }
+  };
+
+  // Handler: Reset Logo to Default
+  const handleResetLogo = async () => {
+    try {
+      setLogoUrl(defaultLogo);
+      await saveLogoToDatabase(defaultLogo);
+      toast.success(language === 'bn' ? 'ডিফল্ট লোগো পুনর্বহাল করা হয়েছে' : 'Restored to default logo');
+    } catch (err: any) {
+      toast.error(err.message || 'রিসেট ব্যর্থ');
+    }
+  };
+
+  // Handler: Save General Settings (Timezone, Names, Helpline, Address)
+  const handleSaveGeneralSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingGeneral(true);
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'general_settings',
+          value: generalSettings,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['general-settings'] });
+
+      toast.success(language === 'bn' ? 'সাধারণ সেটিংস ও সময় অঞ্চল সংরক্ষিত হয়েছে!' : 'General settings & timezone saved successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'সংরক্ষণ ব্যর্থ');
+    } finally {
+      setIsSavingGeneral(false);
+    }
+  };
+
+  // Handler: Hero Banner Upload
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -102,6 +318,35 @@ const Settings = () => {
     }
   };
 
+  // Handler: CTA Banner Upload
+  const handleCtaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(language === 'bn' ? 'ছবি ৫MB এর কম হতে হবে' : 'Photo must be under 5MB');
+      return;
+    }
+    setIsUploadingCta(true);
+    try {
+      const compressedBlob = await compressImage(file, 1600, 800, 0.88);
+      const fileName = `site/cta-${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      const { data, error } = await supabase.storage
+        .from('gallery-images')
+        .upload(fileName, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('gallery-images').getPublicUrl(data.path);
+      setCtaSection((prev) => ({ ...prev, image_url: urlData.publicUrl }));
+      toast.success(language === 'bn' ? 'CTA ব্যানার ছবি আপলোড হয়েছে' : 'CTA banner image uploaded');
+    } catch (err: any) {
+      toast.error(err.message || 'আপলোড ব্যর্থ');
+    } finally {
+      setIsUploadingCta(false);
+    }
+  };
+
   const handleAboutImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'image_main' | 'image_secondary') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -123,39 +368,46 @@ const Settings = () => {
     }
   };
 
-  // Fetch current site_settings from Supabase
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data, error } = await supabase.from('site_settings').select('*');
-        if (error) {
-          console.warn('Error fetching site_settings:', error);
-          return;
-        }
-        if (data) {
-          data.forEach((row) => {
-            if (row.key === 'hero_banner' && row.value) {
-              setHeroBanner((prev) => ({ ...prev, ...(row.value as any) }));
-            }
-            if (row.key === 'about_section' && row.value) {
-              const aboutVal = row.value as any;
-              setAboutSection((prev) => ({ 
-                ...prev, 
-                ...aboutVal,
-                stats: typeof aboutVal.stats === 'string' ? aboutVal.stats : '৫+ বছর'
-              }));
-            }
-            if (row.key === 'cta_section' && row.value) {
-              setCtaSection((prev) => ({ ...prev, ...(row.value as any) }));
-            }
-          });
-        }
-      } catch (err) {
-        console.error(err);
+  // Save Website Content Settings to Supabase site_settings
+  const handleSaveWebsiteContent = async (section: 'hero' | 'about' | 'cta') => {
+    setIsSavingContent(true);
+    try {
+      let key = '';
+      let value: any = {};
+
+      if (section === 'hero') {
+        key = 'hero_banner';
+        value = heroBanner;
+      } else if (section === 'about') {
+        key = 'about_section';
+        value = aboutSection;
+      } else if (section === 'cta') {
+        key = 'cta_section';
+        value = ctaSection;
       }
-    };
-    fetchSettings();
-  }, []);
+
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      try {
+        localStorage.removeItem('batighor_site_settings_cache');
+      } catch {}
+
+      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
+      queryClient.invalidateQueries({ queryKey: ['site-settings-about'] });
+      queryClient.invalidateQueries({ queryKey: ['site-settings-cta'] });
+
+      toast.success(language === 'bn' ? 'ওয়েবসাইট সেটিংস ডাটাবেসে সফলভাবে সংরক্ষিত হয়েছে' : 'Website settings updated successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'সংরক্ষণ ব্যর্থ হয়েছে');
+    } finally {
+      setIsSavingContent(false);
+    }
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,49 +451,6 @@ const Settings = () => {
     }
   };
 
-  // Save Website Content Settings to Supabase site_settings
-  const handleSaveWebsiteContent = async (section: 'hero' | 'about' | 'cta') => {
-    setIsSavingContent(true);
-    try {
-      let key = '';
-      let value: any = {};
-
-      if (section === 'hero') {
-        key = 'hero_banner';
-        value = heroBanner;
-      } else if (section === 'about') {
-        key = 'about_section';
-        value = aboutSection;
-      } else if (section === 'cta') {
-        key = 'cta_section';
-        value = ctaSection;
-      }
-
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ key, value, updated_at: new Date().toISOString() });
-
-      if (error) throw error;
-
-      try {
-        localStorage.removeItem('batighor_site_settings_cache');
-      } catch {
-        // Safe ignore storage access error
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
-      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
-      queryClient.invalidateQueries({ queryKey: ['site-settings-about'] });
-      queryClient.invalidateQueries({ queryKey: ['site-settings-cta'] });
-
-      toast.success(language === 'bn' ? 'ওয়েবসাইট সেটিংস ডাটাবেসে সফলভাবে সংরক্ষিত হয়েছে' : 'Website settings updated successfully');
-    } catch (err: any) {
-      toast.error(err.message || 'সংরক্ষণ ব্যর্থ হয়েছে');
-    } finally {
-      setIsSavingContent(false);
-    }
-  };
-
   // Manual Keep-Alive Ping Handler
   const handleManualPing = async () => {
     setIsPinging(true);
@@ -270,50 +479,409 @@ const Settings = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-heading font-bold text-foreground">
-          {language === 'bn' ? 'সেটিংস ও ওয়েবসাইট কন্ট্রোল' : 'Settings & Site Control'}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          {language === 'bn' ? 'আপনার অ্যাকাউন্ট, ওয়েবসাইটের ব্যানার ও ডাটাবেস কিপ-অ্যালাইভ পরিচালনা করুন' : 'Manage account, homepage banners, and Supabase keep-alive status'}
-        </p>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-[#14231B] dark:text-foreground flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center text-[#0B6B3A]">
+              <Sliders className="w-5 h-5" />
+            </div>
+            {language === 'bn' ? 'সেটিংস ও ওয়েবসাইট কন্ট্রোল' : 'Settings & Site Control'}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {language === 'bn' 
+              ? 'ওয়েবসাইটের মূল লোগো, সময় অঞ্চল, হিরো ব্যানার, কন্টেন্ট ও সিস্টেম পরিচালনা করুন' 
+              : 'Manage main site logo, timezone, banners, content and system status'}
+          </p>
+        </div>
+
+        {/* Live Status Indicator Pill */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold w-fit shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>{language === 'bn' ? 'সিস্টেম রিয়েল-টাইম সিঙ্ক সক্রিয়' : 'Real-time Sync Active'}</span>
+        </div>
       </div>
 
-      <Tabs defaultValue="website_content" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-xl mb-6">
-          <TabsTrigger value="website_content" className="flex items-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm">
-            <LayoutTemplate className="w-4 h-4" />
-            <span>{language === 'bn' ? 'ব্যানার ও কন্টেন্ট' : 'Site Content'}</span>
+      <Tabs defaultValue="branding" className="w-full">
+        {/* Navigation Tabs List */}
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 max-w-4xl mb-6 h-auto p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl gap-1">
+          <TabsTrigger value="branding" className="flex items-center gap-1.5 py-2.5 font-bold text-xs sm:text-sm rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#0B6B3A] data-[state=active]:shadow-xs">
+            <ImageIcon className="w-4 h-4 text-emerald-600" />
+            <span>{language === 'bn' ? 'লোগো ও ব্র্যান্ডিং' : 'Logo & Brand'}</span>
           </TabsTrigger>
-          <TabsTrigger value="supabase_health" className="flex items-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm">
+          <TabsTrigger value="general" className="flex items-center gap-1.5 py-2.5 font-bold text-xs sm:text-sm rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#0B6B3A] data-[state=active]:shadow-xs">
+            <Globe className="w-4 h-4 text-blue-600" />
+            <span>{language === 'bn' ? 'সাধারণ ও সময়' : 'General & Time'}</span>
+          </TabsTrigger>
+          <TabsTrigger value="website_content" className="flex items-center gap-1.5 py-2.5 font-bold text-xs sm:text-sm rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#0B6B3A] data-[state=active]:shadow-xs">
+            <LayoutTemplate className="w-4 h-4 text-purple-600" />
+            <span>{language === 'bn' ? 'ব্যানার ও কন্টেন্ট' : 'Banners & Text'}</span>
+          </TabsTrigger>
+          <TabsTrigger value="supabase_health" className="flex items-center gap-1.5 py-2.5 font-bold text-xs sm:text-sm rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#0B6B3A] data-[state=active]:shadow-xs">
             <Activity className="w-4 h-4 text-emerald-600" />
-            <span>{language === 'bn' ? 'ব্যাকএন্ড কিপ-অ্যালাইভ' : 'Backend Health'}</span>
+            <span>{language === 'bn' ? 'সিস্টেম স্থিতি' : 'System Health'}</span>
           </TabsTrigger>
-          <TabsTrigger value="general" className="flex items-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm">
-            <User className="w-4 h-4" />
+          <TabsTrigger value="account" className="flex items-center gap-1.5 py-2.5 font-bold text-xs sm:text-sm rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#0B6B3A] data-[state=active]:shadow-xs col-span-2 sm:col-span-1">
+            <User className="w-4 h-4 text-amber-600" />
             <span>{language === 'bn' ? 'অ্যাকাউন্ট' : 'Account'}</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Tab 1: Website Content & Banners (Directly Updates Database) ── */}
+        {/* ══════════════════════════════════════════════════════════
+            TAB 1: LOGO & BRANDING (NEW & REQUESTED FEATURE)
+        ══════════════════════════════════════════════════════════ */}
+        <TabsContent value="branding" className="space-y-6">
+          <Card className="border-emerald-200/80 shadow-sm overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-emerald-50 via-teal-50/40 to-transparent dark:bg-emerald-950/20 border-b border-emerald-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-emerald-950 dark:text-emerald-300 text-lg sm:text-xl font-bold">
+                    <ImageIcon className="w-5 h-5 text-emerald-700" />
+                    {language === 'bn' ? 'ওয়েবসাইটের মূল লোগো পরিবর্তন ও ব্যবস্থাপনা' : 'Main Website Logo Management'}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    {language === 'bn'
+                      ? 'এখান থেকে লোগো পরিবর্তন করলে তা ডাটাবেসে সেভ হবে এবং স্বয়ংক্রিয়ভাবে ওয়েবসাইটের হেডার, ফুটার, সাইডবার ও কার্ডে তাৎক্ষণিক আপডেট হয়ে যাবে।'
+                      : 'Updating the logo here persists it in the database and automatically synchronizes across Header, Footer, Sidebar & ID Cards.'}
+                  </CardDescription>
+                </div>
+
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100/70 border border-emerald-300 text-[11px] font-bold text-emerald-900 w-fit">
+                  <BadgeCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>{language === 'bn' ? 'ইনস্ট্যান্ট ক্যাশিং সক্রিয়' : 'Instant Caching Active'}</span>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-6 space-y-6">
+              {/* Dual Logo Previews: Light Card & Dark Emerald Background */}
+              <div>
+                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5 block">
+                  {language === 'bn' ? 'বর্তমান লোগো লাইভ প্রিভিউ (লাইট ও ডার্ক মোডে কেমন দেখাবে)' : 'Current Logo Live Preview (Light & Dark Display)'}
+                </Label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Light Background Preview */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-2xl bg-slate-50 border border-slate-200 p-2 flex items-center justify-center flex-shrink-0 shadow-inner">
+                      <img 
+                        src={logoUrl || defaultLogo} 
+                        alt="Logo Preview Light" 
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = defaultLogo;
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                        {language === 'bn' ? 'লাইট ব্যাকগ্রাউন্ড (হেডার / প্রিন্ট)' : 'Light Background (Header / Print)'}
+                      </span>
+                      <p className="text-sm font-bold text-slate-800 mt-0.5">সময়ের বাতিঘর</p>
+                      <p className="text-xs text-muted-foreground">হেডার, রশিদ ও মেম্বারশিপ কার্ডে এমন দেখাবে</p>
+                    </div>
+                  </div>
+
+                  {/* Dark Emerald Sidebar Preview */}
+                  <div className="p-4 rounded-2xl border border-emerald-800 bg-gradient-to-br from-[#0F6F3C] via-[#0B5A30] to-[#084223] text-white shadow-xs flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-2xl bg-white/10 p-2 border border-white/25 flex items-center justify-center flex-shrink-0 backdrop-blur-xs">
+                      <img 
+                        src={logoUrl || defaultLogo} 
+                        alt="Logo Preview Dark" 
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = defaultLogo;
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-emerald-200 uppercase tracking-wider block">
+                        {language === 'bn' ? 'সবুজ ব্যাকগ্রাউন্ড (অ্যাডমিন সাইডবার)' : 'Green Background (Admin Sidebar)'}
+                      </span>
+                      <p className="text-sm font-bold text-white mt-0.5">সময়ের বাতিঘর</p>
+                      <p className="text-xs text-emerald-200/80">অ্যাডমিন নেভিগেশন সাইডবারে এমন দেখাবে</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload & URL Input Controls */}
+              <div className="p-5 rounded-2xl border border-emerald-200/80 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm font-bold text-emerald-950 dark:text-emerald-200">
+                      {language === 'bn' ? 'নতুন লোগো ছবি আপলোড করুন' : 'Upload New Logo Image'}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {language === 'bn'
+                        ? 'সুপারিশ: স্বচ্ছ ব্যাকগ্রাউন্ডযুক্ত (Transparent) PNG অথবা SVG ফরম্যাট (সর্বোচ্চ ৫MB)'
+                        : 'Recommended: Transparent PNG or SVG format (Max 5MB)'}
+                    </p>
+                  </div>
+
+                  {/* Upload Button */}
+                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-all shadow-md hover:shadow-lg w-fit">
+                    {isUploadingLogo ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <span>{language === 'bn' ? 'ডিভাইস থেকে লোগো বাছাই করুন' : 'Choose Logo File'}</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                      onChange={handleLogoUpload}
+                      disabled={isUploadingLogo || isSavingLogo}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="relative flex items-center gap-2 pt-2">
+                  <div className="flex-1 border-t border-slate-300 dark:border-slate-800" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-emerald-50/40 px-2">
+                    {language === 'bn' ? 'অথবা সরাসরি ছবির লিঙ্ক (URL) দিন' : 'Or Direct Image URL'}
+                  </span>
+                  <div className="flex-1 border-t border-slate-300 dark:border-slate-800" />
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <Input
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    placeholder="https://.../logo.png"
+                    className="flex-1 bg-white dark:bg-slate-900 h-10 text-xs sm:text-sm font-mono"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => saveLogoToDatabase(logoUrl)}
+                    disabled={isSavingLogo || isUploadingLogo || !logoUrl.trim()}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold h-10 px-5 gap-1.5"
+                  >
+                    {isSavingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{language === 'bn' ? 'লোগো সেভ করুন' : 'Save Logo'}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleResetLogo}
+                    disabled={isSavingLogo || isUploadingLogo}
+                    className="h-10 text-xs text-slate-700 hover:bg-slate-100 gap-1.5"
+                    title="Reset to initial default logo"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'ডিফল্ট লোগো' : 'Reset'}</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Technical Caching Notice */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-slate-800 block">
+                    {language === 'bn' ? 'স্বয়ংক্রিয় ক্যাশিং এবং দ্রুত লোডিং নিশ্চয়তা:' : 'Automatic Caching & Zero-Lag Guarantee:'}
+                  </span>
+                  {language === 'bn'
+                    ? 'লোগোটি ডাটাবেসে সেভ হওয়ার সাথে সাথে ব্রাউজারের লোকাল স্টোরেজে স্বয়ংক্রিয়ভাবে ক্যাশ হয়ে যায়। এর ফলে ওয়েবসাইট রিলোড করলেও কোনো ফ্লিকারিং বা দেরি ছাড়াই ১ মিলিসেকেন্ডে লোগো লোড হবে।'
+                    : 'The logo is securely cached in local storage upon saving, ensuring 1ms zero-flicker loading across all page visits and tab switches.'}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ══════════════════════════════════════════════════════════
+            TAB 2: GENERAL SETTINGS & TIMEZONE (NEW & REQUESTED FEATURE)
+        ══════════════════════════════════════════════════════════ */}
+        <TabsContent value="general" className="space-y-6">
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="bg-slate-50/60 dark:bg-slate-900 border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-foreground text-lg font-bold">
+                <Globe className="w-5 h-5 text-blue-600" />
+                {language === 'bn' ? 'সাধারণ সাংগঠনিক তথ্য ও সময় অঞ্চল (Timezone)' : 'General Organization & Timezone Settings'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'bn'
+                  ? 'সংগঠনের নাম, স্লোগান, যোগাযোগের নম্বর, ইমেইল এবং সময় অঞ্চল পরিচালনা করুন।'
+                  : 'Manage organization names, slogans, helpline, contact email, and official timezone.'}
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="pt-6">
+              <form onSubmit={handleSaveGeneralSettings} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{language === 'bn' ? 'সংগঠনের নাম (বাংলা)' : 'Organization Name (Bangla)'}</span>
+                    </Label>
+                    <Input
+                      value={generalSettings.site_name_bn}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, site_name_bn: e.target.value })}
+                      placeholder="সময়ের বাতিঘর"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{language === 'bn' ? 'সংগঠনের নাম (English)' : 'Organization Name (English)'}</span>
+                    </Label>
+                    <Input
+                      value={generalSettings.site_name_en}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, site_name_en: e.target.value })}
+                      placeholder="Samoyer Batighor"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="font-bold text-xs text-slate-700">{language === 'bn' ? 'মূল স্লোগান (বাংলা)' : 'Main Slogan (Bangla)'}</Label>
+                    <Input
+                      value={generalSettings.slogan_bn}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, slogan_bn: e.target.value })}
+                      placeholder="একতাই শক্তি, সেবাই ধর্ম"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="font-bold text-xs text-slate-700">{language === 'bn' ? 'মূল স্লোগান (English)' : 'Main Slogan (English)'}</Label>
+                    <Input
+                      value={generalSettings.slogan_en}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, slogan_en: e.target.value })}
+                      placeholder="Unity is Strength, Service is Religion"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Timezone Selector */}
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <Clock className="w-3.5 h-3.5 text-blue-600" />
+                      <span>{language === 'bn' ? 'সময় অঞ্চল (Time Zone)' : 'Time Zone'}</span>
+                    </Label>
+                    <Select
+                      value={generalSettings.timezone}
+                      onValueChange={(val) => setGeneralSettings({ ...generalSettings, timezone: val })}
+                    >
+                      <SelectTrigger className="w-full bg-white dark:bg-slate-900">
+                        <SelectValue placeholder="Select Timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Asia/Dhaka">Asia/Dhaka (বাংলাদেশ সময় - GMT+6)</SelectItem>
+                        <SelectItem value="UTC">UTC (Universal Coordinated Time - GMT+0)</SelectItem>
+                        <SelectItem value="Asia/Kolkata">Asia/Kolkata (ভারত সময় - GMT+5:30)</SelectItem>
+                        <SelectItem value="Asia/Riyadh">Asia/Riyadh (সৌদি আরব সময় - GMT+3)</SelectItem>
+                        <SelectItem value="Asia/Dubai">Asia/Dubai (ইউএই সময় - GMT+4)</SelectItem>
+                        <SelectItem value="Europe/London">Europe/London (লন্ডন সময় - GMT+0/+1)</SelectItem>
+                        <SelectItem value="America/New_York">America/New_York (যুক্তরাষ্ট্র ইস্টার্ন - GMT-5)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Currency */}
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <Coins className="w-3.5 h-3.5 text-amber-600" />
+                      <span>{language === 'bn' ? 'মুদ্রা প্রতীক (Currency)' : 'Currency Symbol'}</span>
+                    </Label>
+                    <Input
+                      value={generalSettings.currency}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, currency: e.target.value })}
+                      placeholder="BDT (৳)"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{language === 'bn' ? 'অফিসিয়াল হেল্পলাইন নম্বর' : 'Helpline Phone Number'}</span>
+                    </Label>
+                    <Input
+                      value={generalSettings.contact_phone}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, contact_phone: e.target.value })}
+                      placeholder="01916314315"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <Mail className="w-3.5 h-3.5 text-blue-600" />
+                      <span>{language === 'bn' ? 'অফিসিয়াল ইমেইল ঠিকানা' : 'Official Contact Email'}</span>
+                    </Label>
+                    <Input
+                      type="email"
+                      value={generalSettings.contact_email}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, contact_email: e.target.value })}
+                      placeholder="contact@somoyerbatighor.org"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <MapPin className="w-3.5 h-3.5 text-rose-600" />
+                      <span>{language === 'bn' ? 'অফিসের ঠিকানা (বাংলা)' : 'Office Address (Bangla)'}</span>
+                    </Label>
+                    <Input
+                      value={generalSettings.address_bn}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, address_bn: e.target.value })}
+                      placeholder="নওগাঁ, বাংলাদেশ"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="font-bold flex items-center gap-1.5 text-xs text-slate-700">
+                      <MapPin className="w-3.5 h-3.5 text-rose-600" />
+                      <span>{language === 'bn' ? 'অফিসের ঠিকানা (English)' : 'Office Address (English)'}</span>
+                    </Label>
+                    <Input
+                      value={generalSettings.address_en}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, address_en: e.target.value })}
+                      placeholder="Naogaon, Bangladesh"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    disabled={isSavingGeneral}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 gap-2"
+                  >
+                    {isSavingGeneral ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{language === 'bn' ? 'সাধারণ সেটিংস সংরক্ষণ করুন' : 'Save General Settings'}</span>
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ══════════════════════════════════════════════════════════
+            TAB 3: WEBSITE BANNERS & CONTENT (HERO, ABOUT, CTA)
+        ══════════════════════════════════════════════════════════ */}
         <TabsContent value="website_content" className="space-y-6">
           {/* Hero Banner Card */}
           <Card className="border-emerald-200/80 shadow-sm">
             <CardHeader className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100">
-              <CardTitle className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300">
-                <Image className="w-5 h-5 text-emerald-600" />
+              <CardTitle className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold">
+                <ImageIcon className="w-5 h-5 text-emerald-600" />
                 {language === 'bn' ? 'হোমপেজ হিরো ব্যানার সেটিংস' : 'Hero Banner Settings'}
               </CardTitle>
               <CardDescription>
                 {language === 'bn'
                   ? 'ওয়েবসাইটের প্রধান ব্যানার ছবি ও লেখা পরিবর্তন করুন (সরাসরি ডাটাবেস থেকে লোড হবে)'
-                  : 'Customize homepage hero slider image and texts from database'}
+                  : 'Customize homepage hero slider image and texts directly loaded from the database'}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-3 p-4 rounded-xl border border-slate-200 bg-slate-50/70">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <Label className="font-bold">{language === 'bn' ? 'ব্যানার ছবি আপলোড বা লিঙ্ক' : 'Banner Image Upload or URL'}</Label>
+                  <Label className="font-bold text-xs">{language === 'bn' ? 'ব্যানার ছবি আপলোড বা লিঙ্ক' : 'Banner Image Upload or URL'}</Label>
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs w-fit">
                     {isUploadingBanner ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                     <span>{language === 'bn' ? 'ডিভাইস থেকে ছবি আপলোড করুন' : 'Upload from Device'}</span>
@@ -332,7 +900,7 @@ const Settings = () => {
                   placeholder="/images/banner1.jpg"
                 />
                 {heroBanner.image_url && (
-                  <div className="mt-2 h-40 max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                  <div className="mt-2 h-44 max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
                     <img src={heroBanner.image_url} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -378,7 +946,7 @@ const Settings = () => {
           {/* About Section Card */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2 text-foreground">
+              <CardTitle className="flex items-center gap-2 text-foreground font-bold">
                 <Sparkles className="w-5 h-5 text-amber-500" />
                 {language === 'bn' ? 'আমাদের সম্পর্কে সেকশন (ছবি ও বিবরণ)' : 'About Us Section Settings'}
               </CardTitle>
@@ -411,7 +979,7 @@ const Settings = () => {
                     className="h-8 text-xs"
                   />
                   {aboutSection.image_main && (
-                    <div className="h-24 w-full rounded-lg overflow-hidden border border-slate-200">
+                    <div className="h-28 w-full rounded-lg overflow-hidden border border-slate-200">
                       <img src={aboutSection.image_main} alt="Main" className="w-full h-full object-cover" />
                     </div>
                   )}
@@ -437,7 +1005,7 @@ const Settings = () => {
                     className="h-8 text-xs"
                   />
                   {aboutSection.image_secondary && (
-                    <div className="h-24 w-full rounded-lg overflow-hidden border border-slate-200">
+                    <div className="h-28 w-full rounded-lg overflow-hidden border border-slate-200">
                       <img src={aboutSection.image_secondary} alt="Secondary" className="w-full h-full object-cover" />
                     </div>
                   )}
@@ -493,9 +1061,9 @@ const Settings = () => {
           {/* CTA Section Card */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2 text-foreground">
+              <CardTitle className="flex items-center gap-2 text-foreground font-bold">
                 <Heart className="w-5 h-5 text-rose-500" />
-                {language === 'bn' ? 'মানবিক সমাজ গড়ার ব্যানার (কার্যক্রম ও সংবাদের মাঝে)' : 'CTA Banner Settings'}
+                {language === 'bn' ? 'মানবিক সমাজ গড়ার ব্যানার (CTA)' : 'CTA Banner Settings'}
               </CardTitle>
               <CardDescription>
                 {language === 'bn'
@@ -504,13 +1072,32 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <Label>{language === 'bn' ? 'ব্যাকগ্রাউন্ড ছবি URL' : 'Background Image URL'}</Label>
+              <div className="space-y-3 p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <Label className="font-bold text-xs">{language === 'bn' ? 'ব্যাকগ্রাউন্ড ছবি আপলোড বা URL' : 'Background Image Upload or URL'}</Label>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs w-fit">
+                    {isUploadingCta ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    <span>{language === 'bn' ? 'ডিভাইস থেকে ছবি আপলোড' : 'Upload from Device'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCtaUpload}
+                      disabled={isUploadingCta}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
                 <Input
                   value={ctaSection.image_url}
                   onChange={(e) => setCtaSection({ ...ctaSection, image_url: e.target.value })}
                 />
+                {ctaSection.image_url && (
+                  <div className="mt-2 h-36 max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                    <img src={ctaSection.image_url} alt="CTA Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{language === 'bn' ? 'ব্যানারের স্লোগান' : 'Banner Slogan'}</Label>
@@ -540,214 +1127,37 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        {/* ── Tab 2: General Account Settings ── */}
-        <TabsContent value="general" className="space-y-6">
-          {/* Profile Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                {language === 'bn' ? 'প্রোফাইল সেটিংস' : 'Profile Settings'}
-              </CardTitle>
-              <CardDescription>
-                {language === 'bn' ? 'আপনার ব্যক্তিগত তথ্য আপডেট করুন' : 'Update your personal information'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProfileUpdate} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">{language === 'bn' ? 'ইমেইল' : 'Email'}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'bn' ? 'ইমেইল পরিবর্তন করা যাবে না' : 'Email cannot be changed'}
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">{language === 'bn' ? 'পূর্ণ নাম' : 'Full Name'}</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={language === 'bn' ? 'আপনার নাম লিখুন' : 'Enter your name'}
-                  />
-                </div>
-
-                <Button type="submit" disabled={isUpdatingProfile}>
-                  {isUpdatingProfile ? (language === 'bn' ? 'আপডেট হচ্ছে...' : 'Updating...') : (language === 'bn' ? 'প্রোফাইল সংরক্ষণ' : 'Save Profile')}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Password Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5" />
-                {language === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Change Password'}
-              </CardTitle>
-              <CardDescription>
-                {language === 'bn' ? 'আপনার অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তন করুন' : 'Update your account password'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">{language === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New Password'}</Label>
-                  <div className="relative">
-                    <Input
-                      id="newPassword"
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder={language === 'bn' ? 'নতুন পাসওয়ার্ড দিন' : 'Enter new password'}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                    >
-                      {showNewPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">{language === 'bn' ? 'পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm Password'}</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder={language === 'bn' ? 'পাসওয়ার্ড পুনরায় লিখুন' : 'Re-enter password'}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-                    </Button>
-                  </div>
-                </div>
-
-                <Button type="submit" disabled={isChangingPassword}>
-                  {isChangingPassword ? (language === 'bn' ? 'পরিবর্তন হচ্ছে...' : 'Changing...') : (language === 'bn' ? 'পাসওয়ার্ড আপডেট' : 'Update Password')}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Account Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                {language === 'bn' ? 'অ্যাকাউন্ট স্ট্যাটাস' : 'Account Status'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{language === 'bn' ? 'বর্তমান স্ট্যাটাস' : 'Current Status'}</p>
-                  <p className="text-sm text-muted-foreground">{language === 'bn' ? 'অ্যাকাউন্ট সক্রিয় আছে' : 'Account is active'}</p>
-                </div>
-                <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 rounded-full">
-                  {language === 'bn' ? 'সক্রিয়' : 'Active'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── Tab 3: Supabase Backend Keep-Alive & Health Monitoring ── */}
+        {/* ══════════════════════════════════════════════════════════
+            TAB 4: SUPABASE HEALTH & KEEP-ALIVE
+        ══════════════════════════════════════════════════════════ */}
         <TabsContent value="supabase_health" className="space-y-6">
-          <Card className="border-emerald-200/80 shadow-[0_10px_35px_rgba(0,0,0,0.06)] rounded-[24px] overflow-hidden">
-            <CardHeader className="bg-emerald-50/60 dark:bg-emerald-950/20 border-b border-emerald-100/80 pb-5">
+          <Card className="border-emerald-200/80 shadow-sm">
+            <CardHeader className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
-                    <Database className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl font-heading font-bold text-emerald-950 dark:text-emerald-200">
-                      {language === 'bn' ? 'সুপাবেজ ব্যাকএন্ড সচল রাখার অটোমেশন সিস্টেম' : 'Supabase Backend Keep-Alive Automation'}
-                    </CardTitle>
-                    <CardDescription className="text-emerald-800/80 dark:text-emerald-400 text-xs sm:text-sm mt-0.5">
-                      {language === 'bn'
-                        ? 'নিষ্ক্রিয়তার কারণে সুপাবেজ যাতে স্বয়ংক্রিয়ভাবে বন্ধ (Auto-Pause) না হয়, তার জন্য সক্রিয় ব্যবস্থা'
-                        : 'Continuous health monitoring and automated pings to keep Supabase 24/7 active'}
-                    </CardDescription>
-                  </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold">
+                    <Database className="w-5 h-5 text-emerald-600" />
+                    {language === 'bn' ? 'সুপাবেজ ডাটাবেস কিপ-অ্যালাইভ ও অ্যাক্টিভিটি মনিটর' : 'Supabase Keep-Alive & Activity Monitor'}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === 'bn'
+                      ? '৭ দিন নিষ্ক্রিয় থাকার কারণে সুপাবেজ ডাটাবেস যাতে কখনোই পজ না হয়, সেজন্য ব্যাকএন্ড কিপ-অ্যালাইভ সিস্টেম সক্রিয় আছে।'
+                      : 'Guaranteed 24/7 backend activity monitor preventing Supabase free tier inactivity pause.'}
+                  </CardDescription>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-200">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    {language === 'bn' ? 'ডাটাবেস সচল ও সক্রিয়' : 'Database Live & Active'}
-                  </span>
-                </div>
+                <Button
+                  onClick={handleManualPing}
+                  disabled={isPinging}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 self-start sm:self-center shadow-xs"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isPinging ? 'animate-spin' : ''}`} />
+                  {language === 'bn' ? 'এখনই লাইভ টেস্ট করুন' : 'Test Ping Now'}
+                </Button>
               </div>
             </CardHeader>
 
             <CardContent className="pt-6 space-y-6">
-              {/* How it works banner */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
-                    <Zap className="w-4 h-4 text-amber-500" />
-                    <span>{language === 'bn' ? 'স্বয়ংক্রিয় অটো-পিং কিভাবে কাজ করে?' : 'How does Auto-Ping work?'}</span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-                    {language === 'bn'
-                      ? 'Supabase Free Tier-এ একটানা ৭ দিন কোনো রিকোয়েস্ট না আসলে প্রজেক্ট পজ (Pause) হয়ে যায়। আমাদের সিস্টেমে দুটি সুরক্ষা স্তর রয়েছে: ১) Vercel Cloud Cron ও অটোমেশন প্রতি ৪৮ ঘণ্টায় সরাসরি ব্যাকএন্ডে কুয়েরি পাঠায় (ওয়েবসাইটে কেউ না আসলেও এটি চলবে)। ২) ভিজিটররা ওয়েবসাইটে প্রবেশ করলে স্বয়ংক্রিয় ব্যাকগ্রাউন্ড হার্টবিট চালু হয়।'
-                      : 'Supabase Free Tier pauses projects after 7 days of inactivity. Our system implements dual protection: 1) Vercel Cloud Cron runs an automated cloud ping every 48 hours without needing user visits. 2) Client-side lightweight heartbeats run automatically on visitor traffic.'}
-                  </p>
-                </div>
-
-                <Button
-                  onClick={handleManualPing}
-                  disabled={isPinging}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-5 py-2.5 shadow-sm whitespace-nowrap text-xs sm:text-sm"
-                >
-                  {isPinging ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {language === 'bn' ? 'পিং পাঠানো হচ্ছে...' : 'Pinging...'}
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      {language === 'bn' ? 'এখনই পিং টেস্ট করুন' : 'Test / Ping Now'}
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* Status Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 shadow-sm space-y-1">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>{language === 'bn' ? 'ক্লাউড অটোমেশন' : 'Cloud Automation'}</span>
-                    <Server className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <p className="text-base font-bold text-slate-900 dark:text-white">Vercel Cron & Cloud</p>
-                  <p className="text-[11px] text-emerald-600 font-medium">প্রতি ৪৮ ঘণ্টায় (04:00 UTC)</p>
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 shadow-sm space-y-1">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
                     <span>{language === 'bn' ? 'শেষ টেস্ট ফলাফল' : 'Last Ping Status'}</span>
@@ -800,9 +1210,115 @@ const Settings = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400 font-mono">
                   <div className="truncate">URL: https://rbmhzcapomiiduknkfya.supabase.co</div>
-                  <div>Ping Frequency: Every 48 Hours (Cloud Cron) + On-Demand</div>
+                  <div>Ping Frequency: Continuous In-App + Background Ping</div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ══════════════════════════════════════════════════════════
+            TAB 5: ACCOUNT & SECURITY (PASSWORD & PROFILE)
+        ══════════════════════════════════════════════════════════ */}
+        <TabsContent value="account" className="space-y-6">
+          {/* Profile Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-bold">
+                <User className="w-5 h-5 text-emerald-600" />
+                {language === 'bn' ? 'প্রোফাইল তথ্য' : 'Profile Settings'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'bn' ? 'আপনার অ্যাডমিন নাম ও তথ্য পরিবর্তন করুন' : 'Update your administrator display name'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleProfileUpdate} className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'পূর্ণ নাম' : 'Full Name'}</Label>
+                  <Input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Admin Name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'ইমেইল' : 'Email'}</Label>
+                  <Input
+                    value={user?.email || ''}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'bn' ? 'ইমেইল ঠিকানা পরিবর্তন করা যাবে না' : 'Email address cannot be changed'}
+                  </p>
+                </div>
+                <Button type="submit" disabled={isUpdatingProfile} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                  {isUpdatingProfile && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {language === 'bn' ? 'প্রোফাইল আপডেট করুন' : 'Update Profile'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Password Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-bold">
+                <Key className="w-5 h-5 text-amber-600" />
+                {language === 'bn' ? 'পাসওয়ার্ড পরিবর্তন' : 'Change Password'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'bn' ? 'আপনার অ্যাকাউন্টের নিরাপত্তা নিশ্চিত করতে নতুন পাসওয়ার্ড দিন' : 'Ensure account security with a strong password'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New Password'}</Label>
+                  <div className="relative">
+                    <Input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{language === 'bn' ? 'নতুন পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm New Password'}</Label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button type="submit" disabled={isChangingPassword} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                  {isChangingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {language === 'bn' ? 'পাসওয়ার্ড পরিবর্তন করুন' : 'Change Password'}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>

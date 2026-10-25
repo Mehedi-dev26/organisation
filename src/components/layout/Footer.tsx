@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import logo from '@/assets/logo.png';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
 
 const Footer = () => {
   const { t, language } = useLanguage();
+  const { logoUrl } = useSiteLogo();
 
   const quickLinks = [
     { href: '/about', label: 'nav.about' },
@@ -28,7 +29,7 @@ const Footer = () => {
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-white shadow-lg overflow-hidden flex items-center justify-center">
                 <img 
-                  src={logo} 
+                  src={logoUrl} 
                   alt="সময়ের বাতিঘর" 
                   className="w-10 h-10 object-contain"
                 />

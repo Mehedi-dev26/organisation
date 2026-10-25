@@ -57,7 +57,7 @@ import {
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
 import { useReactToPrint } from 'react-to-print';
 import { bangladeshGeoData, professionsList, getUnionsForUpazila } from '@/data/bangladeshGeoData';
-import logoRound from '@/assets/logo-round.png';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
 
 export interface Member {
   id: string;
@@ -81,6 +81,7 @@ const MembersManagement: React.FC = () => {
   const { language } = useLanguage();
   const { isAdmin } = useAuth();
   const { toast } = useToast();
+  const { logoUrl } = useSiteLogo();
   const queryClient = useQueryClient();
 
   // Dialogs & Modals
@@ -1903,7 +1904,7 @@ const MembersManagement: React.FC = () => {
                     {/* Top Header with Dark Green Gradient */}
                     <div className="bg-gradient-to-br from-[#0B6B3A] via-[#09542e] to-[#04331a] p-3 text-center text-white relative shadow-sm">
                       <div className="absolute top-2 left-2.5 w-8 h-8 rounded-full bg-white/10 p-1 flex items-center justify-center border border-white/20">
-                        <img src={logoRound} alt="Logo" className="w-full h-full object-contain" />
+                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
                       </div>
                       <div className="pl-6">
                         <h4 className="text-sm font-bold tracking-wide text-amber-300">
