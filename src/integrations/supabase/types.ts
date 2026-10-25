@@ -381,11 +381,17 @@ export type Database = {
           member_id: string
           member_type: string | null
           occupation: string | null
+          permanent_address: string | null
           phone: string | null
           photo_url: string | null
+          present_address: string | null
           status: string | null
+          subscription_amount: number | null
+          subscription_frequency: string | null
           updated_at: string | null
           user_id: string | null
+          willing_to_donate_blood: boolean | null
+          willing_to_pay_subscription: boolean | null
         }
         Insert: {
           address?: string | null
@@ -398,11 +404,17 @@ export type Database = {
           member_id: string
           member_type?: string | null
           occupation?: string | null
+          permanent_address?: string | null
           phone?: string | null
           photo_url?: string | null
+          present_address?: string | null
           status?: string | null
+          subscription_amount?: number | null
+          subscription_frequency?: string | null
           updated_at?: string | null
           user_id?: string | null
+          willing_to_donate_blood?: boolean | null
+          willing_to_pay_subscription?: boolean | null
         }
         Update: {
           address?: string | null
@@ -415,11 +427,17 @@ export type Database = {
           member_id?: string
           member_type?: string | null
           occupation?: string | null
+          permanent_address?: string | null
           phone?: string | null
           photo_url?: string | null
+          present_address?: string | null
           status?: string | null
+          subscription_amount?: number | null
+          subscription_frequency?: string | null
           updated_at?: string | null
           user_id?: string | null
+          willing_to_donate_blood?: boolean | null
+          willing_to_pay_subscription?: boolean | null
         }
         Relationships: []
       }

@@ -121,11 +121,25 @@ const Members = () => {
                         )}
                       </div>
 
-                      {member.address && (
-                        <p className="text-xs text-muted-foreground mb-3 line-clamp-1">
-                          {member.address}
-                        </p>
-                      )}
+                      {(() => {
+                        const displayAddress = member.present_address?.trim() || (() => {
+                          if (!member.address) return '';
+                          if (member.address.includes('বর্তমান:')) {
+                            const match = member.address.match(/বর্তমান:\s*([^|]+)/);
+                            if (match && match[1]) return match[1].trim();
+                          }
+                          if (member.address.includes('|')) {
+                            return member.address.split('|')[0].replace(/বর্তমান[:ঃ]?\s*/i, '').trim();
+                          }
+                          return member.address.trim();
+                        })();
+
+                        return displayAddress ? (
+                          <p className="text-xs text-muted-foreground mb-3 line-clamp-1" title={displayAddress}>
+                            {displayAddress}
+                          </p>
+                        ) : null;
+                      })()}
 
                       <div className="space-y-1.5 text-xs pt-3 border-t border-slate-100 text-muted-foreground">
                         {member.phone && (
