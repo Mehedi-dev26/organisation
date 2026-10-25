@@ -106,7 +106,8 @@ const AdminLayout = () => {
     navigate('/auth');
   };
 
-  if (isAuthLoading) {
+  // Only show full-screen loader on initial boot when there is no user and no cached admin
+  if (isAuthLoading && !user && !isCachedAdmin()) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -119,7 +120,7 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user || !effectiveIsAdmin) {
+  if (!user && !isCachedAdmin()) {
     return null;
   }
 

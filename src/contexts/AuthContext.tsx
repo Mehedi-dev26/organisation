@@ -91,8 +91,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(true);
 
-  const checkRoles = async (userId: string, currentUser?: User | null) => {
-    setRolesLoading(true);
+  const checkRoles = async (userId: string, currentUser?: User | null, showLoading: boolean = false) => {
+    if (showLoading) {
+      setRolesLoading(true);
+    }
     try {
       const targetUser = currentUser || user;
       const { data } = await supabase
@@ -200,7 +202,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let isMounted = true;
     let isInitialized = false;
 
-    const syncUserSession = async (currentSession: Session | null) => {
+    const syncUserSession = async (currentSession: Session | null, isInitialSync: boolean = false) => {
       if (!isMounted) return;
       setSession(currentSession);
       const currentUser = currentSession?.user ?? null;
@@ -223,7 +225,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             sessionStorage.setItem('batighor_auth_admin', 'true'); 
           } catch {}
         }
-        await checkRoles(currentUser.id, currentUser);
+        // Only trigger visual rolesLoading during the very first boot if no cached admin role exists
+        const needsVisualLoading = isInitialSync && !sessionStorage.getItem('batighor_auth_admin');
+        await checkRoles(currentUser.id, currentUser, needsVisualLoading);
       } else {
         if (isInitialized) {
           setIsAdmin(false);
@@ -241,13 +245,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (isMounted) {
         setLoading(false);
+        setRolesLoading(false);
       }
     };
 
     // Hydrate session from localStorage first
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       isInitialized = true;
-      syncUserSession(existingSession);
+      syncUserSession(existingSession, true);
     }).catch(() => {
       isInitialized = true;
       if (isMounted) {
@@ -260,7 +265,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (event === 'INITIAL_SESSION' && isInitialized) return;
-        syncUserSession(newSession);
+        // Background events like TOKEN_REFRESHED must run quietly without resetting rolesLoading
+        syncUserSession(newSession, false);
       }
     );
 

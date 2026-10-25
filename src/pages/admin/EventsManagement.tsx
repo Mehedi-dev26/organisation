@@ -15,6 +15,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Search, Loader2, Calendar, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { compressImage } from '@/lib/imageUtils';
+import { useToast } from '@/hooks/use-toast';
+import { safeFormatDate } from '@/lib/dateUtils';
 
 interface Event {
   id: string;
@@ -207,7 +209,7 @@ const EventsManagement = () => {
       title_en: event.title_en || '',
       description_bn: event.description_bn || '',
       description_en: event.description_en || '',
-      event_date: event.event_date ? new Date(event.event_date).toISOString().slice(0, 16) : '',
+      event_date: event.event_date ? safeFormatDate(event.event_date, "yyyy-MM-dd'T'HH:mm", '') : '',
       location_bn: event.location_bn || '',
       location_en: event.location_en || '',
       image_url: event.image_url || '',
@@ -530,7 +532,7 @@ const EventsManagement = () => {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-muted-foreground" />
-                          {new Date(event.event_date).toLocaleDateString()}
+                          {safeFormatDate(event.event_date, 'dd/MM/yyyy')}
                         </div>
                       </TableCell>
                       <TableCell>

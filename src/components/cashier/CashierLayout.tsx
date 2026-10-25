@@ -15,7 +15,7 @@ const CashierLayout = () => {
   const isAuthLoading = loading || rolesLoading;
   const hasCashierAccess = isCashier || isAdmin;
 
-  if (isAuthLoading) {
+  if (isAuthLoading && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

@@ -152,6 +152,8 @@ const MembersManagement: React.FC = () => {
 
   // Enable Realtime Subscription
   useRealtimeSubscription({ table: 'members', queryKey: ['admin-members'] });
+  useRealtimeSubscription({ table: 'members', queryKey: ['admin-badge-pending-members'] });
+  useRealtimeSubscription({ table: 'members', queryKey: ['notice-pending-members'] });
 
   // Query Members
   const { data: members, isLoading, refetch } = useQuery({
@@ -257,6 +259,18 @@ const MembersManagement: React.FC = () => {
   };
 
   // Mutations
+  // Helper to sync all member and dashboard cache queries across the system
+  const invalidateAllMemberQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+    queryClient.invalidateQueries({ queryKey: ['public-members'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-badge-pending-members'] });
+    queryClient.invalidateQueries({ queryKey: ['notice-pending-members'] });
+    queryClient.invalidateQueries({ queryKey: ['home-live-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['members-list'] });
+    queryClient.invalidateQueries({ queryKey: ['members-for-dues'] });
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const { data: newMember, error } = await supabase
@@ -283,7 +297,8 @@ const MembersManagement: React.FC = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+      invalidateAllMemberQueries();
+      refetch();
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
@@ -308,7 +323,8 @@ const MembersManagement: React.FC = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+      invalidateAllMemberQueries();
+      refetch();
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
@@ -333,7 +349,8 @@ const MembersManagement: React.FC = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+      invalidateAllMemberQueries();
+      refetch();
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
@@ -352,18 +369,24 @@ const MembersManagement: React.FC = () => {
   });
 
   const approveMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, name }: { id: string; name?: string }) => {
       const { error } = await supabase.from('members').update({ status: 'approved' }).eq('id', id);
       if (error) throw error;
+      return { id, name };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+    onSuccess: (data) => {
+      invalidateAllMemberQueries();
+      refetch();
+
+      // Automatically switch from 'pending' filter to 'all' so the newly approved member remains visible
+      setSelectedStatus((prev) => (prev === 'pending' ? 'all' : prev));
+
       toast({
-        title: language === 'bn' ? 'সফল!' : 'Success!',
+        title: language === 'bn' ? 'সদস্য অনুমোদিত!' : 'Member Approved!',
         description:
           language === 'bn'
-            ? 'সদস্য আবেদন অনুমোদিত হয়েছে।'
-            : 'Member application approved.',
+            ? `${data?.name ? `"${data.name}" - ` : ''}সদস্য আবেদন অনুমোদিত হয়েছে এবং মোট সক্রিয় সদস্য তালিকায় যুক্ত হয়েছে।`
+            : `${data?.name ? `"${data.name}" - ` : ''}Member application approved and added to all active members.`,
       });
     },
     onError: (error: any) => {
@@ -376,18 +399,20 @@ const MembersManagement: React.FC = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, name }: { id: string; name?: string }) => {
       const { error } = await supabase.from('members').update({ status: 'rejected' }).eq('id', id);
       if (error) throw error;
+      return { id, name };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+    onSuccess: (data) => {
+      invalidateAllMemberQueries();
+      refetch();
       toast({
-        title: language === 'bn' ? 'সফল!' : 'Success!',
+        title: language === 'bn' ? 'স্থগিত / বাতিল' : 'Suspended / Rejected',
         description:
           language === 'bn'
-            ? 'সদস্য স্থগিত বা প্রত্যাখ্যাত হয়েছে।'
-            : 'Member rejected or suspended.',
+            ? `${data?.name ? `"${data.name}" - ` : ''}সদস্য আবেদন স্থগিত বা প্রত্যাখ্যাত হয়েছে।`
+            : `${data?.name ? `"${data.name}" - ` : ''}Member application rejected or suspended.`,
       });
     },
     onError: (error: any) => {
@@ -1074,7 +1099,7 @@ const MembersManagement: React.FC = () => {
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  onClick={() => approveMutation.mutate(member.id)}
+                                  onClick={() => approveMutation.mutate({ id: member.id, name: member.full_name })}
                                   disabled={!isAdmin || approveMutation.isPending}
                                   className="cursor-pointer py-2 px-2.5 rounded-lg text-emerald-700 hover:bg-emerald-50 font-medium text-xs flex items-center gap-2"
                                 >
@@ -1082,7 +1107,7 @@ const MembersManagement: React.FC = () => {
                                   <span>{language === 'bn' ? 'অনুমোদন করুন' : 'Approve Member'}</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => rejectMutation.mutate(member.id)}
+                                  onClick={() => rejectMutation.mutate({ id: member.id, name: member.full_name })}
                                   disabled={!isAdmin || rejectMutation.isPending}
                                   className="cursor-pointer py-2 px-2.5 rounded-lg text-rose-700 hover:bg-rose-50 font-medium text-xs flex items-center gap-2"
                                 >
@@ -1721,7 +1746,7 @@ const MembersManagement: React.FC = () => {
                       <Button
                         className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
                         onClick={() => {
-                          approveMutation.mutate(viewingMember.id);
+                          approveMutation.mutate({ id: viewingMember.id, name: viewingMember.full_name });
                           setViewingMember(null);
                         }}
                       >
@@ -1732,7 +1757,7 @@ const MembersManagement: React.FC = () => {
                         variant="destructive"
                         className="flex-1 gap-1.5"
                         onClick={() => {
-                          rejectMutation.mutate(viewingMember.id);
+                          rejectMutation.mutate({ id: viewingMember.id, name: viewingMember.full_name });
                           setViewingMember(null);
                         }}
                       >
