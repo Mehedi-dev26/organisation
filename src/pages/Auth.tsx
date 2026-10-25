@@ -44,11 +44,11 @@ const Auth = () => {
     // Auto redirect if already logged in
     if (!loading && !rolesLoading && user) {
       if (isAdmin) {
-        navigate('/admin');
+        navigate('/admin', { replace: true });
       } else if (isCashier) {
-        navigate('/cashier');
+        navigate('/cashier', { replace: true });
       } else if (isMember) {
-        navigate('/member-dashboard');
+        navigate('/member-dashboard', { replace: true });
       }
     }
   }, [user, isAdmin, isMember, isCashier, loading, rolesLoading, navigate]);

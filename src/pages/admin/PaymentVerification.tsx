@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { safeFormatDate } from '@/lib/dateUtils';
 
 interface PendingPayment {
   id: string;
@@ -451,10 +452,7 @@ const PaymentVerification = () => {
                         </code>
                       </TableCell>
                       <TableCell>
-                        {payment.submitted_at 
-                          ? format(new Date(payment.submitted_at), 'dd/MM/yyyy HH:mm')
-                          : '-'
-                        }
+                        {safeFormatDate(payment.submitted_at, 'dd/MM/yyyy HH:mm')}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

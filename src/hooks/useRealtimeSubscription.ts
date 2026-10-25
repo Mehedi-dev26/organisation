@@ -15,7 +15,8 @@ export const useRealtimeSubscription = ({ table, queryKey }: UseRealtimeSubscrip
 
   useEffect(() => {
     const parsedQueryKey: string[] = JSON.parse(queryKeySerialized);
-    const channelName = `realtime-${table}-${parsedQueryKey.join('-')}`;
+    const instanceId = Math.random().toString(36).substring(2, 7);
+    const channelName = `realtime-${table}-${parsedQueryKey.join('-')}-${instanceId}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -32,7 +33,11 @@ export const useRealtimeSubscription = ({ table, queryKey }: UseRealtimeSubscrip
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch {
+        // ignore removal error on unmount
+      }
     };
   }, [table, queryKeySerialized, queryClient]);
 };
@@ -44,9 +49,10 @@ export const useMultiTableRealtimeSubscription = (tables: { table: TableName; qu
 
   useEffect(() => {
     const parsedTables: { table: TableName; queryKeys: string[][] }[] = JSON.parse(tablesSerialized);
+    const instanceId = Math.random().toString(36).substring(2, 7);
     const channels = parsedTables.map(({ table, queryKeys }) => {
       const channel = supabase
-        .channel(`realtime-multi-${table}`)
+        .channel(`realtime-multi-${table}-${instanceId}`)
         .on(
           'postgres_changes',
           {
@@ -67,7 +73,11 @@ export const useMultiTableRealtimeSubscription = (tables: { table: TableName; qu
 
     return () => {
       channels.forEach(channel => {
-        supabase.removeChannel(channel);
+        try {
+          supabase.removeChannel(channel);
+        } catch {
+          // ignore removal error
+        }
       });
     };
   }, [tablesSerialized, queryClient]);

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
 import { AdminNoticeSheet } from './AdminNoticeSheet';
+import { AdminPageErrorBoundary } from './AdminPageErrorBoundary';
 import {
   Loader2,
   Bell,
@@ -51,17 +52,24 @@ const AdminLayout = () => {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
   const isAuthLoading = loading || rolesLoading;
-  const effectiveIsAdmin = isAdmin || isUserAdmin(user);
+  const isCachedAdmin = () => {
+    try {
+      return sessionStorage.getItem('batighor_auth_admin') === 'true';
+    } catch {
+      return false;
+    }
+  };
+  const effectiveIsAdmin = isAdmin || isUserAdmin(user) || isCachedAdmin();
 
   useEffect(() => {
     if (!isAuthLoading) {
-      if (!user) {
-        navigate('/auth');
-      } else if (!effectiveIsAdmin) {
-        navigate('/');
+      if (!user && !isCachedAdmin()) {
+        navigate('/auth', { replace: true, state: { from: location } });
+      } else if (user && !effectiveIsAdmin) {
+        navigate('/', { replace: true });
       }
     }
-  }, [user, effectiveIsAdmin, isAuthLoading, navigate]);
+  }, [user, effectiveIsAdmin, isAuthLoading, navigate, location]);
 
   // Query real-time pending items count for notification bell badge
   const { data: pendingMembersCount = 0 } = useQuery({
@@ -312,7 +320,9 @@ const AdminLayout = () => {
 
           {/* Main Dashboard / Page Body */}
           <main className="p-4 sm:p-6 lg:p-8 bg-[#F4FAF6] min-h-[calc(100vh-4rem)]">
-            <Outlet />
+            <AdminPageErrorBoundary key={location.pathname}>
+              <Outlet />
+            </AdminPageErrorBoundary>
           </main>
         </SidebarInset>
       </div>

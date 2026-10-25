@@ -58,7 +58,14 @@ export const isUserAdmin = (user: User | null, roles: string[] = []): boolean =>
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const cached = sessionStorage.getItem('batighor_auth_user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
@@ -67,8 +74,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return false;
     }
   });
-  const [isMember, setIsMember] = useState(false);
-  const [isCashier, setIsCashier] = useState(false);
+  const [isMember, setIsMember] = useState(() => {
+    try {
+      return sessionStorage.getItem('batighor_auth_member') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isCashier, setIsCashier] = useState(() => {
+    try {
+      return sessionStorage.getItem('batighor_auth_cashier') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(true);
 
@@ -86,31 +105,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let userIsMember = roles.includes('member');
       let userIsCashier = roles.includes('cashier');
 
-      // Check members table if executive/admin or general member
+      // Check members table safely with guarded conditions
       if (targetUser) {
         try {
-          const email = targetUser.email || '';
+          const email = (targetUser.email || '').trim();
           const phone = (targetUser.phone || (targetUser.user_metadata?.phone as string) || '').replace(/\D/g, '');
+          
+          const orConditions = [`user_id.eq.${userId}`];
+          if (email) orConditions.push(`email.eq.${email}`);
+          if (phone) orConditions.push(`phone.eq.${phone}`);
+
           const { data: memberData } = await supabase
             .from('members')
             .select('id, member_type')
-            .or(`user_id.eq.${userId},email.eq.${email},phone.eq.${phone}`)
+            .or(orConditions.join(','))
             .limit(1);
 
           if (memberData && memberData.length > 0) {
             userIsMember = true;
             if (['executive', 'admin'].includes(memberData[0].member_type)) {
-              // Executive members are core leaders with admin dashboard access
               setIsAdmin(true);
               try { 
                 sessionStorage.setItem('batighor_auth_admin', 'true'); 
               } catch { 
-                // ignore session storage error
+                // ignore
               }
             }
           }
         } catch {
-          // ignore
+          // ignore PostgREST lookup issues safely
         }
       }
 
@@ -141,6 +164,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           sessionStorage.removeItem('batighor_auth_admin');
         }
+        if (userIsMember) {
+          sessionStorage.setItem('batighor_auth_member', 'true');
+        }
+        if (userIsCashier) {
+          sessionStorage.setItem('batighor_auth_cashier', 'true');
+        }
       } catch {
         // ignore session storage error
       }
@@ -161,8 +190,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch { 
           // ignore session storage error
         }
-      } else {
-        setIsAdmin(false);
       }
     } finally {
       setRolesLoading(false);
@@ -171,50 +198,71 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     let isMounted = true;
+    let isInitialized = false;
 
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        if (!isMounted) return;
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
-        if (newSession?.user) {
-          // Fast-path immediate admin check from user object to prevent flicker/kickout
-          if (isUserAdmin(newSession.user)) {
-            setIsAdmin(true);
-          }
-          await checkRoles(newSession.user.id, newSession.user);
-        } else {
+    const syncUserSession = async (currentSession: Session | null) => {
+      if (!isMounted) return;
+      setSession(currentSession);
+      const currentUser = currentSession?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        try {
+          sessionStorage.setItem('batighor_auth_user', JSON.stringify({
+            id: currentUser.id,
+            email: currentUser.email,
+            phone: currentUser.phone,
+            user_metadata: currentUser.user_metadata,
+            app_metadata: currentUser.app_metadata,
+          }));
+        } catch {}
+
+        if (isUserAdmin(currentUser)) {
+          setIsAdmin(true);
+          try { 
+            sessionStorage.setItem('batighor_auth_admin', 'true'); 
+          } catch {}
+        }
+        await checkRoles(currentUser.id, currentUser);
+      } else {
+        if (isInitialized) {
           setIsAdmin(false);
           setIsMember(false);
           setIsCashier(false);
+          try {
+            sessionStorage.removeItem('batighor_auth_user');
+            sessionStorage.removeItem('batighor_auth_admin');
+            sessionStorage.removeItem('batighor_auth_member');
+            sessionStorage.removeItem('batighor_auth_cashier');
+          } catch {}
           setRolesLoading(false);
         }
-        if (isMounted) {
-          setLoading(false);
-        }
       }
-    );
 
-    // Initial check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
-      if (!isMounted) return;
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      
-      if (existingSession?.user) {
-        if (isUserAdmin(existingSession.user)) {
-          setIsAdmin(true);
-        }
-        await checkRoles(existingSession.user.id, existingSession.user);
-      } else {
-        setRolesLoading(false);
-      }
       if (isMounted) {
         setLoading(false);
       }
+    };
+
+    // Hydrate session from localStorage first
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      isInitialized = true;
+      syncUserSession(existingSession);
+    }).catch(() => {
+      isInitialized = true;
+      if (isMounted) {
+        setLoading(false);
+        setRolesLoading(false);
+      }
     });
+
+    // Listen for auth changes (sign in, sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        if (event === 'INITIAL_SESSION' && isInitialized) return;
+        syncUserSession(newSession);
+      }
+    );
 
     return () => {
       isMounted = false;
@@ -266,6 +314,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setRolesLoading(false);
       setLoading(false);
 
+      if (userIsAdmin) {
+        try {
+          sessionStorage.setItem('batighor_auth_admin', 'true');
+          sessionStorage.setItem('batighor_auth_user', JSON.stringify({
+            id: data.user.id,
+            email: data.user.email,
+            phone: data.user.phone,
+            user_metadata: data.user.user_metadata,
+            app_metadata: data.user.app_metadata,
+          }));
+        } catch {}
+      }
+
       if (userIsAdmin && !roles.includes('admin')) {
         supabase
           .from('user_roles')
@@ -302,7 +363,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.warn('SignOut error handled safely:', err);
     } finally {
       try { 
+        sessionStorage.removeItem('batighor_auth_user');
         sessionStorage.removeItem('batighor_auth_admin'); 
+        sessionStorage.removeItem('batighor_auth_member');
+        sessionStorage.removeItem('batighor_auth_cashier');
       } catch {
         // ignore session storage error
       }

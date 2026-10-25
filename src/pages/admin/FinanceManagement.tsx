@@ -46,6 +46,7 @@ import { format } from 'date-fns';
 import TransactionVoucher from '@/components/admin/TransactionVoucher';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { compressImage } from '@/lib/imageUtils';
+import { safeFormatDate } from '@/lib/dateUtils';
 
 export type TransactionType =
   | 'member_fee'
@@ -1016,11 +1017,11 @@ const FinanceManagement: React.FC = () => {
                         {/* Date */}
                         <TableCell className="py-3">
                           <div className="font-medium text-xs text-foreground">
-                            {format(new Date(transaction.transaction_date), 'dd/MM/yyyy')}
+                            {safeFormatDate(transaction.transaction_date, 'dd/MM/yyyy')}
                           </div>
                           <div className="text-[10px] text-muted-foreground">
                             {transaction.created_at
-                              ? format(new Date(transaction.created_at), 'hh:mm a')
+                              ? safeFormatDate(transaction.created_at, 'hh:mm a', '')
                               : ''}
                           </div>
                         </TableCell>
@@ -1650,10 +1651,10 @@ const FinanceManagement: React.FC = () => {
                         তারিখ ও সময়
                       </p>
                       <p className="font-medium text-foreground mt-0.5">
-                        {format(new Date(detailsTransaction.transaction_date), 'dd MMMM yyyy')}
+                        {safeFormatDate(detailsTransaction.transaction_date, 'dd MMMM yyyy')}
                         {detailsTransaction.created_at && (
                           <span className="text-muted-foreground block text-[11px]">
-                            {format(new Date(detailsTransaction.created_at), 'hh:mm a')}
+                            {safeFormatDate(detailsTransaction.created_at, 'hh:mm a')}
                           </span>
                         )}
                       </p>

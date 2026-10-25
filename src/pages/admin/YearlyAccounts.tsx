@@ -25,6 +25,7 @@ import { parseExcelFile, generateExcelTemplate, exportTransactionsToExcel, Excel
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { safeFormatDate, safeGetMonthIndex } from '@/lib/dateUtils';
 
 type TransactionType = Database['public']['Enums']['transaction_type'];
 
@@ -109,11 +110,13 @@ const YearlyAccounts = () => {
     const incomeTypes = ['member_fee', 'donation', 'event_income', 'other_income'];
 
     transactions.forEach(t => {
-      const month = new Date(t.transaction_date).getMonth();
-      if (incomeTypes.includes(t.type)) {
-        months[month].income += Number(t.amount);
-      } else {
-        months[month].expense += Number(t.amount);
+      const month = safeGetMonthIndex(t.transaction_date);
+      if (month >= 0 && month < 12 && months[month]) {
+        if (incomeTypes.includes(t.type)) {
+          months[month].income += Number(t.amount || 0);
+        } else {
+          months[month].expense += Number(t.amount || 0);
+        }
       }
     });
 
@@ -945,7 +948,7 @@ const TransactionsEditTab: React.FC<TransactionsEditTabProps> = ({
                     return (
                       <TableRow key={transaction.id}>
                         <TableCell>
-                          {format(new Date(transaction.transaction_date), 'dd MMM yyyy', { 
+                          {safeFormatDate(transaction.transaction_date, 'dd MMM yyyy', '-', { 
                             locale: language === 'bn' ? bn : enUS 
                           })}
                         </TableCell>
