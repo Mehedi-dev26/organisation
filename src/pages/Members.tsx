@@ -82,43 +82,69 @@ const Members = () => {
           ) : (
             /* Members Grid */
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredMembers?.map((member) => (
-                <Card key={member.id} className="group hover:shadow-lg transition-shadow duration-300">
-                  <CardContent className="p-6 text-center">
-                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 overflow-hidden">
-                      <img
-                        src={member.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.full_name}`}
-                        alt={member.full_name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h3 className="font-heading font-semibold text-lg text-foreground mb-2">
-                      {member.full_name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {member.joining_date 
-                        ? (language === 'bn' 
-                          ? `সদস্য হয়েছেন: ${new Date(member.joining_date).getFullYear()}` 
-                          : `Member since: ${new Date(member.joining_date).getFullYear()}`)
-                        : ''}
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      {member.phone && (
-                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                          <Phone className="w-4 h-4" />
-                          <span>{member.phone}</span>
+              {filteredMembers?.map((member) => {
+                const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.full_name)}`;
+                const memberTypeLabel = language === 'bn' 
+                  ? (member.member_type === 'life' ? 'আজীবন সদস্য' : member.member_type === 'donor' ? 'দাতা সদস্য' : member.member_type === 'executive' ? 'কার্যনির্বাহী পরিষদ' : 'সাধারণ সদস্য')
+                  : (member.member_type || 'General');
+
+                return (
+                  <Card key={member.id} className="group hover:shadow-xl transition-all duration-300 rounded-[24px] border border-slate-100 overflow-hidden hover:-translate-y-1">
+                    <CardContent className="p-6 text-center">
+                      <div className="relative mb-4 inline-block">
+                        <div className="w-24 h-24 rounded-full bg-slate-100 mx-auto overflow-hidden border-2 border-primary/20 group-hover:border-primary transition-colors shadow-2xs">
+                          <img
+                            src={member.photo_url || fallbackAvatar}
+                            alt={member.full_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.currentTarget.src = fallbackAvatar; }}
+                          />
                         </div>
+                        {member.blood_group && (
+                          <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-bold shadow-xs">
+                            {member.blood_group}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mb-2">
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
+                          {memberTypeLabel}
+                        </span>
+                        <h3 className="font-heading font-bold text-lg text-foreground line-clamp-1">
+                          {member.full_name}
+                        </h3>
+                        {member.member_id && (
+                          <p className="text-xs font-mono font-bold text-[#0B6B3A] tracking-wider mt-0.5">
+                            ID: {member.member_id}
+                          </p>
+                        )}
+                      </div>
+
+                      {member.address && (
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-1">
+                          {member.address}
+                        </p>
                       )}
-                      {member.email && (
-                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                          <Mail className="w-4 h-4" />
-                          <span>{member.email}</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+
+                      <div className="space-y-1.5 text-xs pt-3 border-t border-slate-100 text-muted-foreground">
+                        {member.phone && (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-primary" />
+                            <span>{member.phone}</span>
+                          </div>
+                        )}
+                        {member.email && (
+                          <div className="flex items-center justify-center gap-1.5 truncate">
+                            <Mail className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                            <span className="truncate">{member.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

@@ -16,7 +16,7 @@ const CommitteePreview = () => {
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
-        .limit(3);
+        .limit(6);
       
       if (error) {
         console.warn('Error fetching committee preview:', error);
@@ -100,7 +100,7 @@ const CommitteePreview = () => {
             {language === 'bn' ? 'কোন কমিটি সদস্য পাওয়া যায়নি' : 'No committee members found'}
           </div>
         ) : (
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto mb-12">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto mb-12">
             {committeeMembers?.map((member) => {
               const fallbackImage = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name_bn}`;
               const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {

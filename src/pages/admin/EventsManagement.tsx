@@ -13,8 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Loader2, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Calendar, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { compressImage } from '@/lib/imageUtils';
 
 interface Event {
   id: string;
@@ -58,6 +58,62 @@ const EventsManagement = () => {
     category_bn: '',
     status: 'ongoing',
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: language === 'bn' ? 'ছবি ৫MB এর কম হতে হবে' : 'Photo must be under 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadEventPhoto = async (): Promise<string | null> => {
+    if (!selectedImage) return formData.image_url || null;
+
+    try {
+      setIsUploading(true);
+      const compressedBlob = await compressImage(selectedImage, 1200, 800, 0.88);
+      const fileName = `events/${Date.now()}-${selectedImage.name.replace(/\s+/g, '_')}`;
+
+      const { data, error } = await supabase.storage
+        .from('gallery-images')
+        .upload(fileName, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage.from('gallery-images').getPublicUrl(data.path);
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Photo upload error:', error);
+      toast({
+        title: language === 'bn' ? 'ছবি আপলোড ব্যর্থ' : 'Photo upload failed',
+        description: error.message || 'ত্রুটি ঘটেছে',
+        variant: 'destructive',
+      });
+      return formData.image_url || null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Enable realtime subscription
   useRealtimeSubscription({ table: 'events', queryKey: ['admin-events'] });
@@ -138,6 +194,8 @@ const EventsManagement = () => {
       category_bn: '',
       status: 'ongoing',
     });
+    setSelectedImage(null);
+    setImagePreview(null);
     setEditingEvent(null);
     setIsDialogOpen(false);
   };
@@ -159,13 +217,23 @@ const EventsManagement = () => {
       category_bn: event.category_bn || '',
       status: event.status || 'ongoing',
     });
+    setSelectedImage(null);
+    setImagePreview(event.image_url || null);
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let finalImageUrl = formData.image_url;
+    if (selectedImage) {
+      const uploadedUrl = await uploadEventPhoto();
+      if (uploadedUrl) {
+        finalImageUrl = uploadedUrl;
+      }
+    }
     const payload = {
       ...formData,
+      image_url: finalImageUrl,
       target_amount: formData.target_amount ? Number(formData.target_amount) : null,
       raised_amount: formData.raised_amount ? Number(formData.raised_amount) : null,
     };
@@ -310,13 +378,71 @@ const EventsManagement = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>{language === 'bn' ? 'ছবি URL' : 'Image URL'}</Label>
-                <Input
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://..."
-                />
+              {/* Photo Upload & Preview */}
+              <div className="space-y-3 p-4 rounded-xl border border-slate-200 bg-slate-50/60">
+                <Label className="text-sm font-bold flex items-center justify-between">
+                  <span>{language === 'bn' ? 'কর্মসূচির ছবি আপলোড' : 'Event Image Upload'}</span>
+                  {isUploading && (
+                    <span className="text-xs text-primary flex items-center gap-1 font-normal">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {language === 'bn' ? 'আপলোড হচ্ছে...' : 'Uploading...'}
+                    </span>
+                  )}
+                </Label>
+
+                {imagePreview ? (
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden border border-slate-200 bg-black/5 group">
+                    <img 
+                      src={imagePreview} 
+                      alt="Event preview" 
+                      className="w-full h-full object-cover" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setImagePreview(null);
+                        setFormData({ ...formData, image_url: '' });
+                      }}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 transition-colors"
+                      title={language === 'bn' ? 'ছবি মুছে ফেলুন' : 'Remove photo'}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-primary transition-colors bg-white">
+                    <ImageIcon className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                    <p className="text-xs text-slate-500 mb-2">
+                      {language === 'bn' ? 'কম্পিউটার বা মোবাইল থেকে ছবি সিলেক্ট করুন (সর্বোচ্চ ৫MB)' : 'Select image from device (Max 5MB)'}
+                    </p>
+                    <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{language === 'bn' ? 'ছবি বাছাই করুন' : 'Choose Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
+
+                <div className="space-y-1 pt-1">
+                  <span className="text-[11px] text-muted-foreground block">
+                    {language === 'bn' ? 'অথবা সরাসরি ছবির লিঙ্ক প্রদান করতে পারেন:' : 'Or enter direct image URL:'}
+                  </span>
+                  <Input
+                    value={formData.image_url}
+                    onChange={(e) => {
+                      setFormData({ ...formData, image_url: e.target.value });
+                      setImagePreview(e.target.value || null);
+                    }}
+                    placeholder="https://..."
+                    className="h-8 text-xs"
+                  />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Switch

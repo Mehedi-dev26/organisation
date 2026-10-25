@@ -10,9 +10,12 @@ import {
   Calendar, 
   ArrowRight, 
   Wheat,
-  Sprout
+  Sprout,
+  Droplet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 // Import high-definition generated assets and graphics
 import cardSapahar from '@/assets/activities/card-sapahar-hd.jpg';
@@ -22,6 +25,7 @@ import cardEvents from '@/assets/activities/card-events-hd.jpg';
 import bgVillage from '@/assets/activities/bg-village.png';
 import topLeaves from '@/assets/activities/top-leaves.png';
 import topPin from '@/assets/activities/top-pin.png';
+
 
 interface ActivityCard {
   id: string;
@@ -36,6 +40,8 @@ interface ActivityCard {
   pillText: string;
   pillBorder: string;
   pillLabel: string;
+  badgeKey: 'donors' | 'committee' | 'members' | 'events';
+  badgeSuffix: string;
   hasWheat?: boolean;
   Icon: React.ElementType;
   PillIcon: React.ElementType;
@@ -44,42 +50,48 @@ interface ActivityCard {
 
 const activitiesData: ActivityCard[] = [
   {
-    id: 'support',
-    title: 'সাধারণ সমস্যা',
-    titleSecondLine: 'সহায়তা',
-    description: 'নির্ধারিত সহজ সমস্যার সমাধান পেতে আমাদের সাথে যোগাযোগ করুন।',
+    id: 'blood-donors',
+    title: 'জরুরি রক্তদান',
+    titleSecondLine: 'কর্মসূচি ও ব্যাংক',
+    description: 'মুহূর্তের প্রয়োজনে রক্তের সন্ধান ও বিনামূল্যে রক্তদানের মানবিক সহায়তা সেবা।',
     image: cardSapahar,
+    iconBg: 'bg-rose-600',
+    accentColorHex: '#E11D48',
+    curveBorderColor: 'border-rose-200',
+    pillBg: 'bg-rose-50',
+    pillText: 'text-rose-700',
+    pillBorder: 'border-rose-200',
+    pillLabel: 'রক্তদাতা খুঁজুন',
+    badgeKey: 'donors',
+    badgeSuffix: '+ রক্তদাতা প্রস্তুত',
+    Icon: Droplet,
+    PillIcon: Droplet,
+    href: '/blood-donors', // Route: Emergency Blood Donors
+  },
+  {
+    id: 'committee',
+    title: 'কার্যনির্বাহী পরিষদ',
+    titleSecondLine: 'ও নেতৃত্ব',
+    description: 'সুশাসন, মানবিক সমাজ ও প্রাতিষ্ঠানিক উন্নয়নের লক্ষ্যে নিবেদিত পরিচালনা পরিষদ।',
+    image: cardCommittee,
     iconBg: 'bg-[#0B6B3A]',
     accentColorHex: '#0B6B3A',
     curveBorderColor: 'border-[#A7F3D0]',
     pillBg: 'bg-[#EAF6ED]',
     pillText: 'text-[#0A5C34]',
     pillBorder: 'border-[#C8E6C9]',
-    pillLabel: 'সাধারণ অভিযোগ কেন্দ্র',
-    Icon: Users,
-    PillIcon: User,
-    href: '/contact', // Route: Contact / Help center
-  },
-  {
-    id: 'committee',
-    title: 'কার্যনির্বাহী কমিটি',
-    description: 'সুশাসন ও উন্নয়নের লক্ষ্যে একটি সক্রিয় কার্যনির্বাহী কমিটি।',
-    image: cardCommittee,
-    iconBg: 'bg-[#1F6FE5]',
-    accentColorHex: '#1F6FE5',
-    curveBorderColor: 'border-[#BFDBFE]',
-    pillBg: 'bg-[#EDF4FE]',
-    pillText: 'text-[#1F6FE5]',
-    pillBorder: 'border-[#BFDBFE]',
-    pillLabel: 'কমিটি বিস্তারিত দেখুন',
+    pillLabel: 'কমিটি বিস্তারিত',
+    badgeKey: 'committee',
+    badgeSuffix: ' জন পরিষদ সদস্য',
     Icon: UserCheck,
     PillIcon: Users,
     href: '/committee', // Route: Executive Committee
   },
   {
     id: 'members',
-    title: 'আজীবন ও দাতা সদস্য',
-    description: 'মানবতার সেবায় প্রয়োজনীয় সহায়তা ও পরামর্শ পেতে আমাদের সাথে যোগাযোগ করুন।',
+    title: 'আজীবন ও সাধারণ',
+    titleSecondLine: 'সদস্যবৃন্দ',
+    description: 'মানবতার সেবায় নিবেদিত আমাদের সকল সম্মানিত আজীবন ও সাধারণ সদস্যবৃন্দ।',
     image: cardMembers,
     iconBg: 'bg-[#F0A500]',
     accentColorHex: '#F0A500',
@@ -87,16 +99,19 @@ const activitiesData: ActivityCard[] = [
     pillBg: 'bg-[#FFF6E5]',
     pillText: 'text-[#D97706]',
     pillBorder: 'border-[#FDE68A]',
-    pillLabel: 'সহায়তা সেবা',
+    pillLabel: 'সদস্য তালিকা',
+    badgeKey: 'members',
+    badgeSuffix: '+ নিবন্ধিত সদস্য',
     hasWheat: true,
     Icon: HandHeart,
     PillIcon: Heart,
-    href: '/members', // Route: Lifetime & Donor Members
+    href: '/members', // Route: Lifetime & General Members
   },
   {
     id: 'events',
-    title: 'সেবামূলক কর্মসূচি ও ইভেন্ট',
-    description: 'সামাজিক উন্নয়ন ও কল্যাণমূলক বিভিন্ন কার্যক্রম সম্পর্কে জানুন।',
+    title: 'সেবামূলক কর্মসূচি',
+    titleSecondLine: 'ও ত্রাণ কার্যক্রম',
+    description: 'চিকিৎসা সহায়তা, শিক্ষা উপবৃত্তি ও দুর্যোগ মোকাবিলায় আমাদের মানবিক উদ্যোগসমূহ।',
     image: cardEvents,
     iconBg: 'bg-[#8A3FD1]',
     accentColorHex: '#8A3FD1',
@@ -104,7 +119,9 @@ const activitiesData: ActivityCard[] = [
     pillBg: 'bg-[#F6EEFD]',
     pillText: 'text-[#8A3FD1]',
     pillBorder: 'border-[#E9D5FF]',
-    pillLabel: 'সকল ইভেন্ট দেখুন',
+    pillLabel: 'সকল উদ্যোগ',
+    badgeKey: 'events',
+    badgeSuffix: '+ সামাজিক কর্মসূচি',
     Icon: CalendarDays,
     PillIcon: Calendar,
     href: '/programs', // Route: Welfare Programs & Events
@@ -112,6 +129,30 @@ const activitiesData: ActivityCard[] = [
 ];
 
 const ActivitiesOverview: React.FC = () => {
+  const { data: stats } = useQuery({
+    queryKey: ['home-activities-stats'],
+    queryFn: async () => {
+      const [
+        { count: donorsCount },
+        { count: committeeCount },
+        { count: membersCount },
+        { count: eventsCount }
+      ] = await Promise.all([
+        supabase.from('blood_donors').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+        supabase.from('committee_members').select('*', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('members').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+        supabase.from('events').select('*', { count: 'exact', head: true }).eq('is_published', true),
+      ]);
+      return {
+        donors: donorsCount ?? 7,
+        committee: committeeCount ?? 6,
+        members: membersCount ?? 5,
+        events: eventsCount ?? 6,
+      };
+    },
+    staleTime: 1000 * 60 * 3,
+  });
+
   return (
     <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#F4FAF5] via-[#F8FCF9] to-[#FFFFFF] py-16 sm:py-20 lg:py-24 border-b border-emerald-950/5">
       {/* 1. Top-Left Floating Foliage/Leaves */}
@@ -230,8 +271,23 @@ const ActivitiesOverview: React.FC = () => {
                 </div>
               </div>
 
-              {/* Title & Description */}
+              {/* Live Count Badge & Title & Description */}
               <div className="mb-6 z-10">
+                {/* Live Count Pill from Database */}
+                <div 
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold mb-2.5 w-fit border shadow-2xs"
+                  style={{
+                    backgroundColor: `${card.accentColorHex}12`,
+                    color: card.accentColorHex,
+                    borderColor: `${card.accentColorHex}30`
+                  }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: card.accentColorHex }} />
+                  <span>
+                    {stats?.[card.badgeKey] ?? '...'} {card.badgeSuffix}
+                  </span>
+                </div>
+
                 <h3 className="text-xl sm:text-[21px] font-bold font-heading text-[#14231B] leading-snug mb-2 group-hover:text-primary transition-colors">
                   {card.title}
                   {card.titleSecondLine && (

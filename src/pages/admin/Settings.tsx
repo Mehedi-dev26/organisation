@@ -10,10 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Key, User, Shield, Bell, LayoutTemplate, Image, Save, Loader2, Sparkles, Heart, Activity, Database, CheckCircle2, Clock, RefreshCw, Server, Zap, Check } from 'lucide-react';
+import { Eye, EyeOff, Key, User, Shield, Bell, LayoutTemplate, Image, Save, Loader2, Sparkles, Heart, Activity, Database, CheckCircle2, Clock, RefreshCw, Server, Zap, Check, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useQueryClient } from '@tanstack/react-query';
 import { sendKeepAlivePing, getKeepAliveStats, KeepAliveStats } from '@/services/keepAliveService';
+import { compressImage } from '@/lib/imageUtils';
 
 const Settings = () => {
   const { language } = useLanguage();
@@ -70,6 +71,57 @@ const Settings = () => {
     title_en: 'Come, let us all build a humane and beautiful society together.',
     button_text_bn: 'স্বেচ্ছাসেবক হন',
   });
+
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(language === 'bn' ? 'ছবি ৫MB এর কম হতে হবে' : 'Photo must be under 5MB');
+      return;
+    }
+    setIsUploadingBanner(true);
+    try {
+      const compressedBlob = await compressImage(file, 1600, 900, 0.88);
+      const fileName = `site/hero-${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      const { data, error } = await supabase.storage
+        .from('gallery-images')
+        .upload(fileName, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('gallery-images').getPublicUrl(data.path);
+      setHeroBanner((prev) => ({ ...prev, image_url: urlData.publicUrl }));
+      toast.success(language === 'bn' ? 'ব্যানার ছবি আপলোড হয়েছে' : 'Banner image uploaded');
+    } catch (err: any) {
+      toast.error(err.message || 'আপলোড ব্যর্থ');
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const handleAboutImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'image_main' | 'image_secondary') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressedBlob = await compressImage(file, 1000, 800, 0.88);
+      const fileName = `site/about-${field}-${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      const { data, error } = await supabase.storage
+        .from('gallery-images')
+        .upload(fileName, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('gallery-images').getPublicUrl(data.path);
+      setAboutSection((prev) => ({ ...prev, [field]: urlData.publicUrl }));
+      toast.success(language === 'bn' ? 'ছবি আপলোড হয়েছে' : 'Image uploaded');
+    } catch (err: any) {
+      toast.error(err.message || 'আপলোড ব্যর্থ');
+    }
+  };
 
   // Fetch current site_settings from Supabase
   useEffect(() => {
@@ -259,15 +311,28 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <Label>{language === 'bn' ? 'ব্যানার ছবি URL' : 'Banner Image URL'}</Label>
+              <div className="space-y-3 p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <Label className="font-bold">{language === 'bn' ? 'ব্যানার ছবি আপলোড বা লিঙ্ক' : 'Banner Image Upload or URL'}</Label>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs w-fit">
+                    {isUploadingBanner ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    <span>{language === 'bn' ? 'ডিভাইস থেকে ছবি আপলোড করুন' : 'Upload from Device'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerUpload}
+                      disabled={isUploadingBanner}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
                 <Input
                   value={heroBanner.image_url}
                   onChange={(e) => setHeroBanner({ ...heroBanner, image_url: e.target.value })}
                   placeholder="/images/banner1.jpg"
                 />
                 {heroBanner.image_url && (
-                  <div className="mt-2 h-36 max-w-md rounded-xl overflow-hidden border border-slate-200">
+                  <div className="mt-2 h-40 max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
                     <img src={heroBanner.image_url} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -325,21 +390,57 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{language === 'bn' ? 'প্রধান ছবি URL (বাম পাশের বড় ছবি)' : 'Primary Image URL'}</Label>
+                <div className="space-y-2 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold">{language === 'bn' ? 'প্রধান ছবি (বড় ছবি)' : 'Primary Image'}</Label>
+                    <label className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer transition-colors">
+                      <Upload className="w-3 h-3" />
+                      <span>{language === 'bn' ? 'ছবি আপলোড' : 'Upload'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleAboutImageUpload(e, 'image_main')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                   <Input
                     value={aboutSection.image_main}
                     onChange={(e) => setAboutSection({ ...aboutSection, image_main: e.target.value })}
                     placeholder="/images/about1.jpg"
+                    className="h-8 text-xs"
                   />
+                  {aboutSection.image_main && (
+                    <div className="h-24 w-full rounded-lg overflow-hidden border border-slate-200">
+                      <img src={aboutSection.image_main} alt="Main" className="w-full h-full object-cover" />
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <Label>{language === 'bn' ? 'দ্বিতীয় ছবি URL (ডান পাশের ছোট ছবি)' : 'Secondary Image URL'}</Label>
+                <div className="space-y-2 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold">{language === 'bn' ? 'দ্বিতীয় ছবি (ছোট ছবি)' : 'Secondary Image'}</Label>
+                    <label className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer transition-colors">
+                      <Upload className="w-3 h-3" />
+                      <span>{language === 'bn' ? 'ছবি আপলোড' : 'Upload'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleAboutImageUpload(e, 'image_secondary')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                   <Input
                     value={aboutSection.image_secondary}
                     onChange={(e) => setAboutSection({ ...aboutSection, image_secondary: e.target.value })}
                     placeholder="/images/about2.jpg"
+                    className="h-8 text-xs"
                   />
+                  {aboutSection.image_secondary && (
+                    <div className="h-24 w-full rounded-lg overflow-hidden border border-slate-200">
+                      <img src={aboutSection.image_secondary} alt="Secondary" className="w-full h-full object-cover" />
+                    </div>
+                  )}
                 </div>
               </div>
 
