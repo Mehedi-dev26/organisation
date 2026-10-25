@@ -103,13 +103,13 @@ function parseDate(value: any): string | null {
     }
     
     // Try DD/MM/YYYY or DD-MM-YYYY format
-    const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    const dmyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
     if (dmyMatch) {
       return `${dmyMatch[3]}-${String(dmyMatch[2]).padStart(2, '0')}-${String(dmyMatch[1]).padStart(2, '0')}`;
     }
     
     // Try MM/DD/YYYY format
-    const mdyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    const mdyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
     if (mdyMatch) {
       const month = parseInt(mdyMatch[1]);
       const day = parseInt(mdyMatch[2]);

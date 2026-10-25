@@ -164,7 +164,9 @@ const Auth = () => {
             if (rpcEmail && typeof rpcEmail === 'string' && !candidateEmails.includes(rpcEmail.toLowerCase())) {
               candidateEmails.unshift(rpcEmail.toLowerCase());
             }
-          } catch {}
+          } catch {
+            // RPC fallback not available
+          }
         }
 
         // C. Fallback synthetic phone email

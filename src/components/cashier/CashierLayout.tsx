@@ -8,50 +8,14 @@ import CashierMobileNav from './CashierMobileNav';
 import { Loader2 } from 'lucide-react';
 
 const CashierLayout = () => {
-  const { user, loading, session } = useAuth();
+  const { user, loading, rolesLoading, isCashier, isAdmin } = useAuth();
   const { language } = useLanguage();
   const location = useLocation();
 
-  // Check if user has cashier role
-  const [isCashier, setIsCashier] = React.useState<boolean | null>(null);
-  const [checkingRole, setCheckingRole] = React.useState(true);
+  const isAuthLoading = loading || rolesLoading;
+  const hasCashierAccess = isCashier || isAdmin;
 
-  React.useEffect(() => {
-    const checkCashierRole = async () => {
-      if (!user) {
-        setIsCashier(false);
-        setCheckingRole(false);
-        return;
-      }
-
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'cashier')
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error checking cashier role:', error);
-          setIsCashier(false);
-        } else {
-          setIsCashier(!!data);
-        }
-      } catch (error) {
-        console.error('Error checking cashier role:', error);
-        setIsCashier(false);
-      }
-      setCheckingRole(false);
-    };
-
-    if (!loading) {
-      checkCashierRole();
-    }
-  }, [user, loading]);
-
-  if (loading || checkingRole) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -64,7 +28,7 @@ const CashierLayout = () => {
     );
   }
 
-  if (!user || !isCashier) {
+  if (!user || !hasCashierAccess) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

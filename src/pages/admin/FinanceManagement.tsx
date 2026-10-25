@@ -421,7 +421,7 @@ const FinanceManagement: React.FC = () => {
   // Create Transaction Mutation
   const createMutation = useMutation({
     mutationFn: async (dataToSubmit: typeof formData & { selectedMonths?: string[] }) => {
-      let finalReceiptUrl = await uploadReceiptFile();
+      const finalReceiptUrl = await uploadReceiptFile();
 
       // Encode metadata into notes
       const notesParts = [

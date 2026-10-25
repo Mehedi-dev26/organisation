@@ -101,7 +101,9 @@ export const useSiteSettings = () => {
 
       try {
         localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(map));
-      } catch {}
+      } catch {
+        // Safe ignore localStorage write errors
+      }
 
       return map;
     },
@@ -197,7 +199,9 @@ export const useHeroBanners = () => {
       if (slides.length > 0) {
         try {
           localStorage.setItem(STORAGE_KEY_HERO_BANNERS, JSON.stringify(slides));
-        } catch {}
+        } catch {
+          // Safe ignore localStorage write errors
+        }
         return slides;
       }
 

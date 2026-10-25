@@ -102,7 +102,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (['executive', 'admin'].includes(memberData[0].member_type)) {
               // Executive members are core leaders with admin dashboard access
               setIsAdmin(true);
-              try { sessionStorage.setItem('batighor_auth_admin', 'true'); } catch {}
+              try { 
+                sessionStorage.setItem('batighor_auth_admin', 'true'); 
+              } catch { 
+                // ignore session storage error
+              }
             }
           }
         } catch {
@@ -137,7 +141,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           sessionStorage.removeItem('batighor_auth_admin');
         }
-      } catch {}
+      } catch {
+        // ignore session storage error
+      }
 
       // Proactively ensure admin role is stored in user_roles table for Postgres RLS policies
       if (userIsAdmin && !roles.includes('admin')) {
@@ -150,7 +156,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Error checking roles:', err);
       if (currentUser && isUserAdmin(currentUser)) {
         setIsAdmin(true);
-        try { sessionStorage.setItem('batighor_auth_admin', 'true'); } catch {}
+        try { 
+          sessionStorage.setItem('batighor_auth_admin', 'true'); 
+        } catch { 
+          // ignore session storage error
+        }
       } else {
         setIsAdmin(false);
       }
@@ -232,7 +242,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const roles = rolesData?.map(r => r.role) || [];
       const userIsAdmin = isUserAdmin(data.user, roles);
       let userIsMember = roles.includes('member');
-      let userIsCashier = roles.includes('cashier');
+      const userIsCashier = roles.includes('cashier');
 
       if (!userIsMember) {
         try {
@@ -291,7 +301,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.warn('SignOut error handled safely:', err);
     } finally {
-      try { sessionStorage.removeItem('batighor_auth_admin'); } catch {}
+      try { 
+        sessionStorage.removeItem('batighor_auth_admin'); 
+      } catch {
+        // ignore session storage error
+      }
       setUser(null);
       setSession(null);
       setIsAdmin(false);
