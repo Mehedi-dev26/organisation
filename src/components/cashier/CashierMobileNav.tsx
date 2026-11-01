@@ -1,21 +1,18 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { LayoutDashboard, Wallet, Receipt, History, LogOut } from 'lucide-react';
+import { LayoutDashboard, Wallet, Receipt, CheckSquare, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 const CashierMobileNav = () => {
   const { language } = useLanguage();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const navItems = [
     { 
       href: '/cashier', 
       icon: LayoutDashboard, 
-      label: language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard',
+      label: language === 'bn' ? 'ড্যাশবোর্ড' : 'Home',
       exact: true
     },
     { 
@@ -27,13 +24,19 @@ const CashierMobileNav = () => {
     { 
       href: '/cashier/dues', 
       icon: Receipt, 
-      label: language === 'bn' ? 'বকেয়া' : 'Dues',
+      label: language === 'bn' ? 'চাঁদা' : 'Dues',
+      exact: false
+    },
+    { 
+      href: '/cashier/payment-verification', 
+      icon: CheckSquare, 
+      label: language === 'bn' ? 'যাচাই' : 'Verify',
       exact: false
     },
     { 
       href: '/cashier/yearly-accounts', 
       icon: History, 
-      label: language === 'bn' ? 'বছরের হিসাব' : 'Yearly',
+      label: language === 'bn' ? 'রিপোর্ট' : 'Report',
       exact: false
     },
   ];
@@ -45,19 +48,9 @@ const CashierMobileNav = () => {
     return location.pathname.startsWith(path);
   };
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast.success(language === 'bn' ? 'সফলভাবে লগআউট হয়েছে' : 'Logged out successfully');
-      navigate('/');
-    } catch (error) {
-      toast.error(language === 'bn' ? 'লগআউট করতে সমস্যা হয়েছে' : 'Error logging out');
-    }
-  };
-
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 safe-area-bottom">
-      <div className="flex justify-around items-center h-16 px-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-emerald-950/10 z-50 shadow-lg safe-area-bottom">
+      <div className="flex justify-around items-center h-16 px-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href, item.exact);
@@ -68,38 +61,24 @@ const CashierMobileNav = () => {
               to={item.href}
               end={item.exact}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200",
+                "flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition-all duration-200",
                 active 
-                  ? "text-amber-600 bg-amber-50" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "text-[#0B6B3A] bg-[#E6F4EA] font-black" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-medium"
               )}
             >
               <Icon 
                 className={cn(
-                  "w-5 h-5 mb-1 transition-transform duration-200",
-                  active && "scale-110"
+                  "w-5 h-5 mb-0.5 transition-transform duration-200 stroke-[2.2]",
+                  active && "scale-110 text-[#0B6B3A]"
                 )} 
               />
-              <span className={cn(
-                "text-[10px] font-medium truncate max-w-full",
-                active && "font-semibold"
-              )}>
+              <span className="text-[10px] truncate max-w-full leading-tight">
                 {item.label}
               </span>
             </NavLink>
           );
         })}
-        
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200 text-red-500 hover:text-red-600 hover:bg-red-50"
-        >
-          <LogOut className="w-5 h-5 mb-1" />
-          <span className="text-[10px] font-medium truncate max-w-full">
-            {language === 'bn' ? 'লগআউট' : 'Logout'}
-          </span>
-        </button>
       </div>
     </nav>
   );
