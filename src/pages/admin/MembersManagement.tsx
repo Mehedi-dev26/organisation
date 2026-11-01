@@ -626,9 +626,22 @@ const MembersManagement: React.FC = () => {
         },
       });
 
-      if (response.error) throw response.error;
-      if (response.data && !response.data.success) {
-        throw new Error(response.data.error || 'অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে');
+      if (response?.error) {
+        let msg = response.error.message;
+        try {
+          if (response.error.context && typeof response.error.context.json === 'function') {
+            const body = await response.error.context.json();
+            if (body?.error) {
+              msg = body.error;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        throw new Error(msg || (language === 'bn' ? 'অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে' : 'Failed to create account'));
+      }
+      if (response?.data && !response.data.success) {
+        throw new Error(response.data.error || (language === 'bn' ? 'অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে' : 'Failed to create account'));
       }
 
       toast({
