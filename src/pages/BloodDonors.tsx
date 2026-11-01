@@ -643,8 +643,8 @@ const BloodDonors: React.FC = () => {
             </table>
           </div>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden divide-y divide-slate-100">
+          {/* Mobile Card View (2 Donors Side-by-Side as requested) */}
+          <div className="md:hidden">
             {isLoading ? (
               <div className="p-8 text-center text-slate-400">
                 <Droplet className="w-8 h-8 text-red-500 mx-auto animate-bounce mb-2" />
@@ -660,81 +660,90 @@ const BloodDonors: React.FC = () => {
                 </Button>
               </div>
             ) : (
-              filteredDonors.map((donor, idx) => {
-                const eligibility = getDonationEligibility(donor.last_donated);
-                return (
-                  <div key={donor.id} className="p-4 bg-white hover:bg-slate-50">
-                    <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2 bg-slate-100/60 dark:bg-slate-900/40 rounded-2xl">
+                {filteredDonors.map((donor) => {
+                  const eligibility = getDonationEligibility(donor.last_donated);
+                  return (
+                    <div 
+                      key={donor.id} 
+                      className="p-2.5 sm:p-3 bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:border-red-300 transition-all"
+                    >
                       <div>
-                        <div className="font-extrabold text-slate-900 text-base">
-                          {donor.full_name}
-                        </div>
-                        {donor.member_id && (
-                          <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-2 py-0.5 rounded-md mt-0.5 whitespace-nowrap">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
-                            <span>{language === 'bn' ? `আইডি: ${donor.member_id}` : `ID: ${donor.member_id}`}</span>
-                          </div>
-                        )}
-                      </div>
-                      <span className="bg-red-600 text-white font-black text-sm px-3 py-1.5 rounded-lg shadow-sm shrink-0">
-                        {donor.blood_group}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1.5 text-sm text-slate-800 mb-3 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-red-600 shrink-0" />
-                        <span>
-                          {donor.address ? `${donor.address}, ` : ''}
-                          {donor.upazila ? `${donor.upazila}, ` : ''}
-                          {donor.district || 'নওগাঁ'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
-                        <span>
-                          {language === 'bn' ? 'সর্বশেষ রক্তদান: ' : 'Last Donated: '}
-                          <strong className="text-slate-900 font-bold">
-                            {formatBengaliDate(donor.last_donated)}
-                          </strong>
-                        </span>
-                      </div>
-                      <div className="pt-1 flex items-center justify-between">
-                        <div>
+                        {/* Top: Blood Group Badge & Eligibility Dot */}
+                        <div className="flex items-center justify-between gap-1 mb-2">
+                          <span className="inline-flex items-center justify-center bg-red-600 text-white font-black text-xs px-2 py-0.5 rounded-lg shadow-2xs">
+                            <Droplet className="w-3 h-3 mr-0.5 fill-white" />
+                            {donor.blood_group}
+                          </span>
+                          
                           {eligibility.isReady ? (
-                            <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                              {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                              {language === 'bn' ? 'প্রস্তুত' : 'Ready'}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 bg-[#ffc107] text-slate-950 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
-                              <Hourglass className="w-3.5 h-3.5 text-slate-900" />
-                              {language === 'bn' ? eligibility.labelBn : eligibility.labelEn}
+                            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                              {language === 'bn' ? 'অপেক্ষা' : 'Waiting'}
                             </span>
                           )}
                         </div>
+
+                        {/* Donor Name */}
+                        <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm line-clamp-1 leading-tight">
+                          {donor.full_name}
+                        </h4>
+
+                        {/* Member ID / Volunteer */}
+                        {donor.member_id ? (
+                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold truncate mt-0.5">
+                            ID: {donor.member_id}
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
+                            {language === 'bn' ? 'স্বেচ্ছাসেবী রক্তদাতা' : 'Volunteer Donor'}
+                          </div>
+                        )}
+
+                        {/* Location */}
+                        <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-1">
+                          <MapPin className="w-3 h-3 text-red-500 shrink-0" />
+                          <span className="truncate">
+                            {donor.upazila ? `${donor.upazila}, ` : ''}{donor.district || 'নওগাঁ'}
+                          </span>
+                        </div>
+
+                        {/* Last Donated */}
+                        {donor.last_donated && (
+                          <div className="text-[10px] text-slate-400 mt-1 truncate">
+                            {language === 'bn' ? 'সর্বশেষ: ' : 'Last: '}
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                              {formatBengaliDate(donor.last_donated)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Call Button */}
+                      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        {donor.is_public_details ? (
+                          <a
+                            href={`tel:${donor.phone}`}
+                            className="w-full inline-flex items-center justify-center gap-1 bg-[#0B6B3A] hover:bg-emerald-700 text-white font-bold text-[11px] py-1.5 px-2 rounded-lg shadow-xs transition-colors"
+                          >
+                            <PhoneCall className="w-3 h-3 shrink-0" />
+                            <span>{language === 'bn' ? 'কল করুন' : 'Call'}</span>
+                          </a>
+                        ) : (
+                          <span className="block text-center text-[10px] text-slate-400 italic py-1">
+                            {language === 'bn' ? 'নম্বর গোপন' : 'Private'}
+                          </span>
+                        )}
                       </div>
                     </div>
-
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <a
-                        href={`tel:${donor.phone}`}
-                        className="text-slate-900 font-mono font-bold text-sm inline-flex items-center gap-1"
-                      >
-                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                        {donor.phone}
-                      </a>
-                      <a
-                        href={`tel:${donor.phone}`}
-                        className="bg-white hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-600 font-bold text-xs px-3.5 py-1.5 rounded-md inline-flex items-center gap-1.5 shadow-2xs transition-colors"
-                      >
-                        <PhoneCall className="w-3.5 h-3.5" />
-                        {language === 'bn' ? 'কল করুন' : 'Call'}
-                      </a>
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>

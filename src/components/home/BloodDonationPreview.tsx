@@ -212,39 +212,39 @@ const BloodDonationPreview: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mb-12">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6 mb-8 sm:mb-12">
             {displayDonors.map((donor) => {
               const eligibility = getDonationEligibility(donor.last_donated);
               return (
                 <div
                   key={donor.id}
-                  className="bg-white rounded-[24px] p-5 sm:p-6 border border-slate-100 shadow-[0_10px_35px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between relative group"
+                  className="bg-white rounded-[18px] sm:rounded-[24px] p-3 sm:p-6 border border-slate-100 shadow-[0_10px_35px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between relative group"
                 >
                   <div>
                     {/* Top Row: Blood Group Badge & Status */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-700 text-white flex items-center justify-center font-black text-lg shadow-sm group-hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between gap-1 mb-2.5 sm:mb-4">
+                      <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-rose-500 to-rose-700 text-white flex items-center justify-center font-black text-sm sm:text-lg shadow-sm group-hover:scale-105 transition-transform shrink-0">
                         {donor.blood_group}
                       </div>
 
                       <span className={cn(
-                        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border",
+                        "inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border whitespace-nowrap",
                         eligibility.isEligible
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                           : "bg-amber-50 text-amber-700 border-amber-200"
                       )}>
-                        <span className={cn("w-1.5 h-1.5 rounded-full", eligibility.isEligible ? "bg-emerald-500" : "bg-amber-500")} />
-                        {language === 'bn' ? eligibility.statusTextBn : eligibility.statusTextEn}
+                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", eligibility.isEligible ? "bg-emerald-500" : "bg-amber-500")} />
+                        <span className="truncate">{language === 'bn' ? eligibility.statusTextBn : eligibility.statusTextEn}</span>
                       </span>
                     </div>
 
                     {/* Donor Name & Location */}
-                    <h3 className="font-heading font-bold text-base sm:text-lg text-[#14231B] mb-1.5 line-clamp-1 group-hover:text-[#0B6B3A] transition-colors">
+                    <h3 className="font-heading font-bold text-xs sm:text-base md:text-lg text-[#14231B] mb-1 line-clamp-1 group-hover:text-[#0B6B3A] transition-colors leading-snug">
                       {donor.full_name}
                     </h3>
 
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
-                      <MapPin className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
+                    <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 mb-2 sm:mb-3">
+                      <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-500 flex-shrink-0" />
                       <span className="line-clamp-1">
                         {donor.upazila ? `${donor.upazila}, ` : ''}{donor.district || 'নওগাঁ'}
                       </span>
@@ -252,9 +252,9 @@ const BloodDonationPreview: React.FC = () => {
 
                     {/* Last donation date if available */}
                     {donor.last_donated && (
-                      <div className="text-[11px] text-slate-400 flex items-center gap-1 mb-4">
-                        <Calendar className="w-3 h-3 text-slate-400" />
-                        <span>{language === 'bn' ? 'সর্বশেষ রক্তদান: ' : 'Last donation: '}{formatBengaliDate(donor.last_donated)}</span>
+                      <div className="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1 mb-2.5 sm:mb-4">
+                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{language === 'bn' ? 'সর্বশেষ: ' : 'Last: '}{formatBengaliDate(donor.last_donated)}</span>
                       </div>
                     )}
                   </div>
@@ -262,10 +262,10 @@ const BloodDonationPreview: React.FC = () => {
                   {/* Call Action Button */}
                   <a
                     href={`tel:${donor.phone}`}
-                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-50 hover:bg-[#0B6B3A] text-[#0B6B3A] hover:text-white font-bold text-xs sm:text-sm border border-emerald-200 transition-all duration-200 shadow-2xs mt-2"
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 sm:py-2.5 px-2 sm:px-4 rounded-lg sm:rounded-xl bg-emerald-50 hover:bg-[#0B6B3A] text-[#0B6B3A] hover:text-white font-bold text-[11px] sm:text-sm border border-emerald-200 transition-all duration-200 shadow-2xs mt-2"
                   >
-                    <PhoneCall className="w-3.5 h-3.5" />
-                    <span>{donor.phone}</span>
+                    <PhoneCall className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                    <span className="truncate">{donor.phone}</span>
                   </a>
                 </div>
               );

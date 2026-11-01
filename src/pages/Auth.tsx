@@ -277,16 +277,16 @@ const Auth = () => {
       </div>
 
       {/* Main Content Area with rich soft gradient and glassmorphism styling */}
-      <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-emerald-50/70 via-teal-50/30 to-slate-100 dark:from-slate-950 dark:via-emerald-950/20 dark:to-slate-900 min-h-[calc(100vh-280px)] flex items-center relative overflow-hidden">
+      <section className="py-4 sm:py-12 lg:py-16 bg-gradient-to-br from-emerald-50/70 via-teal-50/30 to-slate-100 dark:from-slate-950 dark:via-emerald-950/20 dark:to-slate-900 min-h-[calc(100vh-280px)] flex items-center relative overflow-hidden">
         {/* Soft floating glowing ambient orbs matching registration page */}
         <div className="absolute top-10 left-10 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="container mx-auto px-4 max-w-6xl relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="container mx-auto px-2 sm:px-4 max-w-6xl relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
             
-            {/* Left Column (Desktop Showcase & Highlights) */}
-            <div className="lg:col-span-7 space-y-6">
+            {/* Left Column (Desktop Showcase & Highlights; on mobile only concise welcome header is shown) */}
+            <div className="lg:col-span-7 space-y-4 lg:space-y-6">
               
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-950 dark:to-teal-950 text-[#006a4e] dark:text-emerald-300 border border-emerald-300/40 text-xs sm:text-sm font-bold shadow-xs">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
@@ -294,7 +294,7 @@ const Auth = () => {
               </div>
 
               <div>
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-800 dark:text-slate-100 font-heading leading-tight">
+                <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-800 dark:text-slate-100 font-heading leading-tight">
                   {language === 'bn' ? (
                     <>
                       স্বাগতম <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">সময়ের বাতিঘর</span> ডিজিটাল প্ল্যাটফর্মে
@@ -305,15 +305,15 @@ const Auth = () => {
                     </>
                   )}
                 </h2>
-                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-3 leading-relaxed">
+                <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300 mt-2 sm:mt-3 leading-relaxed">
                   {language === 'bn'
-                    ? 'আলাদা করে সদস্য, ক্যাশিয়ার বা অ্যাডমিন নির্বাচন করার কোনো প্রয়োজন নেই। আপনার সংরক্ষিত মোবাইল নম্বর অথবা ইমেইল দিয়ে লগইন করলেই সিস্টেম স্বয়ংক্রিয়ভাবে আপনাকে নির্দিষ্ট ড্যাশবোর্ডে নিয়ে যাবে।'
-                    : 'No need to manually select member, cashier, or admin role. Simply enter your registered phone number or email, and the system automatically opens your designated dashboard.'}
+                    ? 'আপনার সংরক্ষিত মোবাইল নম্বর অথবা ইমেইল দিয়ে লগইন করলেই সিস্টেম স্বয়ংক্রিয়ভাবে আপনাকে নির্দিষ্ট ড্যাশবোর্ডে নিয়ে যাবে।'
+                    : 'Simply enter your registered phone number or email, and the system automatically opens your designated dashboard.'}
                 </p>
               </div>
 
-              {/* Colorful Showcase Grid with rich glass badges */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              {/* Colorful Showcase Grid with rich glass badges (Hidden on mobile to bring Login Card upfront) */}
+              <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 
                 {/* 1. Auto Role Detection */}
                 <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-emerald-500/20 shadow-md shadow-emerald-950/5 flex items-start gap-3.5 hover:border-emerald-400/50 transition-all group">
@@ -377,8 +377,8 @@ const Auth = () => {
 
               </div>
 
-              {/* Bottom Security Assurance Note */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/30 flex items-center gap-3">
+              {/* Bottom Security Assurance Note (Hidden on mobile) */}
+              <div className="hidden lg:flex p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/30 items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <p className="text-xs sm:text-sm text-emerald-900 dark:text-emerald-200 font-medium">
                   {language === 'bn'
@@ -391,26 +391,26 @@ const Auth = () => {
 
             {/* Right Column (Complete Login Card) */}
             <div className="lg:col-span-5 w-full">
-              <Card className="shadow-2xl border-2 border-emerald-500/30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl overflow-hidden relative">
+              <Card className="shadow-2xl border border-emerald-500/30 sm:border-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl overflow-hidden relative">
                 
                 {/* Decorative glow inside card */}
                 <div className="absolute -top-16 -right-16 w-44 h-44 bg-emerald-400/10 rounded-full blur-2xl pointer-events-none" />
                 
-                <CardHeader className="text-center pb-5 pt-8 px-6 sm:px-8 bg-gradient-to-r from-emerald-100/40 via-teal-50/30 to-emerald-100/40 dark:from-emerald-950/30 dark:to-slate-900 border-b border-emerald-100/70 dark:border-slate-800">
-                  <div className="w-16 h-16 bg-gradient-to-tr from-emerald-600 via-teal-600 to-[#006a4e] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-700/25 text-white">
-                    <KeyRound className="w-8 h-8" />
+                <CardHeader className="text-center pb-4 sm:pb-5 pt-5 sm:pt-8 px-4 sm:px-8 bg-gradient-to-r from-emerald-100/40 via-teal-50/30 to-emerald-100/40 dark:from-emerald-950/30 dark:to-slate-900 border-b border-emerald-100/70 dark:border-slate-800">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-tr from-emerald-600 via-teal-600 to-[#006a4e] rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-lg shadow-emerald-700/25 text-white">
+                    <KeyRound className="w-6 h-6 sm:w-8 sm:h-8" />
                   </div>
-                  <CardTitle className="text-2xl sm:text-3xl font-heading font-extrabold text-slate-900 dark:text-slate-100">
+                  <CardTitle className="text-xl sm:text-2xl md:text-3xl font-heading font-extrabold text-slate-900 dark:text-slate-100">
                     {language === 'bn' ? 'লগইন করুন' : 'Sign In'}
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
                     {language === 'bn'
                       ? 'মোবাইল নম্বর বা ইমেইল এবং পাসওয়ার্ড দিয়ে প্রবেশ করুন'
                       : 'Enter your phone number or email and password'}
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="px-6 sm:px-8 pb-8 pt-6">
+                <CardContent className="px-4 sm:px-8 pb-6 sm:pb-8 pt-5 sm:pt-6">
                   <form onSubmit={handleSignIn} className="space-y-4">
                     
                     {/* Identifier: Mobile or Email */}

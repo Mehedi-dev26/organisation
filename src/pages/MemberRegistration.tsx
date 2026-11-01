@@ -35,7 +35,9 @@ import {
   BookOpen,
   Sprout,
   RefreshCw,
-  Info
+  Info,
+  Lock,
+  Camera
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -91,6 +93,9 @@ const MemberRegistration: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdMemberId, setCreatedMemberId] = useState<string>('');
   const [createdApplicantName, setCreatedApplicantName] = useState<string>('');
+  const [createdPhone, setCreatedPhone] = useState<string>('');
+  const [copiedAll, setCopiedAll] = useState(false);
+  const defaultPassword = 'member@123';
   const [memberType, setMemberType] = useState<'new' | 'existing'>('new');
   const [previousMemberId, setPreviousMemberId] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -334,6 +339,39 @@ const MemberRegistration: React.FC = () => {
     }
   };
 
+  // 1-Click Copy Full Member Credentials Slip
+  const handleCopyAllSlip = () => {
+    const slipText = `সময়ের বাতিঘর (Somoyer Batighor) - সদস্য আবেদন স্লিপ
+------------------------------------------------
+আবেদনকারীর নাম: ${createdApplicantName}
+সদস্য ট্র্যাকিং আইডি: ${createdMemberId}
+নিবন্ধিত মোবাইল নম্বর: ${createdPhone}
+পোর্টালে প্রবেশের ডিফল্ট পাসওয়ার্ড: ${defaultPassword}
+আবেদনের অবস্থা: প্রাথমিক পর্যালোচনাধীন (Pending Verification)
+তারিখ: ${new Date().toLocaleDateString('bn-BD')}
+------------------------------------------------
+ভেরিফিকেশনের পর লগইন লিংক: https://somoyerbatighor.org/login
+হটলাইন: ০১৯১৬-৩১৪৩১৫ / ০১৭১১-০৫০৮৪১`;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(slipText);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = slipText;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      }
+      setCopiedAll(true);
+      toast.success(language === 'bn' ? 'সম্পূর্ণ সদস্য স্লিপ ও লগইন তথ্য কপি হয়েছে!' : 'Full member slip copied!');
+      setTimeout(() => setCopiedAll(false), 2500);
+    } catch {
+      toast.error('কপি করা যায়নি');
+    }
+  };
+
   // Application Status Check by Member ID
   const handleCheckStatus = async (idToSearch?: string) => {
     const targetId = (idToSearch || statusSearchId).trim();
@@ -488,6 +526,7 @@ const MemberRegistration: React.FC = () => {
       // 5. Immediate UI confirmation
       setCreatedMemberId(memberIdToUse);
       setCreatedApplicantName(data.full_name.trim());
+      setCreatedPhone(data.phone.trim());
       setIsSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       toast.success(
@@ -554,63 +593,128 @@ const MemberRegistration: React.FC = () => {
               </p>
             </div>
 
-            {/* Member ID Card with 1-Click Copy and Verification Status */}
-            <div className="mb-8 p-6 sm:p-8 rounded-[24px] bg-gradient-to-br from-white via-emerald-50/40 to-white dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 border-2 border-emerald-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.06)] relative overflow-hidden animate-in fade-in zoom-in-95 duration-400">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+            {/* Member Credentials & Screenshot Slip Card */}
+            <div className="mb-8 p-5 sm:p-8 rounded-[20px] sm:rounded-[24px] bg-gradient-to-br from-white via-emerald-50/40 to-white dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 border-2 border-emerald-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.08)] relative overflow-hidden animate-in fade-in zoom-in-95 duration-400 mx-0.5 sm:mx-0">
+              <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                <div className="flex items-center gap-4 text-left">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#0B6B3A] to-[#11DFC0] flex items-center justify-center text-white shadow-lg shadow-[#0B6B3A]/25 shrink-0">
-                    <CheckCircle2 className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                      {language === 'bn' ? 'আপনার অফিসিয়াল সদস্য আবেদন আইডি' : 'Official Member Application ID'}
-                    </span>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-2xl sm:text-3xl font-extrabold font-mono text-[#0B6B3A] dark:text-emerald-300 tracking-wider">
-                        {createdMemberId}
-                      </span>
-                      <Button
-                        type="button"
-                        onClick={() => handleCopyId(createdMemberId)}
-                        variant="outline"
-                        size="sm"
-                        className="h-9 px-3 rounded-xl border-emerald-300 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 font-semibold gap-1.5 shadow-xs transition-all active:scale-95"
-                      >
-                        {copiedId ? (
-                          <>
-                            <Check className="w-4 h-4 text-emerald-600" />
-                            <span>{language === 'bn' ? 'কপি হয়েছে' : 'Copied'}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4 text-emerald-600" />
-                            <span>{language === 'bn' ? 'আইডি কপি করুন' : 'Copy ID'}</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
+              {/* Screenshot Reminder Header Pill */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-emerald-100 dark:border-slate-800 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs font-bold">
+                  <Camera className="w-4 h-4 text-amber-600 animate-pulse" />
+                  <span>{language === 'bn' ? 'লগইন তথ্যাবলির একটি স্ক্রিনশট (Screenshot) নিয়ে রাখুন' : 'Take a Screenshot of this slip for login'}</span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-xs">
-                    <Clock className="w-4 h-4 text-amber-600 animate-spin" />
-                    <span>{language === 'bn' ? 'আবেদনের অবস্থা: প্রাথমিক পর্যালোচনাধীন' : 'Status: Under Initial Review'}</span>
-                  </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-[11px] font-bold">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                  <span>{language === 'bn' ? 'স্ট্যাটাস: প্রাথমিক পর্যালোচনাধীন' : 'Status: Under Review'}</span>
                 </div>
               </div>
 
-              <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2">
-                <span className="flex items-center gap-1.5">
-                  <Info className="w-4 h-4 text-emerald-600 shrink-0" />
-                  {language === 'bn'
-                    ? 'এই আইডিটি সংরক্ষণ করুন; ভবিষ্যতে আবেদনের অবস্থান জানতে ও পোর্টালে লগইন করতে এটি প্রয়োজন হবে।'
-                    : 'Save this Tracking ID to check status and log in to the portal in future.'}
-                </span>
+              {/* 3-Credentials Grid: Member ID, Mobile, Default Password */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 relative z-10">
+                
+                {/* 1. Member ID */}
+                <div className="p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+                      {language === 'bn' ? 'সদস্য ট্র্যাকিং আইডি' : 'Member Tracking ID'}
+                    </span>
+                    <span className="text-xl sm:text-2xl font-black font-mono text-[#0B6B3A] dark:text-emerald-300 tracking-wider block mt-1">
+                      {createdMemberId}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => handleCopyId(createdMemberId)}
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full h-8 rounded-xl border-emerald-300 text-[#0B6B3A] hover:bg-emerald-50 dark:hover:bg-emerald-950 text-xs font-bold gap-1.5"
+                  >
+                    {copiedId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedId ? (language === 'bn' ? 'কপি হয়েছে' : 'Copied') : (language === 'bn' ? 'আইডি কপি' : 'Copy ID')}</span>
+                  </Button>
+                </div>
+
+                {/* 2. Registered Phone Number */}
+                <div className="p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
+                      {language === 'bn' ? 'নিবন্ধিত মোবাইল নম্বর' : 'Registered Mobile'}
+                    </span>
+                    <span className="text-xl sm:text-2xl font-black font-mono text-slate-800 dark:text-slate-100 tracking-wider block mt-1">
+                      {createdPhone || '০১৭১২xxxxxx'}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => handleCopyId(createdPhone)}
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full h-8 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'নম্বর কপি' : 'Copy Phone'}</span>
+                  </Button>
+                </div>
+
+                {/* 3. Default Password for Member Portal */}
+                <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-emerald-700" />
+                        <span>{language === 'bn' ? 'পোর্টালে প্রবেশের পাসওয়ার্ড' : 'Portal Default Password'}</span>
+                      </span>
+                    </div>
+                    <span className="text-xl sm:text-2xl font-black font-mono text-emerald-900 dark:text-emerald-200 tracking-wider block mt-1">
+                      {defaultPassword}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => handleCopyId(defaultPassword)}
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full h-8 rounded-xl border-emerald-400 bg-white/90 dark:bg-slate-900 text-[#0B6B3A] hover:bg-emerald-100 text-xs font-bold gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'পাসওয়ার্ড কপি' : 'Copy Password'}</span>
+                  </Button>
+                </div>
+
+              </div>
+
+              {/* Crucial Verification Notice */}
+              <div className="mt-4 p-3.5 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-300/70 dark:border-emerald-800 text-xs leading-relaxed text-emerald-950 dark:text-emerald-200 relative z-10 flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-[#0B6B3A] shrink-0 mt-0.5" />
+                <p>
+                  {language === 'bn' ? (
+                    <>
+                      <strong>ভেরিফিকেশন নির্দেশনা:</strong> আপনার আবেদনটি কেন্দ্রীয় কার্যনির্বাহী পরিষদ কর্তৃক যাচাই ও চূড়ান্ত অনুমোদন (Verified) হওয়ার সাথে সাথে, আপনি আপনার এই <strong>সদস্য আইডি / মোবাইল নম্বর</strong> এবং ডিফল্ট পাসওয়ার্ড <strong>{defaultPassword}</strong> ব্যবহার করে সরাসরি সদস্য পোর্টালে (Member Portal) লগইন করতে পারবেন।
+                    </>
+                  ) : (
+                    <>
+                      <strong>Verification Notice:</strong> Once your application is formally verified and approved by the central executive committee, you can sign in to the member portal using your Member ID / Phone and default password <strong>{defaultPassword}</strong>.
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* Copy Full Slip Button & Date */}
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3 relative z-10">
+                <Button
+                  type="button"
+                  onClick={handleCopyAllSlip}
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto h-9 px-4 rounded-xl border-[#0B6B3A] text-[#0B6B3A] hover:bg-[#0B6B3A] hover:text-white font-bold gap-2 transition-all active:scale-95 shadow-2xs"
+                >
+                  {copiedAll ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedAll ? (language === 'bn' ? 'সম্পূর্ণ স্লিপ কপি হয়েছে!' : 'Copied!') : (language === 'bn' ? 'সম্পূর্ণ তথ্য স্লিপ কপি করুন' : 'Copy All Details')}</span>
+                </Button>
+
                 <span className="font-semibold text-emerald-800 dark:text-emerald-400">
-                  {language === 'bn' ? 'তারিখ:' : 'Date:'} {new Date().toLocaleDateString('bn-BD')}
+                  {language === 'bn' ? 'আবেদনের তারিখ:' : 'Date:'} {new Date().toLocaleDateString('bn-BD')}
                 </span>
               </div>
             </div>
@@ -955,8 +1059,8 @@ const MemberRegistration: React.FC = () => {
       </section>
 
       {/* Main Content Area */}
-      <main className="flex-1 py-10 sm:py-14 px-4 bg-gradient-to-b from-slate-100/60 to-slate-50 dark:from-slate-950 dark:to-slate-900">
-        <div className="container mx-auto max-w-6xl">
+      <main className="flex-1 py-4 sm:py-14 px-1.5 sm:px-4 bg-gradient-to-b from-slate-100/60 to-slate-50 dark:from-slate-950 dark:to-slate-900">
+        <div className="container mx-auto max-w-6xl px-0 sm:px-4">
 
           {/* Collapsible Status Search Banner (If clicked) */}
           {showStatusModal && (
@@ -1024,8 +1128,8 @@ const MemberRegistration: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-            {/* Left Column: Benefits & Trust badges */}
-            <div className="lg:col-span-5 space-y-6">
+            {/* Left Column: Benefits & Trust badges (Desktop only - hidden on mobile) */}
+            <div className="lg:col-span-5 space-y-6 hidden lg:block">
               <div className="p-6 rounded-[24px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.06)] space-y-5">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
@@ -1087,38 +1191,28 @@ const MemberRegistration: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Verification Note */}
-              <div className="px-5 py-4 rounded-[20px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300 shadow-sm">
-                <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span className="leading-relaxed">
-                  {language === 'bn'
-                    ? 'আপনার আবেদন জমা হওয়ার পর কেন্দ্রীয় কার্যনির্বাহী পরিষদ কর্তৃক যাচাই শেষে সদস্যপদ চূড়ান্ত করা হয়।'
-                    : 'Applications are verified and approved by the central executive council.'}
-                </span>
-              </div>
             </div>
 
             {/* Right Column: Step Form */}
             <div className="lg:col-span-7 w-full">
-              <Card className="shadow-[0_10px_35px_rgba(0,0,0,0.06)] border-2 border-emerald-500/30 overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[24px]">
-                <CardHeader className="text-center pb-5 pt-7 px-6 bg-gradient-to-r from-emerald-100/40 via-teal-50/30 to-emerald-100/40 dark:from-emerald-950/40 dark:to-slate-900 border-b border-emerald-100/70 dark:border-slate-800">
-                  <div className="w-14 h-14 bg-gradient-to-tr from-[#0B6B3A] via-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-[#0B6B3A]/25 text-white">
-                    <Users className="w-7 h-7" />
+              <Card className="shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-emerald-500/30 sm:border-2 overflow-hidden bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl rounded-[18px] sm:rounded-[24px] mx-0">
+                <CardHeader className="text-center pb-4 sm:pb-5 pt-5 sm:pt-7 px-3.5 sm:px-8 bg-gradient-to-r from-emerald-100/40 via-teal-50/30 to-emerald-100/40 dark:from-emerald-950/40 dark:to-slate-900 border-b border-emerald-100/70 dark:border-slate-800">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-[#0B6B3A] via-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center mx-auto mb-2.5 sm:mb-3 shadow-lg shadow-[#0B6B3A]/25 text-white">
+                    <Users className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
-                  <CardTitle className="text-2xl sm:text-3xl font-heading font-extrabold text-slate-900 dark:text-slate-100">
+                  <CardTitle className="text-xl sm:text-2xl md:text-3xl font-heading font-extrabold text-slate-900 dark:text-slate-100">
                     {language === 'bn' ? 'সদস্য আবেদন ফর্ম' : 'Membership Application Form'}
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm mt-1 text-slate-500 dark:text-slate-400">
+                  <CardDescription className="text-xs sm:text-sm mt-0.5 sm:mt-1 text-slate-500 dark:text-slate-400">
                     {language === 'bn'
                       ? 'পর্যায়ক্রমে ২টি ধাপে সঠিক তথ্য দিয়ে আবেদনপত্রটি সম্পন্ন করুন'
                       : 'Please complete the application across 2 quick steps'}
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="pt-6 px-5 sm:px-8 pb-8">
+                <CardContent className="pt-4 sm:pt-6 px-3.5 sm:px-8 pb-6 sm:pb-8">
                   {/* Step Tracker Indicator */}
-                  <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-6 sm:mb-8 pb-3 sm:pb-4 border-b border-slate-100 dark:border-slate-800">
                     <button
                       type="button"
                       onClick={() => setCurrentStep(1)}
@@ -1810,6 +1904,16 @@ const MemberRegistration: React.FC = () => {
                   </form>
                 </CardContent>
               </Card>
+
+              {/* Verification Note (Prominently placed at the end of the application on all devices) */}
+              <div className="mt-4 sm:mt-6 px-4 py-3.5 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300 shadow-xs mx-0.5 sm:mx-0">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="leading-relaxed">
+                  {language === 'bn'
+                    ? 'আপনার আবেদন জমা হওয়ার পর কেন্দ্রীয় কার্যনির্বাহী পরিষদ কর্তৃক যাচাই শেষে সদস্যপদ চূড়ান্ত করা হয়।'
+                    : 'Applications are verified and approved by the central executive council.'}
+                </span>
+              </div>
             </div>
 
           </div>
