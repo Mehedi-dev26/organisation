@@ -7,3 +7,8 @@
 - Maintain the signature Deep Green (`#0B6B3A`) and Gold theme.
 - All section headings should match the signature two-tone style with yellow-green brush-stroke SVG underline and organic leaf sparkle accents.
 - Reusable components must be responsive across all devices (Desktop, Tablet, Mobile).
+
+## 3. White Screen Prevention Rules
+- Always keep `<ErrorBoundary>` wrapping `<App />` in `main.tsx`.
+- Never use components in JSX (e.g., `Navigate`, `Link`, icons) without importing them in the file.
+- Always verify build and run type check prior to push.

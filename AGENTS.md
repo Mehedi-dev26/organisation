@@ -15,3 +15,9 @@
   - Clean, restrained pill buttons with soft pastel tints and matching borders.
   - Smooth interactive transitions (`translateY(-8px)`, scale on hover).
 - **Dual Language**: Support both Bangla (`bn` default) and English (`en`) seamlessly.
+
+## 3. White Screen of Death (WSOD) Prevention & Stability Rules
+- **Root Error Boundary**: Always wrap the root application `<App />` in `src/main.tsx` inside an `<ErrorBoundary>` so that unexpected runtime exceptions show a friendly recovery UI with a refresh button rather than a blank white screen.
+- **Type-Check Gate (`tsc --noEmit`)**: Before staging and pushing commits, ensure all imports (like `Navigate`, `Route`, hooks, icons) are explicitly imported and type-checked without missing identifier errors.
+- **Defensive Rendering**: Always guard deep object property accesses (e.g. `user?.user_metadata?.phone`, `data?.[0]?.title`) with optional chaining and fallback defaults (`?? []`, `?? ''`) during initial render.
+- **Lazy Load Suspense Fallbacks**: Every lazy-loaded chunk must be protected inside `<Suspense fallback={<PageLoadingFallback />}>` to prevent blank delays during dynamic network loading.
