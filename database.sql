@@ -478,7 +478,8 @@ DROP POLICY IF EXISTS "Public can register as members" ON public.members;
 CREATE POLICY "Public can register as members" ON public.members FOR INSERT WITH CHECK (status = 'pending');
 
 DROP POLICY IF EXISTS "Public can view approved members" ON public.members;
-CREATE POLICY "Public can view approved members" ON public.members FOR SELECT USING (status = 'approved');
+DROP POLICY IF EXISTS "Public can view member by id or status" ON public.members;
+CREATE POLICY "Public can view member by id or status" ON public.members FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Members can view own data" ON public.members;
 CREATE POLICY "Members can view own data" ON public.members FOR SELECT USING (auth.uid() = user_id);
@@ -674,8 +675,9 @@ EXCEPTION WHEN OTHERS THEN null; END $$;
 
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Authenticated users can upload member photos" ON storage.objects;
-  CREATE POLICY "Authenticated users can upload member photos" ON storage.objects FOR INSERT WITH CHECK (
-    bucket_id = 'member-photos' AND auth.role() = 'authenticated'
+  DROP POLICY IF EXISTS "Anyone can upload member photos" ON storage.objects;
+  CREATE POLICY "Anyone can upload member photos" ON storage.objects FOR INSERT WITH CHECK (
+    bucket_id = 'member-photos'
   );
 EXCEPTION WHEN OTHERS THEN null; END $$;
 

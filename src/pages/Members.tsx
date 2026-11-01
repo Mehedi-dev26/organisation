@@ -29,10 +29,16 @@ const Members = () => {
     },
   });
 
-  const filteredMembers = members?.filter(member =>
-    member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = members?.filter(member => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (member.full_name && member.full_name.toLowerCase().includes(q)) ||
+      (member.member_id && member.member_id.toLowerCase().includes(q)) ||
+      (member.email && member.email.toLowerCase().includes(q)) ||
+      (member.phone && member.phone.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <MainLayout>
