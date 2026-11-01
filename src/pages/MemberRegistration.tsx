@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Users,
   Upload,
@@ -85,6 +86,7 @@ const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const MemberRegistration: React.FC = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Multi-step State (Step 1: Personal & Address, Step 2: Profession, Blood & Dues)
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -526,7 +528,17 @@ const MemberRegistration: React.FC = () => {
         });
       }
 
-      // 5. Immediate UI confirmation
+      // 5. Invalidate Admin & Dashboard caches immediately
+      try {
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard-pending-members'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+        queryClient.invalidateQueries({ queryKey: ['members'] });
+      } catch (cacheErr) {
+        console.warn('Cache invalidation error:', cacheErr);
+      }
+
+      // 6. Immediate UI confirmation
       setCreatedMemberId(memberIdToUse);
       setCreatedApplicantName(data.full_name.trim());
       setCreatedPhone(data.phone.trim());
@@ -556,14 +568,14 @@ const MemberRegistration: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 selection:bg-[#0B6B3A] selection:text-white">
         <Navbar />
-        <main className="flex-1 py-10 sm:py-16 px-4 bg-gradient-to-b from-[#E6F4EA]/40 via-slate-50 to-emerald-50/20 dark:from-slate-950 dark:via-emerald-950/20 dark:to-slate-900">
-          <div className="container mx-auto max-w-4xl">
+        <main className="flex-1 py-4 sm:py-12 px-1 sm:px-4 bg-gradient-to-b from-[#E6F4EA]/40 via-slate-50 to-emerald-50/20 dark:from-slate-950 dark:via-emerald-950/20 dark:to-slate-900">
+          <div className="w-full max-w-4xl mx-auto px-0 sm:px-2">
 
             {/* Top Congratulation Banner Card */}
-            <div className="text-center mb-8 sm:mb-10 animate-in fade-in-up duration-500">
+            <div className="text-center mb-5 sm:mb-8 animate-in fade-in-up duration-500">
 
               {/* Signature Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] shadow-xs mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] shadow-xs mb-3 sm:mb-4">
                 <span className="w-5 h-5 rounded-full bg-[#0B6B3A] flex items-center justify-center text-white flex-shrink-0">
                   <Sprout className="w-3.5 h-3.5" />
                 </span>
@@ -573,7 +585,7 @@ const MemberRegistration: React.FC = () => {
               </div>
 
               {/* Two-Tone Title with Brush Underline */}
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold font-heading text-[#14231B] dark:text-slate-100 tracking-tight leading-tight">
+              <h1 className="text-xl sm:text-3xl md:text-5xl font-extrabold font-heading text-[#14231B] dark:text-slate-100 tracking-tight leading-tight">
                 <span>{language === 'bn' ? 'অভিনন্দন! ' : 'Congratulations! '}</span>
                 <span className="text-[#0B6B3A] relative inline-block">
                   {createdApplicantName || (language === 'bn' ? 'সম্মানিত সদস্য' : 'Respected Member')}
@@ -589,7 +601,7 @@ const MemberRegistration: React.FC = () => {
                 </span>
               </h1>
 
-              <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+              <p className="mt-2.5 sm:mt-4 text-xs sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed px-2 sm:px-0">
                 {language === 'bn'
                   ? 'মানবিক ও সামাজিক পরিবর্তনের আলোকবর্তিকা "সময়ের বাতিঘর" পরিবারে আপনাকে আন্তরিক স্বাগতম। আপনার আন্তরিক অংশগ্রহণ আমাদের সমাজকল্যাণের পথচলাকে আরও সমৃদ্ধ করবে।'
                   : 'Welcome to the Somoyer Batighor family. Your participation strengthens our journey toward social welfare and community empowerment.'}
@@ -597,27 +609,27 @@ const MemberRegistration: React.FC = () => {
             </div>
 
             {/* Member Credentials & Screenshot Slip Card */}
-            <div className="mb-8 p-5 sm:p-8 rounded-[20px] sm:rounded-[24px] bg-gradient-to-br from-white via-emerald-50/40 to-white dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 border-2 border-emerald-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.08)] relative overflow-hidden animate-in fade-in zoom-in-95 duration-400 mx-0.5 sm:mx-0">
+            <div className="mb-5 sm:mb-8 p-3.5 sm:p-7 rounded-[18px] sm:rounded-[24px] bg-gradient-to-br from-white via-emerald-50/40 to-white dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 border-2 border-emerald-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.08)] relative overflow-hidden animate-in fade-in zoom-in-95 duration-400">
               <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
               {/* Screenshot Reminder Header Pill */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-emerald-100 dark:border-slate-800 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs font-bold">
-                  <Camera className="w-4 h-4 text-amber-600 animate-pulse" />
-                  <span>{language === 'bn' ? 'লগইন তথ্যাবলির একটি স্ক্রিনশট (Screenshot) নিয়ে রাখুন' : 'Take a Screenshot of this slip for login'}</span>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pb-3 mb-3.5 border-b border-emerald-100 dark:border-slate-800 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs font-bold">
+                  <Camera className="w-4 h-4 text-amber-600 animate-pulse shrink-0" />
+                  <span className="truncate">{language === 'bn' ? 'লগইন তথ্যাবলির একটি স্ক্রিনশট (Screenshot) নিয়ে রাখুন' : 'Take a Screenshot of this slip for login'}</span>
                 </div>
 
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-[11px] font-bold">
-                  <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                <div className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-[11px] font-bold self-start sm:self-auto">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin shrink-0" />
                   <span>{language === 'bn' ? 'স্ট্যাটাস: প্রাথমিক পর্যালোচনাধীন' : 'Status: Under Review'}</span>
                 </div>
               </div>
 
               {/* 3-Credentials Grid: Member ID, Mobile, Default Password */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 relative z-10">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3.5 relative z-10">
                 
                 {/* 1. Member ID */}
-                <div className="p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
+                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
                   <div>
                     <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
                       {language === 'bn' ? 'সদস্য ট্র্যাকিং আইডি' : 'Member Tracking ID'}
@@ -631,7 +643,7 @@ const MemberRegistration: React.FC = () => {
                     onClick={() => handleCopyId(createdMemberId)}
                     variant="outline"
                     size="sm"
-                    className="mt-3 w-full h-8 rounded-xl border-emerald-300 text-[#0B6B3A] hover:bg-emerald-50 dark:hover:bg-emerald-950 text-xs font-bold gap-1.5"
+                    className="mt-2.5 sm:mt-3 w-full h-8 rounded-lg sm:rounded-xl border-emerald-300 text-[#0B6B3A] hover:bg-emerald-50 dark:hover:bg-emerald-950 text-xs font-bold gap-1.5"
                   >
                     {copiedId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedId ? (language === 'bn' ? 'কপি হয়েছে' : 'Copied') : (language === 'bn' ? 'আইডি কপি' : 'Copy ID')}</span>
@@ -639,7 +651,7 @@ const MemberRegistration: React.FC = () => {
                 </div>
 
                 {/* 2. Registered Phone Number */}
-                <div className="p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
+                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-emerald-200 dark:border-slate-700 shadow-2xs flex flex-col justify-between">
                   <div>
                     <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
                       {language === 'bn' ? 'নিবন্ধিত মোবাইল নম্বর' : 'Registered Mobile'}
@@ -653,7 +665,7 @@ const MemberRegistration: React.FC = () => {
                     onClick={() => handleCopyId(createdPhone)}
                     variant="outline"
                     size="sm"
-                    className="mt-3 w-full h-8 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold gap-1.5"
+                    className="mt-2.5 sm:mt-3 w-full h-8 rounded-lg sm:rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold gap-1.5"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>{language === 'bn' ? 'নম্বর কপি' : 'Copy Phone'}</span>
@@ -661,7 +673,7 @@ const MemberRegistration: React.FC = () => {
                 </div>
 
                 {/* 3. Default Password for Member Portal */}
-                <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30 shadow-2xs flex flex-col justify-between">
+                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30 shadow-2xs flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
@@ -678,7 +690,7 @@ const MemberRegistration: React.FC = () => {
                     onClick={() => handleCopyId(defaultPassword)}
                     variant="outline"
                     size="sm"
-                    className="mt-3 w-full h-8 rounded-xl border-emerald-400 bg-white/90 dark:bg-slate-900 text-[#0B6B3A] hover:bg-emerald-100 text-xs font-bold gap-1.5"
+                    className="mt-2.5 sm:mt-3 w-full h-8 rounded-lg sm:rounded-xl border-emerald-400 bg-white/90 dark:bg-slate-900 text-[#0B6B3A] hover:bg-emerald-100 text-xs font-bold gap-1.5"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>{language === 'bn' ? 'পাসওয়ার্ড কপি' : 'Copy Password'}</span>
@@ -688,7 +700,7 @@ const MemberRegistration: React.FC = () => {
               </div>
 
               {/* Crucial Verification Notice */}
-              <div className="mt-4 p-3.5 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-300/70 dark:border-emerald-800 text-xs leading-relaxed text-emerald-950 dark:text-emerald-200 relative z-10 flex items-start gap-2.5">
+              <div className="mt-3 sm:mt-4 p-3 sm:p-3.5 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-300/70 dark:border-emerald-800 text-xs leading-relaxed text-emerald-950 dark:text-emerald-200 relative z-10 flex items-start gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-[#0B6B3A] shrink-0 mt-0.5" />
                 <p>
                   {language === 'bn' ? (
@@ -704,7 +716,7 @@ const MemberRegistration: React.FC = () => {
               </div>
 
               {/* Copy Full Slip Button & Date */}
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3 relative z-10">
+              <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2.5 sm:gap-3 relative z-10">
                 <Button
                   type="button"
                   onClick={handleCopyAllSlip}
@@ -716,22 +728,22 @@ const MemberRegistration: React.FC = () => {
                   <span>{copiedAll ? (language === 'bn' ? 'সম্পূর্ণ স্লিপ কপি হয়েছে!' : 'Copied!') : (language === 'bn' ? 'সম্পূর্ণ তথ্য স্লিপ কপি করুন' : 'Copy All Details')}</span>
                 </Button>
 
-                <span className="font-semibold text-emerald-800 dark:text-emerald-400">
+                <span className="font-semibold text-emerald-800 dark:text-emerald-400 text-center sm:text-right">
                   {language === 'bn' ? 'আবেদনের তারিখ:' : 'Date:'} {new Date().toLocaleDateString('bn-BD')}
                 </span>
               </div>
             </div>
 
             {/* Comprehensive Information Grid: 3 Inspiring Sections */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6 mb-5 sm:mb-8">
 
               {/* Card 1: কার সাথে যুক্ত হলেন? */}
-              <div className="p-6 rounded-[24px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.04)] flex flex-col justify-between">
+              <div className="p-4 sm:p-6 rounded-[18px] sm:rounded-[24px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.04)] flex flex-col justify-between">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-[#0B6B3A] dark:text-emerald-300 flex items-center justify-center mb-4">
-                    <Users className="w-6 h-6" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-[#0B6B3A] dark:text-emerald-300 flex items-center justify-center mb-3 sm:mb-4">
+                    <Users className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-slate-100 mb-2">
+                  <h3 className="text-base sm:text-lg font-bold font-heading text-slate-900 dark:text-slate-100 mb-1.5 sm:mb-2">
                     {language === 'bn' ? 'কার সাথে যুক্ত হলেন?' : 'Who Did You Join?'}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -740,21 +752,21 @@ const MemberRegistration: React.FC = () => {
                       : 'You joined Somoyer Batighor, a dedicated voluntary organization in Sapahar, Naogaon, working tirelessly for humanity.'}
                   </p>
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-[#0B6B3A] dark:text-emerald-400">
+                <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-[#0B6B3A] dark:text-emerald-400">
                   {language === 'bn' ? '✓ ঐক্য, সেবা ও মানবিক পরিবর্তনের অঙ্গীকার' : '✓ Unity, Service & Integrity'}
                 </div>
               </div>
 
               {/* Card 2: মানুষের কী কী উপকার হবে আপনার মাধ্যমে? */}
-              <div className="p-6 rounded-[24px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.04)] flex flex-col justify-between">
+              <div className="p-4 sm:p-6 rounded-[18px] sm:rounded-[24px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.04)] flex flex-col justify-between">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mb-4">
-                    <HeartHandshake className="w-6 h-6" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mb-3 sm:mb-4">
+                    <HeartHandshake className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-slate-100 mb-2">
+                  <h3 className="text-base sm:text-lg font-bold font-heading text-slate-900 dark:text-slate-100 mb-1.5 sm:mb-2">
                     {language === 'bn' ? 'মানুষের কী উপকার হবে?' : 'Impact on Society'}
                   </h3>
-                  <ul className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 space-y-2 leading-relaxed">
+                  <ul className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 space-y-1.5 sm:space-y-2 leading-relaxed">
                     <li className="flex items-start gap-2">
                       <Droplet className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                       <span>{language === 'bn' ? 'মুমূর্ষু রোগীর জরুরি রক্ত সরবরাহ ও জীবন রক্ষা' : 'Emergency blood for critical patients'}</span>
@@ -773,21 +785,21 @@ const MemberRegistration: React.FC = () => {
                     </li>
                   </ul>
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-[#0B6B3A] dark:text-emerald-400">
+                <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-[#0B6B3A] dark:text-emerald-400">
                   {language === 'bn' ? '✓ প্রতিটি দানে সুবিধাবঞ্চিতদের মুখে হাসি' : '✓ Every gift brings a smile'}
                 </div>
               </div>
 
               {/* Card 3: সদস্য হিসেবে আপনি কী সুবিধা পাবেন? */}
-              <div className="p-6 rounded-[24px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.04)] flex flex-col justify-between">
+              <div className="p-4 sm:p-6 rounded-[18px] sm:rounded-[24px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.04)] flex flex-col justify-between">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 flex items-center justify-center mb-4">
-                    <Award className="w-6 h-6" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 flex items-center justify-center mb-3 sm:mb-4">
+                    <Award className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-slate-100 mb-2">
+                  <h3 className="text-base sm:text-lg font-bold font-heading text-slate-900 dark:text-slate-100 mb-1.5 sm:mb-2">
                     {language === 'bn' ? 'আপনি নিজে কী সুবিধা পাবেন?' : 'Your Member Privileges'}
                   </h3>
-                  <ul className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 space-y-2 leading-relaxed">
+                  <ul className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 space-y-1.5 sm:space-y-2 leading-relaxed">
                     <li className="flex items-start gap-2">
                       <CreditCard className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>{language === 'bn' ? 'ইউনিক ডিজিটাল মেম্বার আইডি ও স্বীকৃতি' : 'Official Digital Member ID card'}</span>
@@ -806,7 +818,7 @@ const MemberRegistration: React.FC = () => {
                     </li>
                   </ul>
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-[#0B6B3A] dark:text-emerald-400">
+                <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-[#0B6B3A] dark:text-emerald-400">
                   {language === 'bn' ? '✓ আনুষ্ঠানিক মেম্বারশিপ সার্টিফিকেট ও সম্মাননা' : '✓ Formal Certificate & Honors'}
                 </div>
               </div>
@@ -814,11 +826,11 @@ const MemberRegistration: React.FC = () => {
             </div>
 
             {/* Realtime Status Checking Tool Inline Card */}
-            <div className="p-6 sm:p-7 rounded-[24px] bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-[0_10px_35px_rgba(0,0,0,0.05)] mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="p-4 sm:p-7 rounded-[18px] sm:rounded-[24px] bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-[0_10px_35px_rgba(0,0,0,0.05)] mb-5 sm:mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
                 <div>
                   <h3 className="text-base sm:text-lg font-bold font-heading text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <Search className="w-5 h-5 text-[#0B6B3A]" />
+                    <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#0B6B3A]" />
                     <span>{language === 'bn' ? 'আবেদনের বর্তমান অবস্থান যাচাই করুন' : 'Check Application Live Status'}</span>
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -828,7 +840,7 @@ const MemberRegistration: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                   <Input
                     placeholder={language === 'bn' ? 'সদস্য আইডি লিখুন (উদা: SB-2026-XXXX)' : 'Enter ID (e.g. SB-2026-XXXX)'}
                     value={statusSearchId || createdMemberId}
@@ -839,7 +851,7 @@ const MemberRegistration: React.FC = () => {
                     type="button"
                     onClick={() => handleCheckStatus(statusSearchId || createdMemberId)}
                     disabled={statusLoading}
-                    className="h-10 px-4 rounded-xl bg-[#0B6B3A] hover:bg-[#084D29] text-white font-semibold gap-1.5 shadow-sm"
+                    className="h-10 px-4 rounded-xl bg-[#0B6B3A] hover:bg-[#084D29] text-white font-semibold gap-1.5 shadow-sm w-full sm:w-auto"
                   >
                     {statusLoading ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -918,10 +930,10 @@ const MemberRegistration: React.FC = () => {
             </div>
 
             {/* Bottom Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-4 pb-6">
               <Button
                 onClick={() => navigate('/')}
-                className="w-full sm:w-auto h-12 px-8 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-[#006a4e] hover:from-emerald-700 hover:to-teal-800 text-white font-bold shadow-lg shadow-emerald-700/25 transition-all gap-2"
+                className="w-full sm:w-auto h-11 sm:h-12 px-6 sm:px-8 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-[#006a4e] hover:from-emerald-700 hover:to-teal-800 text-white font-bold shadow-md shadow-emerald-700/20 transition-all gap-2 text-sm"
               >
                 <Home className="w-4 h-4" />
                 <span>{language === 'bn' ? 'হোমপেজে ফিরে যান' : 'Go to Homepage'}</span>
@@ -930,7 +942,7 @@ const MemberRegistration: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => navigate('/members')}
-                className="w-full sm:w-auto h-12 px-8 rounded-2xl border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2"
+                className="w-full sm:w-auto h-11 sm:h-12 px-6 sm:px-8 rounded-xl sm:rounded-2xl border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 gap-2 text-sm"
               >
                 <Users className="w-4 h-4 text-emerald-600" />
                 <span>{language === 'bn' ? 'সদস্য তালিকা ও অনুসন্ধান' : 'Members Directory'}</span>
@@ -946,7 +958,7 @@ const MemberRegistration: React.FC = () => {
                   setCompressedBlob(null);
                   setPhotoPreview(null);
                 }}
-                className="w-full sm:w-auto h-12 px-6 rounded-2xl text-xs font-semibold text-slate-500 hover:text-slate-800"
+                className="w-full sm:w-auto h-11 sm:h-12 px-5 rounded-xl sm:rounded-2xl text-xs font-semibold text-slate-500 hover:text-slate-800"
               >
                 {language === 'bn' ? 'আরেকটি নতুন আবেদন করুন' : 'Submit Another Application'}
               </Button>

@@ -96,6 +96,7 @@ const Dashboard = () => {
         committee: committee.count || 0,
       };
     },
+  refetchInterval: 5000,
   });
 
   // Monthly transaction data for charts (last 6-7 months)
@@ -158,6 +159,7 @@ const Dashboard = () => {
         balance: totalIncome - totalExpense,
       };
     },
+  refetchInterval: 5000,
   });
 
   // Storage usage query
@@ -248,6 +250,7 @@ const Dashboard = () => {
       return data || [];
     },
     enabled: isAdmin,
+  refetchInterval: 5000,
   });
 
   // Pending payment verification requests
@@ -272,6 +275,7 @@ const Dashboard = () => {
       return data || [];
     },
     enabled: isAdmin,
+  refetchInterval: 5000,
   });
 
   // Activity logs
@@ -288,6 +292,7 @@ const Dashboard = () => {
       return data || [];
     },
     enabled: isAdmin,
+  refetchInterval: 5000,
   });
 
   // Recent Activities

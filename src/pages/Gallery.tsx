@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Loader2, ImageIcon } from 'lucide-react';
+import { Loader2, ImageIcon, PlayCircle } from 'lucide-react';
 
 interface GalleryImage {
   id: string;
@@ -67,12 +67,21 @@ const Gallery = () => {
                   className="group relative aspect-square overflow-hidden rounded-xl cursor-pointer"
                   onClick={() => setSelectedImage(image)}
                 >
-                  <img
-                    src={image.image_url}
-                    alt={language === 'bn' ? image.title_bn : (image.title_en || image.title_bn)}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    loading="lazy"
-                  />
+                  {image.image_url?.includes('/preview') ? (
+                    <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white p-4">
+                      <PlayCircle className="w-12 h-12 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold mt-2 text-slate-300">
+                        {language === 'bn' ? 'ভিডিও চালান' : 'Play Video'}
+                      </span>
+                    </div>
+                  ) : (
+                    <img
+                      src={image.image_url}
+                      alt={language === 'bn' ? image.title_bn : (image.title_en || image.title_bn)}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                     <div>
                       <span className="text-primary-foreground font-medium text-sm block">
@@ -109,11 +118,22 @@ const Gallery = () => {
         <DialogContent className="max-w-4xl p-0 border-0 bg-transparent">
           {selectedImage && (
             <div className="relative">
-              <img
-                src={selectedImage.image_url}
-                alt={language === 'bn' ? selectedImage.title_bn : (selectedImage.title_en || selectedImage.title_bn)}
-                className="w-full h-auto rounded-lg max-h-[80vh] object-contain"
-              />
+              {selectedImage.image_url?.includes('/preview') ? (
+                <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-black shadow-2xl">
+                  <iframe
+                    src={selectedImage.image_url}
+                    className="w-full h-full border-0"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <img
+                  src={selectedImage.image_url}
+                  alt={language === 'bn' ? selectedImage.title_bn : (selectedImage.title_en || selectedImage.title_bn)}
+                  className="w-full h-auto rounded-lg max-h-[80vh] object-contain"
+                />
+              )}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-lg">
                 <h3 className="text-white font-medium">
                   {language === 'bn' ? selectedImage.title_bn : (selectedImage.title_en || selectedImage.title_bn)}

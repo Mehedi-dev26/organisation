@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit, Image, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, Image, Loader2, AlertCircle, Link2 } from 'lucide-react';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
 
 interface GalleryImage {
@@ -45,6 +45,21 @@ const GalleryManagement = () => {
   const [isPublished, setIsPublished] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [uploadType, setUploadType] = useState<'upload' | 'drive'>('upload');
+  const [driveUrl, setDriveUrl] = useState<string>('');
+
+  const parseGoogleDriveUrl = (rawUrl: string) => {
+    const trimmed = rawUrl.trim();
+    const driveIdMatch = trimmed.match(/(?:id=|file\/d\/|open\?id=)([a-zA-Z0-9_-]{25,})/);
+    if (driveIdMatch && driveIdMatch[1]) {
+      const fileId = driveIdMatch[1];
+      if (trimmed.includes('preview') || trimmed.includes('video')) {
+        return "https://drive.google.com/file/d/" + fileId + "/preview";
+      }
+      return "https://lh3.googleusercontent.com/d/" + fileId;
+    }
+    return trimmed;
+  };
 
   // Fetch gallery images
   const { data: images, isLoading } = useQuery({
@@ -71,6 +86,8 @@ const GalleryManagement = () => {
     setIsPublished(true);
     setSelectedFile(null);
     setPreviewUrl('');
+    setDriveUrl('');
+    setUploadType('upload');
     setEditingImage(null);
   };
 
@@ -131,6 +148,8 @@ const GalleryManagement = () => {
       
       if (selectedFile) {
         imageUrl = await uploadImage(selectedFile);
+      } else if (driveUrl.trim()) {
+        imageUrl = parseGoogleDriveUrl(driveUrl);
       }
 
       if (!imageUrl) {
@@ -211,6 +230,12 @@ const GalleryManagement = () => {
     setEventDate(image.event_date || '');
     setIsPublished(image.is_published ?? true);
     setPreviewUrl(image.image_url);
+    if (image.image_url.includes('lh3.googleusercontent.com') || image.image_url.includes('drive.google.com')) {
+      setDriveUrl(image.image_url);
+      setUploadType('drive');
+    } else {
+      setUploadType('upload');
+    }
     setIsDialogOpen(true);
   };
 

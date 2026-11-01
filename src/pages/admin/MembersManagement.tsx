@@ -177,6 +177,7 @@ const MembersManagement: React.FC = () => {
       if (error) throw error;
       return (data || []) as Member[];
     },
+  refetchInterval: 5000,
   });
 
   // Cascading Address Options

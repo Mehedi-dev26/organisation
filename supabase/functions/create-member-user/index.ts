@@ -89,7 +89,7 @@ serve(async (req) => {
 
     console.log("Creating user for email:", email);
 
-    // Create the user account
+    // Create the user account (or link/update if already exists)
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -102,35 +102,71 @@ serve(async (req) => {
     console.log("Create user result - Success:", !!newUser?.user);
     console.log("Create user result - Error:", createError?.message);
 
+    let targetUserId = newUser?.user?.id;
+
     if (createError) {
-      throw new Error(`Failed to create user: ${createError.message}`);
+      const isAlreadyExists =
+        createError.message?.toLowerCase().includes("already") ||
+        createError.message?.toLowerCase().includes("exists");
+
+      if (isAlreadyExists) {
+        console.log("User already exists in Auth, looking up existing user by email...");
+        const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+        const existing = usersList?.users?.find(
+          (u) => u.email?.toLowerCase() === email.toLowerCase()
+        );
+
+        if (existing) {
+          targetUserId = existing.id;
+          console.log("Found existing user with ID:", targetUserId);
+
+          // Update password to default and update metadata
+          await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+            password,
+            email_confirm: true,
+            user_metadata: { full_name: fullName },
+          });
+        } else {
+          throw new Error(`Failed to create user: ${createError.message}`);
+        }
+      } else {
+        throw new Error(`Failed to create user: ${createError.message}`);
+      }
     }
 
-    if (!newUser.user) {
-      throw new Error("Failed to create user - no user returned");
+    if (!targetUserId) {
+      throw new Error("Failed to create or link member user account");
     }
 
-    console.log("User created with ID:", newUser.user.id);
+    console.log("Target User ID:", targetUserId);
 
-    // Add 'member' role to the user
-    const { error: roleInsertError } = await supabaseAdmin
+    // Add 'member' role to the user if not exists
+    const { data: existingRole } = await supabaseAdmin
       .from("user_roles")
-      .insert({
-        user_id: newUser.user.id,
-        role: "member",
-      });
+      .select("id")
+      .eq("user_id", targetUserId)
+      .eq("role", "member")
+      .maybeSingle();
 
-    if (roleInsertError) {
-      console.error("Role insert error:", roleInsertError.message);
-      // Don't throw, just log - the user is created
-    } else {
-      console.log("Member role assigned successfully");
+    if (!existingRole) {
+      const { error: roleInsertError } = await supabaseAdmin
+        .from("user_roles")
+        .insert({
+          user_id: targetUserId,
+          role: "member",
+        });
+
+      if (roleInsertError) {
+        console.error("Role insert error:", roleInsertError.message);
+      } else {
+        console.log("Member role assigned successfully");
+      }
     }
 
     // Link the user to the member
     const { error: updateError } = await supabaseAdmin
       .from("members")
-      .update({ user_id: newUser.user.id })
+      .update({ user_id: targetUserId })
       .eq("id", memberId);
 
     if (updateError) {
