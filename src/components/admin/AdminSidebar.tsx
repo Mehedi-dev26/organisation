@@ -125,10 +125,8 @@ const AdminSidebar = () => {
 
         {/* Top Header: Dynamic Organization Logo & Admin Badge aligned with Header Bar (h-16) */}
         <div className="h-16 px-4 border-b border-emerald-500/25 flex items-center gap-3 bg-gradient-to-r from-emerald-800/40 via-emerald-700/20 to-transparent relative z-10 shrink-0">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 p-0.5 shadow-md shadow-emerald-950/30 flex items-center justify-center flex-shrink-0">
-            <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden p-0.5">
-              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
-            </div>
+          <div className="w-10 h-10 rounded-xl bg-white p-1 border border-white/30 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0">

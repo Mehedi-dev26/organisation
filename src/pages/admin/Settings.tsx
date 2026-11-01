@@ -754,7 +754,7 @@ const Settings = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Light Background Preview */}
                   <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-2xl bg-slate-50 border border-slate-200 p-2 flex items-center justify-center flex-shrink-0 shadow-inner">
+                    <div className="w-20 h-20 rounded-2xl bg-white border border-emerald-600/30 p-2 flex items-center justify-center flex-shrink-0 shadow-xs overflow-hidden">
                       <img 
                         src={logoUrl || defaultLogo} 
                         alt="Logo Preview Light" 

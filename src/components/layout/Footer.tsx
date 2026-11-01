@@ -27,11 +27,11 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-white shadow-lg overflow-hidden flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-white border border-white/40 shadow-lg overflow-hidden flex items-center justify-center p-1.5 flex-shrink-0">
                 <img 
                   src={logoUrl} 
                   alt="সময়ের বাতিঘর" 
-                  className="w-10 h-10 object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div>
@@ -66,21 +66,19 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div>
-            <h4 className="font-heading font-semibold text-lg mb-4">{t('contact.title')}</h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 mt-1 text-accent" />
-                <span className="text-primary-foreground/80 text-sm">
-                  {language === 'bn' ? 'সোনাডাঙ্গা, গোপালপুর, সাপাহার, নওগাঁ' : 'Sonadanga, Gopalpur, Sapahar, Naogaon'}
-                </span>
+            <h4 className="font-heading font-semibold text-lg mb-4">{t('footer.contactInfo')}</h4>
+            <ul className="space-y-3 text-sm text-primary-foreground/80">
+              <li className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-accent flex-shrink-0" />
+                <span>{language === 'bn' ? 'নওগাঁ, রাজশাহী বিভাগ, বাংলাদেশ' : 'Naogaon, Rajshahi, Bangladesh'}</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-accent" />
-                <span className="text-primary-foreground/80 text-sm">০১৭৫০২২৪৭২২</span>
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-accent flex-shrink-0" />
+                <span>+880 1916-314315</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-accent" />
-                <span className="text-primary-foreground/80 text-sm">info@samoyerbatighor.org</span>
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-accent flex-shrink-0" />
+                <span>contact@somoyerbatighor.org</span>
               </li>
             </ul>
           </div>
@@ -88,28 +86,28 @@ const Footer = () => {
           {/* Social Links */}
           <div>
             <h4 className="font-heading font-semibold text-lg mb-4">{t('footer.followUs')}</h4>
-            <div className="flex gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-all duration-200"
-                  aria-label={social.label}
-                >
-                  <social.icon className="w-5 h-5" />
-                </a>
-              ))}
+            <div className="flex gap-4">
+              {socialLinks.map((social) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors duration-200"
+                    aria-label={social.label}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t border-primary-foreground/20 text-center">
-          <p className="text-primary-foreground/60 text-sm">
-            © {new Date().getFullYear()} {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}. {t('footer.rights')}.
-          </p>
+        <div className="border-t border-primary-foreground/20 mt-12 pt-8 text-center text-sm text-primary-foreground/60">
+          <p>© {new Date().getFullYear()} {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}. {t('footer.allRightsReserved')}</p>
         </div>
       </div>
     </footer>

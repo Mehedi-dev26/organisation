@@ -472,25 +472,25 @@ const HomeCommitteeCleanCard: React.FC<HomeCommitteeCleanCardProps> = ({
     e.currentTarget.src = fallbackImage;
   };
 
-  // Generous, larger mobile dimensions so mobile users see clear, impressive photos
+  // Exact standard Tailwind dimensions with aspect-square to guarantee 100% perfect circle
   const imageSize = isPresident 
     ? 'w-36 h-36 sm:w-44 sm:h-44' 
     : isTier2 
-    ? 'w-24 h-24 sm:w-32 sm:h-32' 
-    : 'w-26 h-26 sm:w-30 sm:h-30';
+    ? 'w-24 h-24 sm:w-28 sm:h-28' 
+    : 'w-28 h-28 sm:w-32 sm:h-32';
 
   return (
     <div className="text-center group flex flex-col items-center">
       {/* Relative container for Circular Image + Badge Pill */}
-      <div className="relative mb-3 inline-block">
-        {/* Round Image with elegant green border */}
-        <div className={`${imageSize} rounded-full overflow-hidden border-4 ${
+      <div className="relative mb-3.5 inline-block shrink-0">
+        {/* Round Image with elegant green border - Guaranteed Perfect Circle */}
+        <div className={`${imageSize} aspect-square rounded-full overflow-hidden border-4 ${
           isPresident ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' : 'border-[#0B6B3A]/25 group-hover:border-[#0B6B3A]'
-        } transition-colors duration-300 mx-auto shadow-sm bg-slate-50`}>
+        } transition-colors duration-300 mx-auto shadow-sm bg-slate-50 flex items-center justify-center shrink-0`}>
           <img
             src={member.photo_url || fallbackImage}
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover object-center aspect-square rounded-full group-hover:scale-105 transition-transform duration-300"
             onError={handleImageError}
           />
         </div>

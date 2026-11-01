@@ -118,13 +118,15 @@ const Navbar = () => {
       <header className="sticky top-0 z-50 w-full bg-white dark:bg-card backdrop-blur-md border-b border-border shadow-xs">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
           <div className="flex items-center justify-between h-14 md:h-16 py-1">
-            {/* Logo & Brand Identity (Matching Helpline Hello Naogaon style) */}
+            {/* Logo & Brand Identity (Four-cornered with soft-rounded corners and clean border line) */}
             <Link to="/" className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 group flex-shrink-0">
-              <img 
-                src={logoUrl} 
-                alt="সময়ের বাতিঘর" 
-                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 xl:w-12 xl:h-12 object-contain flex-shrink-0"
-              />
+              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl bg-white border border-emerald-600/30 dark:border-emerald-500/30 p-1 shadow-xs flex items-center justify-center flex-shrink-0 overflow-hidden group-hover:border-[#006a4e] transition-colors">
+                <img 
+                  src={logoUrl} 
+                  alt="সময়ের বাতিঘর" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <div className="leading-tight">
                 <div className="font-bold text-sm sm:text-base md:text-lg xl:text-[1.25rem] text-[#006a4e] dark:text-emerald-400 tracking-tight leading-none">
                   {language === 'bn' ? 'সময়ের বাতিঘর' : 'Samoyer Batighor'}

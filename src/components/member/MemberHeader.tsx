@@ -6,11 +6,13 @@ import { useMember } from './MemberContext';
 import { LogOut, CreditCard, ExternalLink, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
 
 const MemberHeader = () => {
   const { language } = useLanguage();
   const { signOut } = useAuth();
   const { memberData, unpaidMonths } = useMember();
+  const { logoUrl } = useSiteLogo();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -25,8 +27,8 @@ const MemberHeader = () => {
         <div className="flex items-center gap-3">
           {/* Mobile Logo & Title */}
           <div className="flex md:hidden items-center gap-2.5">
-            <Link to="/" className="w-9 h-9 rounded-xl bg-[#E6F4EA] flex items-center justify-center shrink-0">
-              <img src="/logo-round.png" alt="Logo" className="w-6 h-6 object-contain aspect-square" />
+            <Link to="/" className="w-9 h-9 rounded-xl bg-white border border-emerald-600/30 p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
             </Link>
             <div className="min-w-0">
               <h2 className="font-heading font-black text-xs sm:text-sm text-[#14231B] truncate leading-tight">

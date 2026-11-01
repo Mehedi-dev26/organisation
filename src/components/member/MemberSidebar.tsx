@@ -18,11 +18,13 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
 
 const MemberSidebar = () => {
   const { language } = useLanguage();
   const { signOut } = useAuth();
   const { memberData } = useMember();
+  const { logoUrl } = useSiteLogo();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -81,8 +83,8 @@ const MemberSidebar = () => {
       {/* 1. Brand Logo & Title */}
       <div>
         <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-          <Link to="/" className="w-10 h-10 rounded-2xl bg-[#E6F4EA] flex items-center justify-center shrink-0 shadow-2xs hover:scale-105 transition-transform">
-            <img src="/logo-round.png" alt="Logo" className="w-7 h-7 object-contain aspect-square" />
+          <Link to="/" className="w-10 h-10 rounded-xl bg-white border border-emerald-600/30 p-1 flex items-center justify-center shrink-0 shadow-xs hover:scale-105 transition-transform overflow-hidden">
+            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </Link>
           <div className="min-w-0">
             <h1 className="font-heading font-black text-sm text-[#14231B] leading-tight truncate">
