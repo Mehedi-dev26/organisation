@@ -136,7 +136,7 @@ const AdminSidebar = () => {
                 {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
               </h2>
-              <p className="text-[11px] text-emerald-200/90 font-medium leading-none mt-0.5">
+              <p className="text-[11px] text-white/80 font-medium leading-none mt-0.5">
                 {language === 'bn' ? 'এডমিন প্যানেল' : 'Admin Panel'}
               </p>
             </div>
@@ -164,13 +164,13 @@ const AdminSidebar = () => {
                       "flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl transition-all duration-200 text-[14px] group",
                       active
                         ? "bg-white/20 text-white font-bold shadow-md shadow-emerald-950/30 border border-white/30 backdrop-blur-md"
-                        : "text-emerald-50/90 hover:text-white hover:bg-white/12 font-medium"
+                        : "text-white hover:bg-white/15 font-medium"
                     )}
                   >
                     <item.icon 
                       className={cn(
                         "w-5 h-5 flex-shrink-0 stroke-[2.2] transition-transform duration-200 group-hover:scale-105",
-                        active ? "text-amber-300" : "text-emerald-200/90 group-hover:text-white"
+                        active ? "text-amber-300" : "text-white group-hover:scale-110"
                       )} 
                     />
                     {!collapsed && <span className="truncate">{item.title}</span>}

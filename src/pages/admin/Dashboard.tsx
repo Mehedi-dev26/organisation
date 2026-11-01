@@ -518,8 +518,8 @@ const Dashboard = () => {
           {/* Subtle bottom gradient wave */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-emerald-50/40 to-transparent pointer-events-none" />
           
-          {/* Watermark: Bar Chart */}
-          <div className="absolute right-3.5 bottom-12 opacity-35 pointer-events-none select-none">
+          {/* Watermark: Bar Chart - vertically aligned with the zero amount */}
+          <div className="absolute right-4 top-[50%] -translate-y-1/2 opacity-35 pointer-events-none select-none">
             <svg width="68" height="54" viewBox="0 0 68 54" fill="none">
               <rect x="2" y="38" width="12" height="16" rx="3" fill="#10B981" />
               <rect x="18" y="26" width="12" height="28" rx="3" fill="#10B981" />
@@ -543,11 +543,9 @@ const Dashboard = () => {
             <p className="text-2xl sm:text-3xl font-black text-slate-900 my-1 leading-tight tracking-tight">
               ৳{financialSummary?.totalIncome?.toLocaleString() || 0}
             </p>
-            {/* Green accent line */}
-            <div className="w-1/3 h-1 bg-[#10B981] rounded-full my-2.5" />
           </div>
 
-          <div className="pt-2 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
+          <div className="pt-3 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
             <span>{language === 'bn' ? 'গত মাস: ৳০' : 'Last month: ৳0'}</span>
             <span className="px-3.5 py-1.5 rounded-full bg-[#0B6B3A] hover:bg-[#08522c] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1 group-hover:scale-105">
               {language === 'bn' ? 'বিস্তারিত →' : 'Details →'}
@@ -563,8 +561,8 @@ const Dashboard = () => {
           {/* Subtle bottom gradient wave */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-rose-50/40 to-transparent pointer-events-none" />
 
-          {/* Watermark: Wallet */}
-          <div className="absolute right-3.5 bottom-12 opacity-30 pointer-events-none select-none">
+          {/* Watermark: Wallet - vertically aligned with the zero amount */}
+          <div className="absolute right-4 top-[50%] -translate-y-1/2 opacity-30 pointer-events-none select-none">
             <svg width="64" height="50" viewBox="0 0 64 50" fill="none">
               <rect x="2" y="10" width="60" height="38" rx="8" fill="#EF4444" />
               <path d="M6 10V7C6 4.23858 8.23858 2 11 2H53C55.7614 2 58 4.23858 58 7V10" stroke="#EF4444" strokeWidth="3" />
@@ -588,11 +586,9 @@ const Dashboard = () => {
             <p className="text-2xl sm:text-3xl font-black text-slate-900 my-1 leading-tight tracking-tight">
               ৳{financialSummary?.totalExpense?.toLocaleString() || 0}
             </p>
-            {/* Red accent line */}
-            <div className="w-1/3 h-1 bg-[#EF4444] rounded-full my-2.5" />
           </div>
 
-          <div className="pt-2 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
+          <div className="pt-3 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
             <span>{language === 'bn' ? 'গত মাস: ৳০' : 'Last month: ৳0'}</span>
             <span className="px-3.5 py-1.5 rounded-full bg-[#DC2626] hover:bg-[#b91c1c] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1 group-hover:scale-105">
               {language === 'bn' ? 'বিস্তারিত →' : 'Details →'}
@@ -608,8 +604,8 @@ const Dashboard = () => {
           {/* Subtle bottom gradient wave */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-blue-50/40 to-transparent pointer-events-none" />
 
-          {/* Watermark: Credit Card */}
-          <div className="absolute right-3.5 bottom-12 opacity-30 pointer-events-none select-none">
+          {/* Watermark: Credit Card - vertically aligned with the zero amount */}
+          <div className="absolute right-4 top-[50%] -translate-y-1/2 opacity-30 pointer-events-none select-none">
             <svg width="66" height="48" viewBox="0 0 66 48" fill="none">
               <rect x="2" y="2" width="62" height="44" rx="8" fill="#3B82F6" />
               <rect x="2" y="12" width="62" height="7" fill="#ffffff" opacity="0.35" />
@@ -633,11 +629,9 @@ const Dashboard = () => {
             <p className="text-2xl sm:text-3xl font-black text-slate-900 my-1 leading-tight tracking-tight">
               ৳{financialSummary?.balance?.toLocaleString() || 0}
             </p>
-            {/* Blue accent line */}
-            <div className="w-1/3 h-1 bg-[#2563EB] rounded-full my-2.5" />
           </div>
 
-          <div className="pt-2 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
+          <div className="pt-3 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
             <span>{language === 'bn' ? 'গত মাস: ৳০' : 'Last month: ৳0'}</span>
             <span className="px-3.5 py-1.5 rounded-full bg-[#1D4ED8] hover:bg-[#1e40af] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1 group-hover:scale-105">
               {language === 'bn' ? 'বিস্তারিত →' : 'Details →'}
@@ -653,8 +647,8 @@ const Dashboard = () => {
           {/* Subtle bottom gradient wave */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-amber-50/40 to-transparent pointer-events-none" />
 
-          {/* Watermark: Money Bag & Coins */}
-          <div className="absolute right-3.5 bottom-12 opacity-35 pointer-events-none select-none">
+          {/* Watermark: Money Bag & Coins - vertically aligned with the zero amount */}
+          <div className="absolute right-4 top-[50%] -translate-y-1/2 opacity-35 pointer-events-none select-none">
             <svg width="64" height="54" viewBox="0 0 64 54" fill="none">
               <path d="M30 16C39.9411 16 48 24.0589 48 34C48 43.9411 39.9411 50 30 50C20.0589 50 12 43.9411 12 34C12 24.0589 20.0589 16 30 16Z" fill="#F59E0B" />
               <path d="M22 8L30 16L38 8C36 6 34 4 30 4C26 4 24 6 22 8Z" fill="#D97706" />
@@ -679,11 +673,9 @@ const Dashboard = () => {
             <p className="text-2xl sm:text-3xl font-black text-slate-900 my-1 leading-tight tracking-tight">
               ৳{financialSummary?.balance?.toLocaleString() || 0}
             </p>
-            {/* Amber accent line */}
-            <div className="w-1/3 h-1 bg-[#D97706] rounded-full my-2.5" />
           </div>
 
-          <div className="pt-2 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
+          <div className="pt-3 text-xs text-slate-500 font-medium flex items-center justify-between relative z-10">
             <span>{language === 'bn' ? 'ক্যাশিয়ার ও কোষাধ্যক্ষ মোট' : 'Cashiers & Treasurer'}</span>
             <span className="px-3.5 py-1.5 rounded-full bg-[#EA580C] hover:bg-[#c2410c] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1 group-hover:scale-105">
               {language === 'bn' ? 'নগদ দেখুন →' : 'View Cash →'}
