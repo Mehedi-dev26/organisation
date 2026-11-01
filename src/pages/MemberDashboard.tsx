@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useReactToPrint } from 'react-to-print';
 import TransactionVoucher from '@/components/admin/TransactionVoucher';
 import MemberMobileNav from '@/components/member/MemberMobileNav';
+import { useMultiTableRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface MemberData {
   id: string;
@@ -97,6 +98,71 @@ const MemberDashboard = () => {
   const [donationNotes, setDonationNotes] = useState('');
   const [isSavingBloodInfo, setIsSavingBloodInfo] = useState(false);
 
+  // Real-time subscriptions for live updates
+  const subscriptionTables = React.useMemo(() => [
+    { table: 'members' as const, queryKeys: [['member-profile']] },
+    { table: 'member_dues' as const, queryKeys: [['member-dues']] },
+    { table: 'news' as const, queryKeys: [['member-news']] },
+    { table: 'transactions' as const, queryKeys: [['member-dues']] },
+  ], []);
+
+  useMultiTableRealtimeSubscription(subscriptionTables);
+
+  // Fetch member data (with fallback lookup by email/phone and auto-link user_id)
+  const { data: memberData, isLoading: memberLoading, refetch: refetchMember } = useQuery({
+    queryKey: ['member-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      // 1. Try matching by user_id
+      const { data: memberByUserId } = await supabase
+        .from('members')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (memberByUserId) {
+        return memberByUserId as MemberData;
+      }
+
+      // 2. Fallback: match by email or phone digits
+      const conditions: string[] = [];
+      if (user.email) {
+        conditions.push(`email.eq.${user.email}`);
+        if (user.email.endsWith('@batighor.org')) {
+          const rawPhone = user.email.replace('@batighor.org', '');
+          if (rawPhone && rawPhone.length >= 10) {
+            conditions.push(`phone.eq.${rawPhone}`);
+          }
+        }
+      }
+      if (user.phone) {
+        conditions.push(`phone.eq.${user.phone}`);
+      }
+
+      if (conditions.length > 0) {
+        const { data: fallbackMember } = await supabase
+          .from('members')
+          .select('*')
+          .or(conditions.join(','))
+          .maybeSingle();
+
+        if (fallbackMember) {
+          // Auto-link user_id for seamless future logins
+          await supabase
+            .from('members')
+            .update({ user_id: user.id })
+            .eq('id', fallbackMember.id);
+          return fallbackMember as MemberData;
+        }
+      }
+
+      return null;
+    },
+    enabled: !!user?.id,
+    refetchInterval: 5000,
+  });
+
   // Fetch member's blood donor info
   const { data: bloodDonorInfo, refetch: refetchBloodDonor } = useQuery({
     queryKey: ['member-blood-donor-info', memberData?.member_id, memberData?.phone],
@@ -146,7 +212,7 @@ const MemberDashboard = () => {
     try {
       let photoUrlToSave = '';
       if (donationPhoto) {
-        const compressed = await compressImage(donationPhoto, { maxWidth: 1000, quality: 0.8 });
+        const compressed = await compressImage(donationPhoto, 800, 800, 0.88);
         const fileName = `donations/${memberData.member_id || memberData.id}_${Date.now()}.jpg`;
         const { error: uploadErr } = await supabase.storage
           .from('member-photos')
@@ -222,21 +288,7 @@ const MemberDashboard = () => {
     documentTitle: `Voucher-${printTransaction?.payment_reference || 'receipt'}`,
   });
 
-  // Fetch member data
-  const { data: memberData, isLoading: memberLoading } = useQuery({
-    queryKey: ['member-profile', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data as MemberData | null;
-    },
-    enabled: !!user?.id,
-  });
+  // Member data query declared at top
 
   // Fetch member dues
   const { data: duesData, isLoading: duesLoading } = useQuery({

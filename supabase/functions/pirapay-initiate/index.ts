@@ -44,7 +44,7 @@ serve(async (req) => {
     const webhookUrl = `${SUPABASE_URL}/functions/v1/pirapay-webhook`;
     
     // Get success/cancel URLs
-    const baseUrl = req.headers.get('origin') || 'https://samoyer-batighor.lovable.app';
+    const baseUrl = req.headers.get('origin') || 'https://somoyerbatighor.org';
     const successUrl = `${baseUrl}/member-dashboard?payment=success`;
     const cancelUrl = `${baseUrl}/member/pay-dues?payment=cancelled`;
 

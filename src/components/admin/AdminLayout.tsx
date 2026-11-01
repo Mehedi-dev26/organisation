@@ -137,7 +137,7 @@ const AdminLayout = () => {
     if (path.includes('dues')) return language === 'bn' ? 'মাসিক চাঁদা' : 'Dues';
     if (path.includes('payment-verification')) return language === 'bn' ? 'পেমেন্ট ভেরিফাই' : 'Payment Verification';
     if (path.includes('yearly-accounts')) return language === 'bn' ? 'বিভিন্ন হিসাব নিকাশ' : 'Yearly Accounts';
-    if (path.includes('cashiers')) return language === 'bn' ? 'ক্যাশিয়ার ব্যবস্থাপনা' : 'Cashiers';
+    if (path.includes('cashiers')) return language === 'bn' ? 'টিম ও রোল ব্যবস্থাপনা' : 'Team & Roles';
     if (path.includes('settings')) return language === 'bn' ? 'সেটিংস' : 'Settings';
     if (path.includes('gallery')) return language === 'bn' ? 'গ্যালারি ও রিপোর্ট' : 'Gallery & Reports';
     if (path.includes('news')) return language === 'bn' ? 'সংবাদ ব্যবস্থাপনা' : 'News';

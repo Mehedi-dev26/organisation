@@ -92,7 +92,7 @@ const AdminSidebar = () => {
       icon: History 
     },
     { 
-      title: language === 'bn' ? 'ক্যাশিয়ার' : 'Cashiers', 
+      title: language === 'bn' ? 'টিম ব্যবস্থাপনা' : 'Team & Roles', 
       url: '/admin/cashiers', 
       icon: UserCog2 
     },

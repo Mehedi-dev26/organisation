@@ -374,7 +374,7 @@ CREATE POLICY "Admins can manage gallery images storage" ON storage.objects FOR 
 - `SUPABASE_SERVICE_ROLE_KEY` (auto-set)
 - `PIPRAPAY_API_KEY` - PipraPay API Key
 - `RESEND_API_KEY` - Resend Email API Key
-- `LOVABLE_API_KEY` - Lovable AI Gateway Key (optional, for chatbot)
+- `AI_GATEWAY_KEY` - AI Gateway Key (optional, for chatbot)
 
 ---
 
@@ -423,17 +423,17 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const AI_GATEWAY_KEY = Deno.env.get("AI_GATEWAY_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+    if (!AI_GATEWAY_KEY) {
+      console.error("AI_GATEWAY_KEY is not configured");
       throw new Error("AI service is not configured");
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${AI_GATEWAY_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -748,7 +748,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const webhookUrl = `${SUPABASE_URL}/functions/v1/pirapay-webhook`;
-    const baseUrl = req.headers.get('origin') || 'https://samoyer-batighor.lovable.app';
+    const baseUrl = req.headers.get('origin') || 'https://somoyerbatighor.org';
     const successUrl = `${baseUrl}/member-dashboard?payment=success`;
     const cancelUrl = `${baseUrl}/member/pay-dues?payment=cancelled`;
     const emailMobile = member_email || member_phone || '';
@@ -1199,6 +1199,6 @@ VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
 # 1. নতুন Supabase প্রজেক্ট তৈরি করুন
 # 2. SQL Editor-এ পার্ট ১ এর সম্পূর্ণ SQL রান করুন
 # 3. Edge Functions ডিপ্লয় করুন (supabase functions deploy)
-# 4. Secrets সেট করুন: PIPRAPAY_API_KEY, RESEND_API_KEY, LOVABLE_API_KEY
+# 4. Secrets সেট করুন: PIPRAPAY_API_KEY, RESEND_API_KEY, AI_GATEWAY_KEY
 # 5. .env ফাইলে নতুন প্রজেক্টের URL ও Key বসান
 # 6. Admin ইউজার তৈরি করে user_roles টেবিলে admin role যোগ করুন

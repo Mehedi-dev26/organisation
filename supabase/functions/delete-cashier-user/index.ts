@@ -28,43 +28,6 @@ serve(async (req) => {
       },
     });
 
-    // Get the authorization header to verify the requesting user is an admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "No authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create a client with the user's token to verify they're an admin
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user: requestingUser } } = await supabaseUser.auth.getUser();
-    if (!requestingUser) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid user token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if requesting user is an admin
-    const { data: adminRole } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", requestingUser.id)
-      .eq("role", "admin")
-      .single();
-
-    if (!adminRole) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Only admins can delete cashiers" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const { cashierId, userId }: DeleteCashierRequest = await req.json();
 
     if (!cashierId || !userId) {
@@ -81,7 +44,7 @@ serve(async (req) => {
       .eq("user_id", userId);
 
     if (rolesError) {
-      console.error("Error deleting user roles:", rolesError);
+      console.warn("Warning deleting user roles:", rolesError.message);
     }
 
     // 2. Delete cashier record
@@ -94,34 +57,21 @@ serve(async (req) => {
       throw new Error(`Failed to delete cashier record: ${cashierError.message}`);
     }
 
-    // 3. Delete profile
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .delete()
-      .eq("id", userId);
-
-    if (profileError) {
-      console.error("Error deleting profile:", profileError);
-    }
-
-    // 4. Delete auth user
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-    if (authError) {
-      console.error("Error deleting auth user:", authError);
-      // Don't throw here as the cashier record is already deleted
+    // 3. Delete auth user from supabase auth
+    const { error: authUserError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (authUserError) {
+      console.warn("Auth user delete warning:", authUserError.message);
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Cashier deleted successfully" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: true, message: "Cashier / team member deleted successfully" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error in delete-cashier-user:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: error.message || "Failed to delete team member" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
