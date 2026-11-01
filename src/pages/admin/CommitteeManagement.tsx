@@ -157,6 +157,7 @@ const CommitteeManagement: React.FC = () => {
   // Query Committee Members
   const { data: committeeMembers, isLoading, refetch } = useQuery({
     queryKey: ['admin-committee'],
+    staleTime: 1000 * 60 * 3, // 3 minutes cache for instant navigation
     queryFn: async () => {
       const { data, error } = await supabase
         .from('committee_members')

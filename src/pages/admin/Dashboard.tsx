@@ -367,38 +367,35 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-7 pb-10">
-      {/* 1. Header matching Reference Image */}
-      <div className="pb-2">
+    <div className="space-y-4 sm:space-y-4.5 pb-10">
+      {/* 1. Header without side margin bar and with compact spacing */}
+      <div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold shadow-2xs">
           <TrendingUp className="w-3.5 h-3.5 stroke-[2.5]" />
           <span>{language === 'bn' ? 'আজদিন আপডেট' : "Today's Update"}</span>
         </div>
-        <div className="flex items-center gap-3 mt-2">
-          <div className="w-1.5 h-9 sm:h-10 rounded-full bg-[#0B6B3A] shrink-0" />
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#14231B] font-heading tracking-tight leading-tight">
-              {language === 'bn' ? 'স্বাগতম!' : 'Welcome!'}
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-              {language === 'bn' 
-                ? 'সকল কার্যক্রম ও আর্থিক সারসংক্ষেপ' 
-                : 'Overview of all organization activities and metrics'}
-            </p>
-          </div>
+        <div className="mt-1.5">
+          <h2 className="text-2xl sm:text-3xl font-black text-[#14231B] font-heading tracking-tight leading-tight">
+            {language === 'bn' ? 'স্বাগতম!' : 'Welcome!'}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            {language === 'bn' 
+              ? 'সকল কার্যক্রম ও আর্থিক সারসংক্ষেপ' 
+              : 'Overview of all organization activities and metrics'}
+          </p>
         </div>
       </div>
 
-      {/* 2. Top Row: 4 Main Activity Stat Cards (Blue, Purple, Amber, Rose/Green with bottom waves) */}
+      {/* 2. Top Row: 4 Main Activity Stat Cards with vibrant, darker bottom waves */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* মোট সদস্য */}
         <Link 
           to="/admin/members" 
           className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-blue-100 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden"
         >
-          {/* Bottom subtle blue wave */}
-          <div className="absolute -bottom-1 -right-2 -left-2 h-6 pointer-events-none overflow-hidden opacity-30">
-            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-blue-400">
+          {/* Bottom darker blue wave */}
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
+            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#3B82F6]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
@@ -425,9 +422,9 @@ const Dashboard = () => {
           to="/admin/committee" 
           className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-purple-100 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden"
         >
-          {/* Bottom subtle purple wave */}
-          <div className="absolute -bottom-1 -right-2 -left-2 h-6 pointer-events-none overflow-hidden opacity-30">
-            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-purple-400">
+          {/* Bottom darker purple wave */}
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
+            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#8B5CF6]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
@@ -454,9 +451,9 @@ const Dashboard = () => {
           to="/admin/events" 
           className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-amber-100 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden"
         >
-          {/* Bottom subtle amber wave */}
-          <div className="absolute -bottom-1 -right-2 -left-2 h-6 pointer-events-none overflow-hidden opacity-30">
-            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-amber-400">
+          {/* Bottom darker amber wave */}
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-80">
+            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#F59E0B]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
@@ -483,9 +480,9 @@ const Dashboard = () => {
           to="/admin/committee" 
           className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-emerald-100 transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden"
         >
-          {/* Bottom subtle green wave */}
-          <div className="absolute -bottom-1 -right-2 -left-2 h-6 pointer-events-none overflow-hidden opacity-30">
-            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-emerald-400">
+          {/* Bottom darker green wave */}
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-80">
+            <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#10B981]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>

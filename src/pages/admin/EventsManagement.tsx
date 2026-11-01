@@ -122,6 +122,7 @@ const EventsManagement = () => {
 
   const { data: eventsList, isLoading } = useQuery({
     queryKey: ['admin-events'],
+    staleTime: 1000 * 60 * 3,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
