@@ -1,73 +1,119 @@
-# Welcome to your Lovable project
+# সময়ের বাতিঘর (Somoyer Batighor)
 
-## Project info
+> **"একতাই শক্তি, সেবাই ধর্ম"**  
+> মানবিক ও সামাজিক পরিবর্তনের আলোকবর্তিকা — একটি প্রতিশ্রুতিশীল ও নিবেদিতপ্রাণ স্বেচ্ছাসেবী সামাজিক সংগঠন।
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Production%20Live-0B6B3A?style=for-the-badge&logo=vercel)](https://somoyerbatighor.org)
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend%20%26%20Auth-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 📌 পরিচিতি (About Organization)
 
-**Use Lovable**
+**"সময়ের বাতিঘর"** নওগাঁর সীমান্তবর্তী সাপাহার উপজেলাভিত্তিক একটি সম্পূর্ণ অরাজনৈতিক ও স্বেচ্ছাসেবী সামাজিক সংগঠন। সমাজের সুবিধাবঞ্চিত, অসহায় ও মুমূর্ষু মানুষের পাশে নিঃস্বার্থভাবে দাঁড়ানো এবং একটি আলোকিত, মানবিক সমাজ বিনির্মাণের লক্ষ্য নিয়ে সংগঠনটি পরিচালিত হচ্ছে।
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+সংগঠনের মূল কার্যক্রমগুলো হলো:
+* 🩸 **জরুরি রক্তদান নেটওয়ার্ক**: মুমূর্ষু রোগীর জীবন রক্ষার্থে দ্রুততম সময়ে স্বেচ্ছায় রক্তদাতা ব্যবস্থাপনা ও সহায়তা।
+* 🤝 **ত্রাণ ও খাদ্য সহায়তা**: প্রাকৃতিক দুর্যোগ, শীতকাল এবং জরুরি সময়ে অসহায় পরিবারসমূহের মাঝে খাদ্য ও বস্ত্র বিতরণ।
+* 🎓 **শিক্ষাবৃত্তি ও সহায়তা**: অসচ্ছল কিন্তু মেধাবী শিক্ষার্থীদের নিয়মিত শিক্ষাবৃত্তি ও শিক্ষা উপকরণ বিতরণ।
+* 🌳 **পরিবেশ ও বৃক্ষরোপণ**: এলাকায় সবুজায়ন ও পরিবেশের ভারসাম্য রক্ষায় প্রতিবছর বৃক্ষরোপণ অভিযান।
+* 💡 **জনসচেতনতা ও সামাজিক উন্নয়ন**: বাল্যবিয়ে রোধ, মাদকবিরোধী সচেতনতা এবং স্বাস্থ্য ক্যাম্পেইন পরিচালনা।
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🌟 প্ল্যাটফর্মের মূল বৈশিষ্ট্যসমূহ (Key Platform Features)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### ১. দ্বি-ভাষিক ইন্টারফেস (Bilingual System)
+- সম্পূর্ণ প্ল্যাটফর্মটি বাংলা (`bn` - ডিফল্ট) এবং ইংরেজি (`en`) উভয় ভাষায় তাৎক্ষণিক পরিবর্তনযোগ্য।
+- টাইপোগ্রাফিতে ব্যবহার করা হয়েছে দৃষ্টিনন্দন **'Hind Siliguri'**, **'Noto Sans Bengali'** এবং **'Poppins'** ফন্ট।
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### ২. ২-ধাপের স্মার্ট সদস্য আবেদন ও ডিজিটাল স্লিপ (Member Registration & Slip)
+- **ধাপ ১**: ব্যক্তিগত তথ্য এবং জেলা-উপজেলা-ইউনিয়ন ভিত্তিক ক্যাসকেডিং ঠিকানা নির্বাচন।
+- **ধাপ ২**: পেশা, রক্তদান সম্মতি এবং মাসিক চাঁদার প্রতিশ্রুতি নির্বাচন।
+- আবেদন সম্পন্ন হওয়ার সাথে সাথেই তৈরি হয় **ইউনিক ডিজিটাল ট্র্যাকিং আইডি** (`SB-2026-XXXX`)।
+- মোবাইল ফ্রেন্ডলি এজ-টু-এজ অভিনন্দন স্লিপ, যা থেকে তাৎক্ষণিক আইডি, মোবাইল নম্বর ও ডিফল্ট পাসওয়ার্ড কপি অথবা স্ক্রিনশট নেওয়া যায়।
 
-Follow these steps:
+### ৩. রক্তদাতা ব্যবস্থাপনা ও ডোনেশন ট্র্যাকার (Blood Donation Hub)
+- রক্তের গ্রুপ, বিভাগ, জেলা ও উপজেলা অনুযায়ী সরাসরি রক্তদাতা অনুসন্ধান ও জরুরি কল সুবিধা।
+- মেম্বার পোর্টালে রক্তদানের তারিখ হালনাগাদ করার ব্যবস্থা এবং পরবর্তী রক্তদানের ৯০-দিনের এলিজিবিলিটি কাউন্টার।
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### ৪. স্বয়ংক্রিয় রিয়েল-টাইম অ্যাডমিন ড্যাশবোর্ড (Real-time Admin Dashboard)
+- নতুন আবেদন জমা পড়া মাত্রই কোনো পেজ রিফ্রেশ ছাড়াই ৫ সেকেন্ডের মধ্যে ড্যাশবোর্ড কাউন্টার ও কার্যকলাপ লগ স্বয়ংক্রিয়ভাবে আপডেট হয়।
+- আয়-ব্যয় পরিসংখ্যান, ক্যাশিয়ার ব্যালেন্স, মাসিক আর্থিক গ্রাফ এবং স্টোরেজ ট্র্যাকিং।
+- এক ক্লিকে সদস্য অনুমোদন, রক্তদাতা ডাটাবেস সিঙ্ক এবং স্বয়ংক্রিয় লগইন অ্যাকাউন্ট অ্যাক্টিভেশন।
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### ৫. গুগল ড্রাইভ গ্যালারি ইন্টিগ্রেশন (Zero Supabase Storage Media)
+- সুপাবেস স্টোরেজ লিমিট খরচ ছাড়াই সরাসরি গুগল ড্রাইভ লিঙ্ক দিয়ে ১,০০০ - ২,০০০ ছবি ও ভিডিও যুক্ত করার সুবিধা।
+- গুগল ড্রাইভ লিঙ্ক স্বয়ংক্রিয়ভাবে হাই-স্পিড গুগল সিডিএন (`lh3.googleusercontent.com`) এবং ভিডিও প্লেয়ারে রূপান্তরিত হয়।
 
-# Step 3: Install the necessary dependencies.
-npm i
+### ৬. অর্থ ব্যবস্থাপনা ও ক্যাশিয়ার সিস্টেম (Accounting & Audit)
+- মাসিক সদস্য চাঁদা ট্র্যাকিং, ডিজিটাল ভাউচার এবং স্বচ্ছ আর্থিক হিসেব।
+- প্রতি অর্থবছর অনুযায়ী স্বয়ংক্রিয় আর্থিক অডিট ও ব্যালেন্স শিট জেনারেশন।
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+---
+
+## 🛠️ প্রযুক্তিগত স্ট্যাক (Technology Stack)
+
+| স্তর (Layer) | প্রযুক্তি (Technology) | বিবরণ (Description) |
+|---|---|---|
+| **Frontend** | React 18 + TypeScript | মডার্ন কম্পোনেন্ট আর্কিটেকচার |
+| **Bundler** | Vite 5 | সুপারফাস্ট এইচএমআর ও অপ্টিমাইজড বান্ডলিং |
+| **Styling** | Tailwind CSS 3.4 | সিগনেচার ডিপ গ্রিন (`#0B6B3A`) থিম ও ফ্লুইড অ্যানিমেশন |
+| **UI Components**| Radix UI / shadcn/ui | অ্যাক্সেসিবল ও কাস্টমাইজেবল কম্পোনেন্ট লাইব্রেরি |
+| **Icons** | Lucide React | মডার্ন লাইটওয়েট ভেক্টর আইকন |
+| **Data Fetching**| TanStack Query (React Query) | স্মার্ট ক্যাশিং, ব্যাকগ্রাউন্ড রিফেচ এবং অপটিমিস্টিক আপডেট |
+| **Backend & DB** | Supabase (PostgreSQL 17) | রিয়েলটাইম লিসেনার, আরএলএস পলিসি, সিকিউর অথেন্টিকেশন |
+| **Edge Functions**| Deno 2 Runtime | নিরাপদ ব্যাকএন্ড প্রসেসিং ও সদস্য অ্যাকাউন্ট তৈরি |
+| **Deployment** | Vercel | অটোমেটিক গিট-ট্রিগারড সিআই/সিডি প্রোডাকশন ডিপ্লয়মেন্ট |
+
+---
+
+## 🚀 লোকাল সেটআপ ও রান (Getting Started Locally)
+
+### পূর্বশর্ত (Prerequisites)
+- [Node.js](https://nodejs.org/) (সংস্করণ `18.x` বা তার বেশি)
+- `npm` বা `bun`
+
+### ১. ক্লোন ও নির্ভরতা ইনস্টল (Clone & Install)
+```bash
+git clone https://github.com/Mehedi-dev26/organisation.git
+cd organisation
+npm install
 ```
 
-**Edit a file directly in GitHub**
+### ২. এনভায়রনমেন্ট ভ্যারিয়েবল সেটআপ (Environment Setup)
+প্রজেক্টের রুট ডিরেক্টরিতে `.env` ফাইল নিশ্চিত করুন:
+```env
+VITE_SUPABASE_URL=https://rbmhzcapomiiduknkfya.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### ৩. ডেভেলপমেন্ট সার্ভার চালু (Start Dev Server)
+```bash
+npm run dev
+```
+ব্রাউজারে ওপেন করুন: `http://localhost:8080`
 
-**Use GitHub Codespaces**
+### ৪. প্রোডাকশন বিল্ড (Production Build)
+```bash
+npm run build
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🔒 নিরাপত্তা ও অ্যাক্সেস কন্ট্রোল (Security & Access Roles)
 
-This project is built with:
+প্ল্যাটফর্মে তিন স্তরের রোল-বেসড অ্যাক্সেস কন্ট্রোল (RBAC) রয়েছে:
+1. **অ্যাডমিন (Admin)**: সম্পূর্ণ সংগঠনের সদস্য অনুমোদন, আর্থিক হিসাব, ইভেন্ট ও নিউজ কন্ট্রোল।
+2. **ক্যাশিয়ার (Cashier)**: আর্থিক লেনদেন এন্ট্রি ও চাঁদা পেমেন্ট যাচাইকরণ।
+3. **সদস্য (Member)**: ব্যক্তিগত মেম্বার পোর্টাল, আইডি কার্ড দেখা, রক্তদান হিস্ট্রি ও নিজস্ব পাসওয়ার্ড পরিবর্তন।
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 📄 লাইসেন্স ও কপিরাইট (License)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+কপিরাইট © ২০২৬ **সময়ের বাতিঘর (Somoyer Batighor)**। সর্বস্বত্ব সংরক্ষিত।
+মানবিক পরিবর্তনের পথচলায় সবার আন্তরিক অংশগ্রহণই আমাদের শক্তি।

@@ -170,8 +170,11 @@ const Auth = () => {
         }
 
         // C. Fallback synthetic phone email
-        if (candidateEmails.length === 0 && digitsOnly.length >= 10) {
-          candidateEmails.push(`${standardLocal}@batighor.org`);
+        if (digitsOnly.length >= 10) {
+          const synth = `${standardLocal}@batighor.org`;
+          if (!candidateEmails.includes(synth)) {
+            candidateEmails.push(synth);
+          }
         }
       }
 

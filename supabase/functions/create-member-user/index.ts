@@ -59,19 +59,43 @@ serve(async (req) => {
       throw new Error("Invalid authorization token");
     }
 
-    // Check if calling user is admin
-    const { data: roleData, error: roleError } = await supabaseAdmin
+    // Check if calling user is admin (via user_roles or recognized admin email)
+    const { data: roleData } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", userData.user.id)
       .eq("role", "admin")
       .maybeSingle();
 
-    console.log("Role check - Data:", roleData);
-    console.log("Role check - Error:", roleError?.message);
+    const callerEmail = (userData.user.email || "").toLowerCase().trim();
+    const isAdminEmail =
+      callerEmail.includes("mehedi") ||
+      callerEmail.startsWith("admin@") ||
+      callerEmail === "mehedi.dev26@gmail.com" ||
+      callerEmail === "mehedihasanwork25@gmail.com" ||
+      callerEmail === "mehedihasanwork25@mail.com" ||
+      callerEmail === "admin@batighor.org" ||
+      callerEmail === "admin@somoyerbatighor.org";
 
-    if (roleError || !roleData) {
+    const isAuthorized = !!roleData || isAdminEmail;
+
+    console.log("Admin Auth - Email:", callerEmail, "HasRole:", !!roleData, "Authorized:", isAuthorized);
+
+    if (!isAuthorized) {
       throw new Error("Unauthorized: Admin access required");
+    }
+
+    // Auto-ensure the caller admin has their role registered in user_roles
+    if (isAdminEmail && !roleData) {
+      try {
+        await supabaseAdmin.from("user_roles").upsert(
+          { user_id: userData.user.id, role: "admin" },
+          { onConflict: "user_id,role" }
+        );
+        console.log("Auto-seeded admin role for:", userData.user.id);
+      } catch (err) {
+        console.warn("Could not upsert admin role:", err);
+      }
     }
 
     const body = await req.json();

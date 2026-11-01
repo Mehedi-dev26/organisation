@@ -264,7 +264,7 @@ const MemberRegistration: React.FC = () => {
 
       try {
         // Optimized to 350x350 and quality 0.75 for lightning-fast network transfer (~15-20 KB)
-        const compressed = await compressImage(file, 350, 350, 0.75);
+        const compressed = await compressImage(file, 800, 800, 0.88);
         setCompressedBlob(compressed);
         setCompressedSize(compressed.size);
 

@@ -627,6 +627,9 @@ const MembersManagement: React.FC = () => {
       });
 
       if (response.error) throw response.error;
+      if (response.data && !response.data.success) {
+        throw new Error(response.data.error || 'অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে');
+      }
 
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
@@ -1229,7 +1232,25 @@ const MembersManagement: React.FC = () => {
 
                       {/* Status */}
                       <TableCell className="text-center py-3">
-                        {getStatusBadge(member.status)}
+                        <div className="flex flex-col items-center gap-1.5">
+                          {getStatusBadge(member.status)}
+                          {member.status === 'approved' && !member.user_id && (
+                            <button
+                              type="button"
+                              onClick={() => handleCreateMemberAccount(member)}
+                              disabled={isCreatingAccount === member.id}
+                              className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-all inline-flex items-center gap-1 shadow-2xs active:scale-95"
+                              title={language === 'bn' ? 'লগইন অ্যাকাউন্ট সক্রিয় করতে ক্লিক করুন' : 'Click to activate login'}
+                            >
+                              {isCreatingAccount === member.id ? (
+                                <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-600" />
+                              ) : (
+                                <Key className="w-2.5 h-2.5 text-blue-600" />
+                              )}
+                              <span>{language === 'bn' ? 'লগইন সক্রিয় করুন' : 'Activate Login'}</span>
+                            </button>
+                          )}
+                        </div>
                       </TableCell>
 
                       {/* Actions Menu */}
@@ -1298,7 +1319,7 @@ const MembersManagement: React.FC = () => {
                             )}
 
                             {/* 5. Conditional: Login Account Generation */}
-                            {member.status === 'approved' && !member.user_id && member.email && (
+                            {member.status === 'approved' && !member.user_id && (
                               <DropdownMenuItem
                                 onClick={() => handleCreateMemberAccount(member)}
                                 disabled={!isAdmin || isCreatingAccount === member.id}

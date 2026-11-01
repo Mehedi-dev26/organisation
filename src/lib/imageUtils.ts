@@ -2,9 +2,9 @@
 
 export const compressImage = (
   file: File,
-  maxWidth: number = 300,
-  maxHeight: number = 300,
-  quality: number = 0.8
+  maxWidth: number = 800,
+  maxHeight: number = 800,
+  quality: number = 0.88
 ): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -39,6 +39,10 @@ export const compressImage = (
           reject(new Error('Could not get canvas context'));
           return;
         }
+
+        // Enable high-definition image smoothing to prevent blurriness
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         
         // Draw white background (for transparency)
         ctx.fillStyle = '#FFFFFF';
