@@ -56,7 +56,8 @@ import {
   Trash2,
   Layers,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Info
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sendKeepAlivePing, getKeepAliveStats, KeepAliveStats } from '@/services/keepAliveService';
@@ -1110,6 +1111,85 @@ const Settings = () => {
             </CardHeader>
 
             <CardContent className="pt-6 space-y-6">
+              {/* Banner Aspect Ratio & Resolution Guide */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-blue-50/60 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-blue-950/20 border border-emerald-200/90 dark:border-emerald-800/60 shadow-xs">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                    <Info className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div className="space-y-3 flex-1">
+                    <div>
+                      <h4 className="font-heading font-black text-sm sm:text-base text-emerald-950 dark:text-emerald-200">
+                        {language === 'bn' ? 'ব্যানার সাইজ ও অ্যাসপেক্ট রেশিও নির্দেশিকা (Banner Dimensions Guide)' : 'Banner Dimensions & Aspect Ratio Guide'}
+                      </h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                        {language === 'bn'
+                          ? 'সব ডিভাইসে নিখুঁত ও আকর্ষণীয় প্রদর্শনের জন্য নিচের সাইজ অনুযায়ী ফটো ডিজাইন করার সুপারিশ করা হচ্ছে:'
+                          : 'For pixel-perfect display across all screens, follow the recommended dimensions below:'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                      {/* Desktop Banner Spec */}
+                      <div className="p-3 sm:p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-emerald-200 dark:border-slate-800 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-extrabold text-xs">
+                          <Monitor className="w-4 h-4" />
+                          <span>{language === 'bn' ? 'ডেস্কটপ ব্যানার (Desktop Banner)' : 'Desktop Banner'}</span>
+                        </div>
+                        <div className="text-xs space-y-1 text-slate-700 dark:text-slate-300">
+                          <div>
+                            <span className="font-bold">{language === 'bn' ? 'অ্যাসপেক্ট রেশিও: ' : 'Aspect Ratio: '}</span>
+                            <span className="font-mono bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-bold">16:9</span>
+                            <span className="text-slate-500 text-[11px]"> ({language === 'bn' ? 'স্ট্যান্ডার্ড' : 'Standard'}) / </span>
+                            <span className="font-mono bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-bold">21:9</span>
+                            <span className="text-slate-500 text-[11px]"> ({language === 'bn' ? 'ওয়াইড' : 'Wide'})</span>
+                          </div>
+                          <div>
+                            <span className="font-bold">{language === 'bn' ? 'প্রস্তাবিত রেজোলিউশন: ' : 'Recommended Resolution: '}</span>
+                            <span className="font-mono font-bold text-slate-900 dark:text-white">1920 × 1080 px</span>
+                            <span className="text-slate-500 text-[11px]"> (Full HD) অথবা </span>
+                            <span className="font-mono font-bold text-slate-900 dark:text-white">1920 × 820 px</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 pt-0.5">
+                            {language === 'bn' 
+                              ? 'গুরুত্বপূর্ণ লেখা বা লোগো কেন্দ্রীয় ৭০% অংশে রাখুন যাতে স্ক্রিন সাইজ পরিবর্তনে না কাটে।'
+                              : 'Keep key text and logos in the center 70% safe-zone to avoid clipping.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Mobile Banner Spec */}
+                      <div className="p-3 sm:p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-emerald-200 dark:border-slate-800 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-extrabold text-xs">
+                          <Smartphone className="w-4 h-4" />
+                          <span>{language === 'bn' ? 'মোবাইল ব্যানার (Mobile Banner)' : 'Mobile Banner'}</span>
+                        </div>
+                        <div className="text-xs space-y-1 text-slate-700 dark:text-slate-300">
+                          <div>
+                            <span className="font-bold">{language === 'bn' ? 'অ্যাসপেক্ট রেশিও: ' : 'Aspect Ratio: '}</span>
+                            <span className="font-mono bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">4:5</span>
+                            <span className="text-slate-500 text-[11px]"> ({language === 'bn' ? 'প্রস্তাবিত' : 'Recommended'}) / </span>
+                            <span className="font-mono bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">9:16</span>
+                            <span className="text-slate-500 text-[11px]"> ({language === 'bn' ? 'পোর্ট্রেট' : 'Portrait'})</span>
+                          </div>
+                          <div>
+                            <span className="font-bold">{language === 'bn' ? 'প্রস্তাবিত রেজোলিউশন: ' : 'Recommended Resolution: '}</span>
+                            <span className="font-mono font-bold text-slate-900 dark:text-white">1080 × 1350 px</span>
+                            <span className="text-slate-500 text-[11px]"> অথবা </span>
+                            <span className="font-mono font-bold text-slate-900 dark:text-white">1080 × 1920 px</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 pt-0.5">
+                            {language === 'bn'
+                              ? 'মোবাইলে আলাদা ছবি দিলে কোনো ক্রপ বা কাটাকাটি ছাড়া একদম পারফেক্ট দেখাবে।'
+                              : 'Providing a dedicated mobile banner prevents awkward cropping on mobile screens.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Banner List */}
               <div className="space-y-6">
                 {heroBannersList.map((banner, index) => {
@@ -1201,7 +1281,7 @@ const Settings = () => {
                           <div className="flex items-center justify-between">
                             <Label className="font-bold text-xs flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
                               <Monitor className="w-4 h-4 text-blue-600" />
-                              <span>{language === 'bn' ? 'ডেস্কটপ ব্যানার (Desktop Banner - 16:9)' : 'Desktop Banner Image (16:9)'}</span>
+                              <span>{language === 'bn' ? 'ডেস্কটপ ব্যানার (Desktop - 16:9 / 1920×1080 px)' : 'Desktop Banner Image (16:9 / 1920×1080 px)'}</span>
                             </Label>
                             
                             <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs">
@@ -1247,7 +1327,7 @@ const Settings = () => {
                           <div className="flex items-center justify-between">
                             <Label className="font-bold text-xs flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
                               <Smartphone className="w-4 h-4 text-emerald-600" />
-                              <span>{language === 'bn' ? 'মোবাইল ব্যানার (Mobile Banner - Portrait / Fit)' : 'Mobile Banner Image (Mobile Fit)'}</span>
+                              <span>{language === 'bn' ? 'মোবাইল ব্যানার (Mobile - 4:5 / 1080×1350 px বা 9:16)' : 'Mobile Banner Image (4:5 / 1080×1350 px or 9:16)'}</span>
                             </Label>
                             
                             <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs">
