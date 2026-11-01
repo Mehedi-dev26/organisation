@@ -173,32 +173,32 @@ const MemberDashboardHome = () => {
         </div>
       </div>
 
-      {/* 2. Top 4 Activity Stat Cards (Signature aesthetic) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      {/* 2. Top 4 Activity Stat Cards (Mobile 2-column, Desktop 4-column) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: পরিশোধিত চাঁদা */}
         <Link
           to="/member/dues"
-          className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden"
+          className="group bg-white rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden"
         >
           <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#059669]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#E6F4EA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <CheckCircle className="w-6 h-6 stroke-[2.2] text-[#059669]" />
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 z-10">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#E6F4EA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.2] text-[#059669]" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
+              <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
                 {language === 'bn' ? 'পরিশোধিত চাঁদা' : 'Paid Dues'}
               </p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+              <p className="text-base sm:text-2xl lg:text-3xl font-black text-slate-900 leading-tight mt-0.5 truncate">
                 ৳{paidDues.toLocaleString()}
               </p>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#E6F4EA] text-[#059669] flex items-center justify-center shrink-0 z-10 shadow-2xs">
+          <div className="hidden sm:flex w-9 h-9 rounded-full bg-[#E6F4EA] text-[#059669] items-center justify-center shrink-0 z-10 shadow-2xs">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
@@ -206,31 +206,31 @@ const MemberDashboardHome = () => {
         {/* Card 2: বকেয়া চাঁদা */}
         <Link
           to="/member/dues"
-          className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden"
+          className="group bg-white rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden"
         >
           <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className={`w-full h-full ${unpaidDues > 0 ? 'fill-[#EF4444]' : 'fill-[#10B981]'}`}>
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs ${
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 z-10">
+            <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs ${
               unpaidDues > 0 ? 'bg-[#FEE2E2]' : 'bg-[#E6F4EA]'
             }`}>
-              <Wallet className={`w-6 h-6 stroke-[2.2] ${unpaidDues > 0 ? 'text-[#DC2626]' : 'text-[#059669]'}`} />
+              <Wallet className={`w-4 h-4 sm:w-6 sm:h-6 stroke-[2.2] ${unpaidDues > 0 ? 'text-[#DC2626]' : 'text-[#059669]'}`} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
+              <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
                 {language === 'bn' ? 'বকেয়া চাঁদা' : 'Unpaid Dues'}
               </p>
-              <p className={`text-2xl sm:text-3xl font-black leading-tight mt-0.5 ${
+              <p className={`text-base sm:text-2xl lg:text-3xl font-black leading-tight mt-0.5 truncate ${
                 unpaidDues > 0 ? 'text-rose-600' : 'text-emerald-700'
               }`}>
                 ৳{unpaidDues.toLocaleString()}
               </p>
             </div>
           </div>
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 z-10 shadow-2xs ${
+          <div className={`hidden sm:flex w-9 h-9 rounded-full items-center justify-center shrink-0 z-10 shadow-2xs ${
             unpaidDues > 0 ? 'bg-[#FEE2E2] text-rose-600' : 'bg-[#E6F4EA] text-emerald-600'
           }`}>
             <span className="text-[10px] font-black">{unpaidMonths.length}</span>
@@ -240,27 +240,27 @@ const MemberDashboardHome = () => {
         {/* Card 3: বার্ষিক মোট প্রদেয় */}
         <Link
           to="/member/dues"
-          className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden"
+          className="group bg-white rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden"
         >
           <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#3B82F6]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#EEF4FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <TrendingUp className="w-6 h-6 stroke-[2.2] text-[#2563EB]" />
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 z-10">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EEF4FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.2] text-[#2563EB]" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
+              <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
                 {language === 'bn' ? 'বার্ষিক হিসাব (১ বছর)' : 'Yearly Total'}
               </p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+              <p className="text-base sm:text-2xl lg:text-3xl font-black text-slate-900 leading-tight mt-0.5 truncate">
                 ৳{yearlyTotal.toLocaleString()}
               </p>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#EEF4FF] text-[#2563EB] flex items-center justify-center shrink-0 z-10 shadow-2xs">
+          <div className="hidden sm:flex w-9 h-9 rounded-full bg-[#EEF4FF] text-[#2563EB] items-center justify-center shrink-0 z-10 shadow-2xs">
             <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
           </div>
         </Link>
@@ -268,27 +268,27 @@ const MemberDashboardHome = () => {
         {/* Card 4: রক্তদানের প্রস্তুতি */}
         <div
           onClick={handleOpenBloodDialog}
-          className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden cursor-pointer"
+          className="group bg-white rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden cursor-pointer"
         >
           <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#E11D48]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Droplet className="w-6 h-6 stroke-[2.2] text-rose-600 fill-rose-500/20" />
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 z-10">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+              <Droplet className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.2] text-rose-600 fill-rose-500/20" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
-                {language === 'bn' ? `গ্রুপ: ${donorBloodGroup}` : `Blood: ${donorBloodGroup}`}
+              <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
+                {language === 'bn' ? `রক্তের গ্রুপ: ${donorBloodGroup}` : `Blood: ${donorBloodGroup}`}
               </p>
-              <p className="text-base sm:text-lg font-black text-slate-900 leading-tight mt-0.5 truncate">
+              <p className="text-sm sm:text-lg font-black text-slate-900 leading-tight mt-0.5 truncate">
                 {donorEligibility.isReady ? (language === 'bn' ? 'প্রস্তুত' : 'Ready') : (language === 'bn' ? donorEligibility.labelBn : donorEligibility.labelEn)}
               </p>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 z-10 shadow-2xs">
+          <div className="hidden sm:flex w-9 h-9 rounded-full bg-rose-50 text-rose-600 items-center justify-center shrink-0 z-10 shadow-2xs">
             <Heart className="w-4 h-4 fill-rose-500/30" />
           </div>
         </div>
@@ -351,23 +351,23 @@ const MemberDashboardHome = () => {
         </CardContent>
       </Card>
 
-      {/* 4. Quick Action Navigation Cards (Dashboard style buttons) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* 4. Quick Action Navigation Cards (2-column on mobile, 4-column on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         <Link
           to="/member/dues"
-          className="group p-5 rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-[#0B6B3A]/30 transition-all flex flex-col justify-between"
+          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-[#0B6B3A]/30 transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-[#E6F4EA] text-[#0B6B3A] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <CreditCard className="w-5 h-5 stroke-[2.3]" />
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#E6F4EA] text-[#0B6B3A] flex items-center justify-center group-hover:scale-110 transition-transform">
+              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3]" />
             </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#0B6B3A] group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#0B6B3A] group-hover:translate-x-1 transition-all" />
           </div>
-          <div className="mt-4">
-            <h4 className="font-bold text-slate-900 text-sm">
+          <div className="mt-3 sm:mt-4">
+            <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
               {language === 'bn' ? 'চাঁদা ব্যবস্থাপনা' : 'Dues & Fees'}
             </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">
               {language === 'bn' ? 'মাসিক চাঁদার হিসাব ও রসিদ' : 'View payments & receipts'}
             </p>
           </div>
@@ -375,19 +375,19 @@ const MemberDashboardHome = () => {
 
         <Link
           to="/member/pay-dues"
-          className="group p-5 rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between"
+          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Wallet className="w-5 h-5 stroke-[2.3]" />
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Wallet className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3]" />
             </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#D97706] group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#D97706] group-hover:translate-x-1 transition-all" />
           </div>
-          <div className="mt-4">
-            <h4 className="font-bold text-slate-900 text-sm">
+          <div className="mt-3 sm:mt-4">
+            <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
               {language === 'bn' ? 'অনলাইন চাঁদা পরিশোধ' : 'Pay Online'}
             </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">
               {language === 'bn' ? 'বিকাশ/নগদ মাধ্যমে পরিশোধ' : 'Instant gateway payment'}
             </p>
           </div>
@@ -395,19 +395,19 @@ const MemberDashboardHome = () => {
 
         <Link
           to="/member/profile"
-          className="group p-5 rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between"
+          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-[#EEF4FF] text-[#2563EB] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <User className="w-5 h-5 stroke-[2.3]" />
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EEF4FF] text-[#2563EB] flex items-center justify-center group-hover:scale-110 transition-transform">
+              <User className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3]" />
             </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-x-1 transition-all" />
           </div>
-          <div className="mt-4">
-            <h4 className="font-bold text-slate-900 text-sm">
+          <div className="mt-3 sm:mt-4">
+            <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
               {language === 'bn' ? 'ডিজিটাল আইডি কার্ড' : 'Digital ID Card'}
             </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">
               {language === 'bn' ? 'আইডি কার্ড ও প্রোফাইল তথ্য' : 'View ID card & edit profile'}
             </p>
           </div>
@@ -415,19 +415,19 @@ const MemberDashboardHome = () => {
 
         <Link
           to="/member/security"
-          className="group p-5 rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between"
+          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-[#F3E8FF] text-[#7C3AED] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Key className="w-5 h-5 stroke-[2.3]" />
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#F3E8FF] text-[#7C3AED] flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Key className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3]" />
             </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#7C3AED] group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#7C3AED] group-hover:translate-x-1 transition-all" />
           </div>
-          <div className="mt-4">
-            <h4 className="font-bold text-slate-900 text-sm">
+          <div className="mt-3 sm:mt-4">
+            <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
               {language === 'bn' ? 'নিরাপত্তা ও পাসওয়ার্ড' : 'Security & Password'}
             </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">
               {language === 'bn' ? 'লগইন পাসওয়ার্ড পরিবর্তন' : 'Change password & secure account'}
             </p>
           </div>

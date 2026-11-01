@@ -70,14 +70,16 @@ const CashierLayout = () => {
     queryKey: ['cashier-badge-pending-payments'],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from('payment_verifications')
+        .from('member_dues')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('payment_status', 'submitted')
+        .eq('is_paid', false);
       if (error) return 0;
       return count || 0;
     },
     enabled: Boolean(hasCashierAccess),
-    refetchInterval: 5000,
+    staleTime: 30000,
+    placeholderData: (prev) => prev ?? 0,
   });
 
   // Query unpaid dues count
@@ -92,7 +94,8 @@ const CashierLayout = () => {
       return count || 0;
     },
     enabled: Boolean(hasCashierAccess),
-    refetchInterval: 10000,
+    staleTime: 60000,
+    placeholderData: (prev) => prev ?? 0,
   });
 
   const totalNoticeCount = pendingPaymentsCount;

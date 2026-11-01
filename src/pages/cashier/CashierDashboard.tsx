@@ -51,8 +51,7 @@ const CashierDashboard = () => {
   // Real-time subscriptions for cashier dashboard data
   const subscriptionTables = React.useMemo(() => [
     { table: 'transactions' as const, queryKeys: [['cashier-transactions-summary'], ['cashier-monthly-chart'], ['cashier-recent-transactions']] },
-    { table: 'member_dues' as const, queryKeys: [['cashier-unpaid-dues']] },
-    { table: 'payment_verifications' as const, queryKeys: [['cashier-pending-verifications']] },
+    { table: 'member_dues' as const, queryKeys: [['cashier-unpaid-dues'], ['cashier-pending-verifications']] },
   ], []);
 
   useMultiTableRealtimeSubscription(subscriptionTables);
@@ -76,7 +75,7 @@ const CashierDashboard = () => {
     fetchCashierInfo();
   }, [user]);
 
-  // 1. Fetch current month transactions summary
+  // 1. Fetch current month transactions summary (staleTime ensures stable UI without jitter)
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
     queryKey: ['cashier-transactions-summary'],
     queryFn: async () => {
@@ -92,7 +91,8 @@ const CashierDashboard = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 5000,
+    staleTime: 60000,
+    placeholderData: (prev) => prev,
   });
 
   // 2. Fetch unpaid dues
@@ -101,34 +101,50 @@ const CashierDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('member_dues')
-        .select('id, amount, member_id, month, year')
+        .select('id, amount, member_id, month_year, is_paid')
         .eq('is_paid', false);
 
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 5000,
+    staleTime: 60000,
+    placeholderData: (prev) => prev,
   });
 
-  // 3. Fetch pending payment verifications
+  // 3. Fetch pending payment verifications from member_dues
   const { data: pendingVerifications = [], isLoading: verificationsLoading } = useQuery({
     queryKey: ['cashier-pending-verifications'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('payment_verifications')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
+        .from('member_dues')
+        .select(`
+          id,
+          amount,
+          month_year,
+          payment_method,
+          transaction_id,
+          submitted_at,
+          members (
+            id,
+            member_id,
+            full_name,
+            phone
+          )
+        `)
+        .eq('payment_status', 'submitted')
+        .eq('is_paid', false)
+        .order('submitted_at', { ascending: false })
         .limit(5);
 
       if (error) return [];
       return data || [];
     },
-    refetchInterval: 5000,
+    staleTime: 60000,
+    placeholderData: (prev) => prev ?? [],
   });
 
   // 4. Fetch recent transactions for live ledger
-  const { data: recentTransactions = [], isLoading: recentLoading } = useQuery({
+  const { data: recentTransactions = [] } = useQuery({
     queryKey: ['cashier-recent-transactions'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -141,7 +157,8 @@ const CashierDashboard = () => {
       if (error) return [];
       return data || [];
     },
-    refetchInterval: 5000,
+    staleTime: 60000,
+    placeholderData: (prev) => prev ?? [],
   });
 
   // 5. Monthly trend data for the interactive AreaChart (last 6 months)
@@ -180,7 +197,8 @@ const CashierDashboard = () => {
       }
       return months;
     },
-    refetchInterval: 15000,
+    staleTime: 120000,
+    placeholderData: (prev) => prev ?? [],
   });
 
   // Financial category breakdown for BarChart
@@ -221,19 +239,20 @@ const CashierDashboard = () => {
   const totalUnpaidAmount = unpaidDues?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
   const netBalance = monthlyIncome - monthlyExpense;
 
-  const isLoading = transactionsLoading || duesLoading || verificationsLoading;
+  // Stable rendering: only show full skeleton on cold start before data exists
+  const isInitialLoading = !transactions && transactionsLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 1. Signature Two-tone Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 sm:p-6 rounded-[24px] border border-slate-100 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-6 rounded-[24px] border border-slate-100 shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold shadow-2xs">
             <Wallet className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>{language === 'bn' ? 'ক্যাশিয়ার ড্যাশবোর্ড ও আর্থিক সারসংক্ষেপ' : 'Cashier Desk & Financial Overview'}</span>
           </div>
           <div className="mt-2">
-            <h2 className="text-2xl sm:text-3xl font-black text-[#14231B] font-heading tracking-tight leading-tight">
+            <h2 className="text-xl sm:text-3xl font-black text-[#14231B] font-heading tracking-tight leading-tight">
               {language === 'bn' ? `স্বাগতম, ${cashierName || 'ক্যাশিয়ার'}` : `Welcome, ${cashierName || 'Cashier'}`}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
@@ -252,110 +271,110 @@ const CashierDashboard = () => {
         </div>
       </div>
 
-      {isLoading ? (
+      {isInitialLoading ? (
         <div className="flex justify-center p-16">
           <Loader2 className="h-10 w-10 animate-spin text-[#0B6B3A]" />
         </div>
       ) : (
         <>
-          {/* 2. Top 4 Live Stat Cards matching Admin aesthetic */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 2. Top 4 Live Stat Cards (Mobile 2-column grid, Desktop 4-column grid) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: এই মাসের আয় */}
-            <div className="group bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
+            <div className="group bg-white rounded-[20px] sm:rounded-[24px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden">
               <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
                 <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#059669]">
                   <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
                 </svg>
               </div>
-              <div className="flex items-center gap-3.5 min-w-0 z-10">
-                <div className="w-12 h-12 rounded-2xl bg-[#E6F4EA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-                  <TrendingUp className="w-6 h-6 stroke-[2.2] text-[#059669]" />
+              <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 z-10">
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#E6F4EA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                  <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.2] text-[#059669]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-500 truncate">
+                  <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
                     {language === 'bn' ? 'চলতি মাসের আয়' : 'Monthly Income'}
                   </p>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+                  <p className="text-base sm:text-2xl lg:text-3xl font-black text-slate-900 leading-tight mt-0.5 truncate">
                     ৳{monthlyIncome.toLocaleString()}
                   </p>
                 </div>
               </div>
-              <div className="w-9 h-9 rounded-full bg-[#E6F4EA] text-[#059669] flex items-center justify-center shrink-0 z-10 shadow-2xs">
+              <div className="hidden sm:flex w-9 h-9 rounded-full bg-[#E6F4EA] text-[#059669] items-center justify-center shrink-0 z-10 shadow-2xs">
                 <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>
 
             {/* Card 2: এই মাসের ব্যয় */}
-            <div className="group bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
+            <div className="group bg-white rounded-[20px] sm:rounded-[24px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden">
               <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
                 <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#EF4444]">
                   <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
                 </svg>
               </div>
-              <div className="flex items-center gap-3.5 min-w-0 z-10">
-                <div className="w-12 h-12 rounded-2xl bg-[#FEE2E2] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-                  <TrendingDown className="w-6 h-6 stroke-[2.2] text-[#DC2626]" />
+              <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 z-10">
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#FEE2E2] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                  <TrendingDown className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.2] text-[#DC2626]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-500 truncate">
+                  <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
                     {language === 'bn' ? 'চলতি মাসের ব্যয়' : 'Monthly Expense'}
                   </p>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+                  <p className="text-base sm:text-2xl lg:text-3xl font-black text-slate-900 leading-tight mt-0.5 truncate">
                     ৳{monthlyExpense.toLocaleString()}
                   </p>
                 </div>
               </div>
-              <div className="w-9 h-9 rounded-full bg-[#FEE2E2] text-[#DC2626] flex items-center justify-center shrink-0 z-10 shadow-2xs">
+              <div className="hidden sm:flex w-9 h-9 rounded-full bg-[#FEE2E2] text-[#DC2626] items-center justify-center shrink-0 z-10 shadow-2xs">
                 <ArrowDownRight className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>
 
             {/* Card 3: বকেয়া চাঁদা */}
-            <div className="group bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
+            <div className="group bg-white rounded-[20px] sm:rounded-[24px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden">
               <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
                 <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#F59E0B]">
                   <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
                 </svg>
               </div>
-              <div className="flex items-center gap-3.5 min-w-0 z-10">
-                <div className="w-12 h-12 rounded-2xl bg-[#FEF3C7] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-                  <Receipt className="w-6 h-6 stroke-[2.2] text-[#D97706]" />
+              <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 z-10">
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#FEF3C7] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                  <Receipt className="w-4 h-4 stroke-[2.2] text-[#D97706]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-500 truncate">
+                  <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
                     {language === 'bn' ? 'বকেয়া চাঁদা' : 'Unpaid Dues'}
                   </p>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+                  <p className="text-base sm:text-2xl lg:text-3xl font-black text-slate-900 leading-tight mt-0.5 truncate">
                     ৳{totalUnpaidAmount.toLocaleString()}
                   </p>
                 </div>
               </div>
-              <div className="w-9 h-9 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0 z-10 shadow-2xs">
+              <div className="hidden sm:flex w-9 h-9 rounded-full bg-[#FEF3C7] text-[#D97706] items-center justify-center shrink-0 z-10 shadow-2xs">
                 <span className="text-[11px] font-black">{unpaidDues?.length || 0}</span>
               </div>
             </div>
 
             {/* Card 4: নিট ক্যাশ ব্যালেন্স */}
-            <div className="group bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
+            <div className="group bg-white rounded-[20px] sm:rounded-[24px] p-3.5 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-2 sm:gap-3 relative overflow-hidden">
               <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
                 <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#3B82F6]">
                   <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
                 </svg>
               </div>
-              <div className="flex items-center gap-3.5 min-w-0 z-10">
-                <div className="w-12 h-12 rounded-2xl bg-[#EEF4FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-                  <Wallet className="w-6 h-6 stroke-[2.2] text-[#2563EB]" />
+              <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 z-10">
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EEF4FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                  <Wallet className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.2] text-[#2563EB]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-500 truncate">
+                  <p className="text-[11px] sm:text-xs font-bold text-slate-500 truncate">
                     {language === 'bn' ? 'চলতি ব্যালেন্স' : 'Net Balance'}
                   </p>
-                  <p className={`text-2xl sm:text-3xl font-black leading-tight mt-0.5 ${netBalance >= 0 ? 'text-[#059669]' : 'text-rose-600'}`}>
+                  <p className={`text-base sm:text-2xl lg:text-3xl font-black leading-tight mt-0.5 truncate ${netBalance >= 0 ? 'text-[#059669]' : 'text-rose-600'}`}>
                     ৳{netBalance.toLocaleString()}
                   </p>
                 </div>
               </div>
-              <div className="w-9 h-9 rounded-full bg-[#EEF4FF] text-[#2563EB] flex items-center justify-center shrink-0 z-10 shadow-2xs">
+              <div className="hidden sm:flex w-9 h-9 rounded-full bg-[#EEF4FF] text-[#2563EB] items-center justify-center shrink-0 z-10 shadow-2xs">
                 <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>
@@ -418,6 +437,7 @@ const CashierDashboard = () => {
                         strokeWidth={2.5}
                         fillOpacity={1} 
                         fill="url(#cashierIncomeGrad)" 
+                        isAnimationActive={false}
                       />
                       <Area 
                         type="monotone" 
@@ -427,6 +447,7 @@ const CashierDashboard = () => {
                         strokeWidth={2.5}
                         fillOpacity={1} 
                         fill="url(#cashierExpenseGrad)" 
+                        isAnimationActive={false}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -567,7 +588,7 @@ const CashierDashboard = () => {
                       borderRadius: '12px'
                     }}
                   />
-                  <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                  <Bar dataKey="amount" radius={[8, 8, 0, 0]} isAnimationActive={false}>
                     {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
@@ -659,7 +680,7 @@ const CashierDashboard = () => {
                     <div key={pv.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3 text-xs">
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900 truncate">
-                          {pv.member_name || pv.phone || 'অনলাইন আবেদনকারী'}
+                          {pv.members?.full_name || pv.members?.phone || pv.member_name || 'অনলাইন সদস্য'}
                         </p>
                         <p className="text-[10px] text-slate-400 font-mono mt-0.5">
                           TrxID: {pv.transaction_id || 'N/A'} • {pv.payment_method || 'bKash'}

@@ -660,83 +660,82 @@ const BloodDonors: React.FC = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2 bg-slate-100/60 dark:bg-slate-900/40 rounded-2xl">
+              <div className="space-y-3 p-2 sm:p-3 bg-slate-100/60 dark:bg-slate-900/40 rounded-2xl">
                 {filteredDonors.map((donor) => {
                   const eligibility = getDonationEligibility(donor.last_donated);
                   return (
                     <div 
                       key={donor.id} 
-                      className="p-2.5 sm:p-3 bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:border-red-300 transition-all"
+                      className="p-4 bg-white dark:bg-slate-900 rounded-[20px] border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-red-300 transition-all gap-3.5"
                     >
                       <div>
-                        {/* Top: Blood Group Badge & Eligibility Dot */}
-                        <div className="flex items-center justify-between gap-1 mb-2">
-                          <span className="inline-flex items-center justify-center bg-red-600 text-white font-black text-xs px-2 py-0.5 rounded-lg shadow-2xs">
-                            <Droplet className="w-3 h-3 mr-0.5 fill-white" />
-                            {donor.blood_group}
-                          </span>
+                        {/* Top: Blood Group Badge & Eligibility Status */}
+                        <div className="flex items-center justify-between gap-2 mb-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-600 to-rose-700 text-white font-black text-base flex items-center justify-center shadow-xs">
+                              {donor.blood_group}
+                            </span>
+                            <div>
+                              <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-base leading-tight">
+                                {donor.full_name}
+                              </h4>
+                              {donor.member_id ? (
+                                <div className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>ID: {donor.member_id}</span>
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-slate-400 font-medium mt-0.5">
+                                  {language === 'bn' ? 'স্বেচ্ছাসেবী রক্তদাতা' : 'Volunteer Donor'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                           
                           {eligibility.isReady ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap shadow-2xs">
+                              <span className="w-2 h-2 rounded-full bg-emerald-600" />
                               {language === 'bn' ? 'প্রস্তুত' : 'Ready'}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap shadow-2xs">
+                              <span className="w-2 h-2 rounded-full bg-amber-600" />
                               {language === 'bn' ? 'অপেক্ষা' : 'Waiting'}
                             </span>
                           )}
                         </div>
 
-                        {/* Donor Name */}
-                        <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm line-clamp-1 leading-tight">
-                          {donor.full_name}
-                        </h4>
-
-                        {/* Member ID / Volunteer */}
-                        {donor.member_id ? (
-                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold truncate mt-0.5">
-                            ID: {donor.member_id}
-                          </div>
-                        ) : (
-                          <div className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
-                            {language === 'bn' ? 'স্বেচ্ছাসেবী রক্তদাতা' : 'Volunteer Donor'}
-                          </div>
-                        )}
-
-                        {/* Location */}
-                        <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-1">
-                          <MapPin className="w-3 h-3 text-red-500 shrink-0" />
-                          <span className="truncate">
-                            {donor.upazila ? `${donor.upazila}, ` : ''}{donor.district || 'নওগাঁ'}
-                          </span>
-                        </div>
-
-                        {/* Last Donated */}
-                        {donor.last_donated && (
-                          <div className="text-[10px] text-slate-400 mt-1 truncate">
-                            {language === 'bn' ? 'সর্বশেষ: ' : 'Last: '}
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">
-                              {formatBengaliDate(donor.last_donated)}
+                        {/* Location & Last Donation Date */}
+                        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400 pt-1">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                            <span className="truncate">
+                              {donor.upazila ? `${donor.upazila}, ` : ''}{donor.district || 'নওগাঁ'}
                             </span>
                           </div>
-                        )}
+
+                          <div className="flex items-center gap-1.5 truncate text-slate-500">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">
+                              {donor.last_donated ? formatBengaliDate(donor.last_donated) : (language === 'bn' ? 'তথ্য নেই' : 'N/A')}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Action Call Button */}
-                      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      {/* Prominent Visible Call Button */}
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                         {donor.is_public_details ? (
                           <a
                             href={`tel:${donor.phone}`}
-                            className="w-full inline-flex items-center justify-center gap-1 bg-[#0B6B3A] hover:bg-emerald-700 text-white font-bold text-[11px] py-1.5 px-2 rounded-lg shadow-xs transition-colors"
+                            className="w-full inline-flex items-center justify-center gap-2 bg-[#0B6B3A] hover:bg-[#08522c] active:bg-[#063f21] text-white font-bold text-sm py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-[0.98]"
                           >
-                            <PhoneCall className="w-3 h-3 shrink-0" />
-                            <span>{language === 'bn' ? 'কল করুন' : 'Call'}</span>
+                            <PhoneCall className="w-4 h-4 shrink-0 animate-pulse" />
+                            <span>{language === 'bn' ? `সরাসরি কল করুন (${donor.phone})` : `Call Now (${donor.phone})`}</span>
                           </a>
                         ) : (
-                          <span className="block text-center text-[10px] text-slate-400 italic py-1">
-                            {language === 'bn' ? 'নম্বর গোপন' : 'Private'}
+                          <span className="block text-center text-xs text-slate-400 italic py-2">
+                            {language === 'bn' ? 'নম্বর গোপন রাখা হয়েছে' : 'Phone number is private'}
                           </span>
                         )}
                       </div>

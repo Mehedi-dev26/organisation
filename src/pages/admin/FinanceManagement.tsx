@@ -1,4 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useReactToPrint } from 'react-to-print';
 import { supabase } from '@/integrations/supabase/client';
@@ -167,11 +168,24 @@ const FinanceManagement: React.FC = () => {
   const [printTransaction, setPrintTransaction] = useState<Transaction | null>(null);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
-  // Filters
-  const [selectedTab, setSelectedTab] = useState<'all' | 'income' | 'expense'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  // Filters & URL search parameters
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
+  const urlTab = searchParams.get('tab') as 'all' | 'income' | 'expense' | null;
+
+  const [selectedTab, setSelectedTab] = useState<'all' | 'income' | 'expense'>(urlTab || 'all');
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>('all');
+
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+    }
+    if (urlTab) {
+      setSelectedTab(urlTab);
+    }
+  }, [urlSearch, urlTab]);
 
   // Receipt image upload
   const [selectedReceipt, setSelectedReceipt] = useState<File | null>(null);
@@ -724,27 +738,27 @@ const FinanceManagement: React.FC = () => {
           </p>
         </div>
 
-        {/* Unified 1-Lane Action Buttons: নতুন খরচ, নতুন আয়, নতুন লেনদেন (Unbreakable Mobile-Responsive Lane) */}
-        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
-          <div className="inline-flex items-center gap-2 p-1.5 bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-[#11DFC0]/40 shadow-[0_4px_20px_rgba(17,223,192,0.10)] whitespace-nowrap min-w-max">
-            {/* 1. New Expense Button */}
-            <Button
-              size="sm"
-              onClick={() => openAddModal('expense')}
-              className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <MinusCircle className="w-4 h-4 stroke-[2.4]" />
-              {language === 'bn' ? 'নতুন খরচ' : 'New Expense'}
-            </Button>
-
-            {/* 2. New Income Button */}
+        {/* Mobile: 2 buttons per row side-by-side grid, Desktop: clean flex bar */}
+        <div className="w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 p-1.5 bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-[#11DFC0]/40 shadow-[0_4px_20px_rgba(17,223,192,0.10)]">
+            {/* 1. New Income Button */}
             <Button
               size="sm"
               onClick={() => openAddModal('donation')}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3 sm:px-4 py-2.5 transition-all hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto justify-center"
             >
               <PlusCircle className="w-4 h-4 stroke-[2.4]" />
               {language === 'bn' ? 'নতুন আয়' : 'New Income'}
+            </Button>
+
+            {/* 2. New Expense Button */}
+            <Button
+              size="sm"
+              onClick={() => openAddModal('expense')}
+              className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3 sm:px-4 py-2.5 transition-all hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto justify-center"
+            >
+              <MinusCircle className="w-4 h-4 stroke-[2.4]" />
+              {language === 'bn' ? 'নতুন খরচ' : 'New Expense'}
             </Button>
 
             {/* 3. New Transaction Button */}
@@ -752,7 +766,7 @@ const FinanceManagement: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => openAddModal('member_fee')}
-              className="bg-[#11DFC0]/15 hover:bg-[#11DFC0]/30 border-[#11DFC0]/60 text-teal-950 dark:text-teal-200 gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="col-span-2 sm:col-span-1 bg-[#11DFC0]/15 hover:bg-[#11DFC0]/30 border-[#11DFC0]/60 text-teal-950 dark:text-teal-200 gap-1.5 rounded-xl shadow-xs font-bold text-xs sm:text-sm px-3 sm:px-4 py-2.5 transition-all hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto justify-center"
             >
               <ArrowLeftRight className="w-4 h-4 text-teal-700 dark:text-teal-300 stroke-[2.4]" />
               {language === 'bn' ? 'নতুন লেনদেন' : 'New Transaction'}

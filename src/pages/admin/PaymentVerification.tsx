@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -62,7 +63,15 @@ const PaymentVerification = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+    }
+  }, [urlSearch]);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);

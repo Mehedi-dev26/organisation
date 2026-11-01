@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -54,7 +55,15 @@ const DuesManagement = () => {
   // Real-time subscription for member dues
   useRealtimeSubscription({ table: 'member_dues', queryKey: ['member-dues'] });
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+    }
+  }, [urlSearch]);
   const [filterStatus, setFilterStatus] = useState<string>('unpaid');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
