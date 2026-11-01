@@ -296,7 +296,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const roles = rolesData?.map(r => r.role) || [];
       const userIsAdmin = isUserAdmin(data.user, roles);
       let userIsMember = roles.includes('member');
-      const userIsCashier = roles.includes('cashier');
+      let userIsCashier = roles.includes('cashier');
+
+      // Check user_metadata and cashiers table for cashier role
+      if (!userIsCashier && data.user) {
+        if (
+          data.user.user_metadata?.role === 'cashier' ||
+          data.user.app_metadata?.role === 'cashier'
+        ) {
+          userIsCashier = true;
+        } else {
+          try {
+            const uEmail = data.user.email || '';
+            const { data: cashierData } = await supabase
+              .from('cashiers')
+              .select('id')
+              .or(`user_id.eq.${data.user.id},email.eq.${uEmail}`)
+              .limit(1);
+            if (cashierData && cashierData.length > 0) {
+              userIsCashier = true;
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
 
       if (!userIsMember) {
         try {
@@ -320,9 +344,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setRolesLoading(false);
       setLoading(false);
 
-      if (userIsAdmin) {
-        try {
+      try {
+        if (userIsAdmin) {
           sessionStorage.setItem('batighor_auth_admin', 'true');
+        } else {
+          sessionStorage.removeItem('batighor_auth_admin');
+        }
+        if (userIsMember) {
+          sessionStorage.setItem('batighor_auth_member', 'true');
+        } else {
+          sessionStorage.removeItem('batighor_auth_member');
+        }
+        if (userIsCashier) {
+          sessionStorage.setItem('batighor_auth_cashier', 'true');
+        } else {
+          sessionStorage.removeItem('batighor_auth_cashier');
+        }
+
+        if (userIsAdmin || userIsCashier || userIsMember) {
           sessionStorage.setItem('batighor_auth_user', JSON.stringify({
             id: data.user.id,
             email: data.user.email,
@@ -330,13 +369,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             user_metadata: data.user.user_metadata,
             app_metadata: data.user.app_metadata,
           }));
-        } catch {}
-      }
+        }
+      } catch {}
 
       if (userIsAdmin && !roles.includes('admin')) {
         supabase
           .from('user_roles')
           .upsert({ user_id: data.user.id, role: 'admin' }, { onConflict: 'user_id,role' })
+          .then(() => {}, () => {});
+      }
+
+      if (userIsCashier && !roles.includes('cashier')) {
+        supabase
+          .from('user_roles')
+          .upsert({ user_id: data.user.id, role: 'cashier' }, { onConflict: 'user_id,role' })
           .then(() => {}, () => {});
       }
       

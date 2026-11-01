@@ -242,23 +242,40 @@ const CashierManagement = () => {
   // Create team / cashier user mutation
   const createCashierMutation = useMutation({
     mutationFn: async (data: typeof formData & { role: string; permissions: string[] }) => {
-      const response = await supabase.functions.invoke('create-cashier-user', {
-        body: {
-          email: data.email,
-          password: data.password,
-          fullName: data.fullName,
-          phone: data.phone,
-          role: data.role,
-          permissions: data.permissions,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
+      let response: any;
+      try {
+        response = await supabase.functions.invoke('create-cashier-user', {
+          body: {
+            email: data.email.trim(),
+            password: data.password.trim(),
+            fullName: data.fullName.trim(),
+            phone: data.phone?.trim() || '',
+            role: data.role,
+            permissions: data.permissions,
+          },
+        });
+      } catch (err: any) {
+        console.error('Invoke error:', err);
+        throw new Error(err.message || (language === 'bn' ? 'ফাংশন কল ব্যর্থ হয়েছে' : 'Function call failed'));
       }
 
-      if (!response.data?.success) {
-        throw new Error(response.data?.error || 'অ্যাকাউন্ট তৈরি করতে ব্যর্থ হয়েছে');
+      if (response?.error) {
+        let msg = response.error.message;
+        try {
+          if (response.error.context && typeof response.error.context.json === 'function') {
+            const body = await response.error.context.json();
+            if (body?.error) {
+              msg = body.error;
+            }
+          }
+        } catch {
+          // ignore context parsing error
+        }
+        throw new Error(msg || (language === 'bn' ? 'অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে' : 'Failed to create account'));
+      }
+
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.error || (language === 'bn' ? 'অ্যাকাউন্ট তৈরি করতে ব্যর্থ হয়েছে' : 'Failed to create account'));
       }
 
       return response.data;

@@ -154,6 +154,22 @@ const Auth = () => {
           console.debug('Member lookup error:', e);
         }
 
+        // A2. Direct query in cashiers / team table
+        try {
+          const { data: cashierData } = await supabase
+            .from('cashiers')
+            .select('email, phone')
+            .in('phone', candidatePhones)
+            .limit(1)
+            .maybeSingle();
+
+          if (cashierData?.email && !candidateEmails.includes(cashierData.email.toLowerCase())) {
+            candidateEmails.unshift(cashierData.email.toLowerCase());
+          }
+        } catch (e) {
+          console.debug('Cashier lookup error:', e);
+        }
+
         // B. RPC lookup fallback
         if (candidateEmails.length === 0) {
           try {

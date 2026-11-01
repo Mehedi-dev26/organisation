@@ -13,22 +13,37 @@ const CashierLayout = () => {
   const location = useLocation();
 
   const isAuthLoading = loading || rolesLoading;
-  const hasCashierAccess = isCashier || isAdmin;
+  const isCachedCashier = () => {
+    try {
+      return (
+        sessionStorage.getItem('batighor_auth_cashier') === 'true' ||
+        sessionStorage.getItem('batighor_auth_admin') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  };
 
-  if (isAuthLoading && !user) {
+  const hasCashierAccess = isCashier || isAdmin || isCachedCashier();
+
+  if (isAuthLoading && !hasCashierAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">
-            {language === 'bn' ? 'লোড হচ্ছে...' : 'Loading...'}
+          <Loader2 className="h-10 w-10 animate-spin text-[#0B6B3A] mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm font-medium">
+            {language === 'bn' ? 'ক্যাশিয়ার প্যানেল লোড হচ্ছে...' : 'Loading Cashier Panel...'}
           </p>
         </div>
       </div>
     );
   }
 
-  if (!user || !hasCashierAccess) {
+  if (!user && !isCachedCashier()) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (!hasCashierAccess) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

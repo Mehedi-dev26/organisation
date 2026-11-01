@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-client-role",
 };
 
 interface CreateCashierUserRequest {
@@ -29,7 +29,7 @@ serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
-      throw new Error("Missing required environment variables");
+      throw new Error("Missing required Supabase environment variables");
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -89,41 +89,85 @@ serve(async (req) => {
 
     console.log("Resolving auth user for:", normalizedEmail);
 
-    // 2. Check if auth user already exists
+    // 2. Multi-tier search to find if user already exists
     let targetUserId: string | null = null;
 
+    // Check members table first
     try {
-      const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
-      const existing = usersList?.users?.find(
-        (u) => u.email?.toLowerCase() === normalizedEmail
-      );
-      if (existing) {
-        targetUserId = existing.id;
-        console.log("Found existing user ID:", targetUserId);
+      const { data: existingMember } = await supabaseAdmin
+        .from("members")
+        .select("user_id")
+        .eq("email", normalizedEmail)
+        .not("user_id", "is", null)
+        .maybeSingle();
 
-        // Update password and metadata
-        const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
-          password: password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: fullName,
-            phone: phone || null,
-            role: role,
-            permissions: permissions || [],
-          },
-        });
-
-        if (updateErr) {
-          console.error("Failed to update existing user:", updateErr);
-          throw new Error(`ব্যবহারকারীর তথ্য আপডেট ব্যর্থ: ${updateErr.message}`);
-        }
+      if (existingMember?.user_id) {
+        targetUserId = existingMember.user_id;
+        console.log("Found user ID from members table:", targetUserId);
       }
-    } catch (listErr) {
-      console.warn("User list lookup error:", listErr);
+    } catch (memberLookupErr) {
+      console.warn("Member lookup non-fatal error:", memberLookupErr);
     }
 
-    // 3. If user doesn't exist yet, create a new auth user
+    // Check cashiers table
     if (!targetUserId) {
+      try {
+        const { data: existingCashierRecord } = await supabaseAdmin
+          .from("cashiers")
+          .select("user_id")
+          .eq("email", normalizedEmail)
+          .maybeSingle();
+
+        if (existingCashierRecord?.user_id) {
+          targetUserId = existingCashierRecord.user_id;
+          console.log("Found user ID from cashiers table:", targetUserId);
+        }
+      } catch (cashierLookupErr) {
+        console.warn("Cashier lookup non-fatal error:", cashierLookupErr);
+      }
+    }
+
+    // Check auth.admin.listUsers
+    if (!targetUserId) {
+      try {
+        let page = 1;
+        while (page <= 5 && !targetUserId) {
+          const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
+          if (!usersList?.users || usersList.users.length === 0) break;
+          const existing = usersList.users.find(
+            (u) => u.email?.toLowerCase() === normalizedEmail
+          );
+          if (existing) {
+            targetUserId = existing.id;
+            console.log("Found existing user ID via listUsers:", targetUserId);
+            break;
+          }
+          page++;
+        }
+      } catch (listErr) {
+        console.warn("User list lookup error:", listErr);
+      }
+    }
+
+    // 3. Update existing user or create a new auth user
+    if (targetUserId) {
+      const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          phone: phone || null,
+          role: role,
+          permissions: permissions || [],
+        },
+      });
+
+      if (updateErr) {
+        console.error("Failed to update existing user:", updateErr);
+        throw new Error(`ব্যবহারকারীর তথ্য আপডেট ব্যর্থ: ${updateErr.message}`);
+      }
+    } else {
+      // Create new user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: normalizedEmail,
         password: password,
@@ -137,16 +181,46 @@ serve(async (req) => {
       });
 
       if (createError) {
-        throw new Error(`ব্যবহারকারী তৈরি ব্যর্থ: ${createError.message}`);
+        console.warn("Create user error:", createError.message);
+        // Handle case where user already exists in auth
+        if (
+          createError.message?.toLowerCase().includes("already") ||
+          createError.message?.toLowerCase().includes("exists") ||
+          createError.message?.toLowerCase().includes("registered")
+        ) {
+          // Retry listing users to grab their ID
+          const { data: retryList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
+          const retryFound = retryList?.users?.find(
+            (u) => u.email?.toLowerCase() === normalizedEmail
+          );
+          if (retryFound) {
+            targetUserId = retryFound.id;
+            await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+              password: password,
+              email_confirm: true,
+              user_metadata: {
+                full_name: fullName,
+                phone: phone || null,
+                role: role,
+                permissions: permissions || [],
+              },
+            });
+          } else {
+            throw new Error(`ব্যবহারকারী ইতিমধ্যে বিদ্যমান কিন্তু আইডি উদ্ধার করা যায়নি: ${createError.message}`);
+          }
+        } else {
+          throw new Error(`ব্যবহারকারী তৈরি ব্যর্থ: ${createError.message}`);
+        }
+      } else if (newUser?.user) {
+        targetUserId = newUser.user.id;
       }
-
-      if (!newUser?.user) {
-        throw new Error("নতুন ব্যবহারকারী তৈরি করা যায়নি");
-      }
-
-      targetUserId = newUser.user.id;
-      console.log("Newly created user ID:", targetUserId);
     }
+
+    if (!targetUserId) {
+      throw new Error("নতুন ব্যবহারকারী তৈরি বা সনাক্ত করা যায়নি");
+    }
+
+    console.log("Resolved Target User ID:", targetUserId);
 
     // 4. Assign role in user_roles table
     const { error: roleInsertError } = await supabaseAdmin
@@ -160,7 +234,7 @@ serve(async (req) => {
       );
 
     if (roleInsertError) {
-      console.error("Role assignment error:", roleInsertError.message);
+      console.warn("Role assignment warning:", roleInsertError.message);
       // Non-fatal if enum restriction happens, try cashier fallback
       if (role !== "cashier") {
         await supabaseAdmin.from("user_roles").upsert(
@@ -173,14 +247,14 @@ serve(async (req) => {
     console.log("Role assigned successfully:", role);
 
     // 5. Upsert record in cashiers table for team management
-    const { data: existingCashier } = await supabaseAdmin
+    const { data: existingCashiers } = await supabaseAdmin
       .from("cashiers")
-      .select("id")
-      .or(`user_id.eq.${targetUserId},email.eq.${normalizedEmail}`)
-      .maybeSingle();
+      .select("id, user_id, email")
+      .or(`user_id.eq.${targetUserId},email.eq.${normalizedEmail}`);
 
-    if (existingCashier) {
-      await supabaseAdmin
+    if (existingCashiers && existingCashiers.length > 0) {
+      const primaryId = existingCashiers[0].id;
+      const { error: updateCashierErr } = await supabaseAdmin
         .from("cashiers")
         .update({
           user_id: targetUserId,
@@ -188,8 +262,13 @@ serve(async (req) => {
           email: normalizedEmail,
           phone: phone || null,
           is_active: true,
+          updated_at: new Date().toISOString(),
         })
-        .eq("id", existingCashier.id);
+        .eq("id", primaryId);
+
+      if (updateCashierErr) {
+        console.warn("Cashier record update warning:", updateCashierErr.message);
+      }
     } else {
       const { error: cashierInsertError } = await supabaseAdmin
         .from("cashiers")
@@ -203,7 +282,7 @@ serve(async (req) => {
         });
 
       if (cashierInsertError) {
-        console.error("Cashier insert warning:", cashierInsertError.message);
+        console.warn("Cashier insert warning:", cashierInsertError.message);
       }
     }
 
