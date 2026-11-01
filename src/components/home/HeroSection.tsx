@@ -12,12 +12,16 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { useHeroBanners, BannerSlide } from '@/services/siteSettingsService';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 const HeroSection = () => {
   const { language } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
+
+  // Realtime subscription for instant updates on admin banner save
+  useRealtimeSubscription({ table: 'site_settings', queryKey: ['hero-banners'] });
 
   // Fetch dynamic banner directly from Supabase database with instant local-first cache
   const { data: dbBanners, isLoading } = useHeroBanners();

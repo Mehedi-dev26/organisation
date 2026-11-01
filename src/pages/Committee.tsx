@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
-  Phone, 
   PhoneCall, 
   Loader2, 
   Award, 
@@ -11,10 +10,11 @@ import {
   Info, 
   Copy, 
   Check, 
-  X,
-  Mail,
-  Calendar,
-  UserCheck
+  Mail, 
+  Calendar, 
+  MapPin, 
+  Briefcase,
+  CheckCircle2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,35 +22,19 @@ import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-
-interface CommitteeMember {
-  id: string;
-  name_bn: string;
-  name_en: string | null;
-  position_bn: string;
-  position_en: string | null;
-  photo_url: string | null;
-  phone: string | null;
-  email: string | null;
-  sort_order: number | null;
-  term_start?: string | null;
-  term_end?: string | null;
-  member_id?: string | null;
-}
+import { getMemberRoleDetails, CommitteeMember } from '@/lib/committeeUtils';
 
 const Committee = () => {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const { toast } = useToast();
 
   const [selectedMember, setSelectedMember] = useState<CommitteeMember | null>(null);
   const [copiedPhone, setCopiedPhone] = useState(false);
 
-  // Enable realtime subscription
+  // Enable realtime subscription for instant auto-refresh
   useRealtimeSubscription({ table: 'committee_members', queryKey: ['public-committee'] });
 
   const { data: committeeMembers = [], isLoading } = useQuery({
@@ -65,6 +49,8 @@ const Committee = () => {
       if (error) throw error;
       return (data || []) as CommitteeMember[];
     },
+    staleTime: 1000 * 30,
+    placeholderData: (prev) => prev,
   });
 
   // 1. President (Tier 1 - Top)
@@ -146,15 +132,9 @@ const Committee = () => {
     setTimeout(() => setCopiedPhone(false), 2000);
   };
 
-  if (isLoading) {
-    return (
-      <MainLayout>
-        <div className="flex-1 flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-[#0B6B3A]" />
-        </div>
-      </MainLayout>
-    );
-  }
+  const selectedMemberRole = selectedMember 
+    ? getMemberRoleDetails(selectedMember.position_bn, language)
+    : null;
 
   return (
     <MainLayout>
@@ -181,16 +161,20 @@ const Committee = () => {
       {/* Main Committee Section */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          {committeeMembers.length === 0 ? (
+          {isLoading && committeeMembers.length === 0 ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-[#0B6B3A]" />
+            </div>
+          ) : committeeMembers.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
               <ShieldCheck className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>{language === 'bn' ? 'কোন কমিটি সদস্য পাওয়া যায়নি' : 'No committee members found'}</p>
             </div>
           ) : (
-            <div className="space-y-12 sm:space-y-16">
-              {/* 1. TIER 1: President (Top, Centered, Prominent Round Photo, No Box/Button Background) */}
+            <div className="space-y-14 sm:space-y-20">
+              {/* 1. TIER 1: President (Top, Centered, Prominent Round Photo, Spaced Out & Clean) */}
               {president && (
-                <div className="max-w-md mx-auto text-center">
+                <div className="max-w-md mx-auto text-center px-4">
                   <CommitteeCleanCard 
                     member={president} 
                     language={language} 
@@ -201,10 +185,10 @@ const Committee = () => {
               )}
 
               {/* 2. TIER 2: 3 Core Officers (General Secretary, Cashier, ICT Secretary) */}
-              {/* Desktop: 3 Columns | Mobile: Neatly arranged together in 3 columns */}
+              {/* Desktop: 3 Columns | Mobile: Enlarged images with generous breathing room */}
               {tier2List.length > 0 && (
-                <div>
-                  <div className="grid grid-cols-3 gap-3 sm:gap-8 max-w-xs sm:max-w-md md:max-w-4xl mx-auto items-start">
+                <div className="py-2">
+                  <div className="grid grid-cols-3 gap-3.5 sm:gap-10 max-w-sm sm:max-w-md md:max-w-4xl mx-auto items-start">
                     {tier2List.map((member) => (
                       <CommitteeCleanCard 
                         key={member.id} 
@@ -219,21 +203,21 @@ const Committee = () => {
               )}
 
               {/* 3. TIER 3: Executive Members & Departmental Secretaries */}
-              {/* Desktop: 4 per row | Mobile: 2 per row (Organizing, Office, Publicity, etc.) */}
+              {/* Desktop: 4 per row | Mobile: 2 per row with larger photos and clean margins */}
               {executiveMembers.length > 0 && (
-                <div className="pt-4 border-t border-slate-100">
-                  <div className="text-center mb-10">
+                <div className="pt-6 border-t border-slate-100">
+                  <div className="text-center mb-10 sm:mb-14">
                     <h2 className="font-heading font-black text-xl sm:text-2xl text-slate-800">
                       {language === 'bn' ? 'কার্যনির্বাহী সদস্যবৃন্দ' : 'Executive Members'}
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                    <p className="text-xs sm:text-sm text-slate-400 mt-1">
                       {language === 'bn' 
                         ? 'সাংগঠনিক, দপ্তর, প্রচার ও বিভিন্ন বিভাগীয় সম্পাদকীয় পরিষদ' 
                         : 'Departmental secretaries and executive council members'}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 max-w-5xl mx-auto">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10 max-w-5xl mx-auto">
                     {executiveMembers.map((member) => (
                       <CommitteeCleanCard 
                         key={member.id} 
@@ -251,86 +235,146 @@ const Committee = () => {
         </div>
       </section>
 
-      {/* Member Details Info Modal (Triggered by (i) button) */}
+      {/* Professional Member Details Dossier Modal */}
       <Dialog open={!!selectedMember} onOpenChange={(open) => !open && setSelectedMember(null)}>
-        <DialogContent className="max-w-md p-6 rounded-3xl border-slate-200">
+        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-3xl border-slate-200 shadow-2xl">
           {selectedMember && (
-            <div className="text-center space-y-4">
-              {/* Member Photo */}
-              <div className="relative inline-block mx-auto">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-[#0B6B3A]/30 mx-auto shadow-md bg-slate-50">
+            <div>
+              {/* Executive Header Banner */}
+              <div className="bg-gradient-to-r from-[#0B6B3A] via-[#095A31] to-[#04331A] text-white p-6 pb-12 relative text-center">
+                <div className="absolute top-3 right-3">
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full bg-white/15 border border-white/20">
+                    {language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive Council'}
+                  </span>
+                </div>
+                <h4 className="text-xs font-semibold text-emerald-200 tracking-wide uppercase">
+                  {language === 'bn' ? 'সময়ের বাতিঘর ফাউন্ডেশন' : 'Somoyer Batighor Foundation'}
+                </h4>
+                <p className="text-[11px] text-white/70 mt-0.5">
+                  {language === 'bn' ? 'সততা, মানবসেবা ও সামাজিক উন্নয়ন' : 'Dedicated to Humanitarian Service'}
+                </p>
+              </div>
+
+              {/* Overlapping Photo & Main Info */}
+              <div className="px-6 -mt-10 text-center">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white shadow-xl mx-auto bg-slate-50 relative z-10">
                   <img
                     src={selectedMember.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedMember.name_bn)}`}
                     alt={selectedMember.name_bn}
                     className="w-full h-full object-cover"
                   />
                 </div>
+
+                <div className="mt-3 space-y-1">
+                  <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 leading-tight">
+                    {language === 'bn' ? selectedMember.name_bn : (selectedMember.name_en || selectedMember.name_bn)}
+                  </h3>
+                  {selectedMember.name_en && language === 'bn' && (
+                    <p className="text-xs text-slate-500 font-semibold">{selectedMember.name_en}</p>
+                  )}
+                  <div className="pt-1">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-extrabold shadow-2xs">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{language === 'bn' ? selectedMember.position_bn : (selectedMember.position_en || selectedMember.position_bn)}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Name & Title */}
-              <div>
-                <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 leading-tight">
-                  {language === 'bn' ? selectedMember.name_bn : (selectedMember.name_en || selectedMember.name_bn)}
-                </h3>
-                {selectedMember.name_en && language === 'bn' && (
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">{selectedMember.name_en}</p>
-                )}
-                <div className="mt-2.5 inline-block px-3.5 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold shadow-2xs">
-                  {language === 'bn' ? selectedMember.position_bn : (selectedMember.position_en || selectedMember.position_bn)}
-                </div>
-              </div>
-
-              {/* Contact Actions: Call & Copy Button */}
-              {selectedMember.phone ? (
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5">
-                  <div className="text-xs text-slate-500 font-medium">
-                    {language === 'bn' ? 'মোবাইল নম্বর:' : 'Phone Number:'}{' '}
-                    <span className="font-mono font-bold text-slate-900 text-sm">{selectedMember.phone}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <a
-                      href={`tel:${selectedMember.phone}`}
-                      className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#0B6B3A] hover:bg-[#08522c] text-white text-xs font-bold transition-all shadow-xs"
-                    >
-                      <PhoneCall className="w-3.5 h-3.5" />
-                      <span>{language === 'bn' ? 'কল করুন' : 'Call'}</span>
-                    </a>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => selectedMember.phone && handleCopyPhone(selectedMember.phone)}
-                      className="rounded-xl border-slate-200 text-xs font-bold gap-1.5 hover:bg-slate-100"
-                    >
-                      {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedPhone ? (language === 'bn' ? 'কপি হয়েছে' : 'Copied') : (language === 'bn' ? 'কপি করুন' : 'Copy')}</span>
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 italic">
-                  {language === 'bn' ? 'মোবাইল নম্বর সংযুক্ত করা হয়নি' : 'Phone number not available'}
-                </p>
-              )}
-
-              {/* Extra Details */}
-              <div className="text-left text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <span>{language === 'bn' ? 'সংগঠন:' : 'Organization:'}</span>
-                  <span className="font-bold text-slate-800">সময়ের বাতিঘর</span>
-                </div>
-                {selectedMember.member_id && (
-                  <div className="flex items-center justify-between">
-                    <span>{language === 'bn' ? 'সদস্য আইডি:' : 'Member ID:'}</span>
-                    <span className="font-mono font-bold text-[#0B6B3A]">{selectedMember.member_id}</span>
+              {/* Dossier Body Content */}
+              <div className="p-6 pt-4 space-y-4 max-h-[62vh] overflow-y-auto">
+                {/* 1. সংগঠনের ভূমিকা ও মূল দায়িত্ব (Role & Responsibilities) */}
+                {selectedMemberRole && (
+                  <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-2.5">
+                    <div className="flex items-center gap-2 text-slate-900 font-extrabold text-xs">
+                      <Briefcase className="w-4 h-4 text-[#0B6B3A]" />
+                      <span>{language === 'bn' ? 'সংগঠনের ভূমিকা ও দায়িত্ব' : 'Role & Responsibilities'}:</span>
+                      <span className="text-xs font-bold text-[#0B6B3A]">{selectedMemberRole.category}</span>
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-slate-600 pl-1">
+                      {selectedMemberRole.responsibilities.map((resp, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                          <span className="leading-relaxed">{resp}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
-                {selectedMember.email && (
-                  <div className="flex items-center justify-between">
-                    <span>{language === 'bn' ? 'ইমেইল:' : 'Email:'}</span>
-                    <span className="font-mono text-slate-700">{selectedMember.email}</span>
+
+                {/* 2. পরিচিতি, এলাকা ও কার্যকাল (Origin, Area & Term) */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>{language === 'bn' ? 'উৎস ও এলাকা' : 'Origin & Area'}</span>
+                    </div>
+                    <p className="font-semibold text-slate-800 pl-5">
+                      {language === 'bn' ? 'নওগাঁ জেলা, বাংলাদেশ' : 'Naogaon, Bangladesh'}
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-100 space-y-1">
+                    <div className="flex items-center gap-1.5 text-amber-900 font-bold">
+                      <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>{language === 'bn' ? 'পরিষদ কার্যকাল' : 'Council Term'}</span>
+                    </div>
+                    <p className="font-semibold text-slate-800 pl-5">
+                      {selectedMember.term_start 
+                        ? `${new Date(selectedMember.term_start).getFullYear()} - ${selectedMember.term_end ? new Date(selectedMember.term_end).getFullYear() : 'চলমান'}`
+                        : (language === 'bn' ? '২০২৬ - ২০২৭ পরিষদ' : '2026 - 2027 Term')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. যোগাযোগ অ্যাকশন: কল ও কপি বাটন */}
+                {selectedMember.phone && (
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium">{language === 'bn' ? 'মোবাইল নম্বর:' : 'Phone:'}</span>
+                      <span className="font-mono font-bold text-slate-900 text-sm tracking-wide">{selectedMember.phone}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <a
+                        href={`tel:${selectedMember.phone}`}
+                        className="inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#0B6B3A] hover:bg-[#08522c] text-white text-xs font-bold transition-all shadow-xs active:scale-95"
+                      >
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        <span>{language === 'bn' ? 'সরাসরি কল করুন' : 'Call Now'}</span>
+                      </a>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => selectedMember.phone && handleCopyPhone(selectedMember.phone)}
+                        className="rounded-xl border-slate-200 text-xs font-bold gap-1.5 hover:bg-slate-100 h-auto py-2.5"
+                      >
+                        {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-700" />}
+                        <span>{copiedPhone ? (language === 'bn' ? 'কপি হয়েছে' : 'Copied') : (language === 'bn' ? 'নম্বর কপি' : 'Copy')}</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Info: Member ID & Email */}
+                {(selectedMember.member_id || selectedMember.email) && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1.5">
+                    {selectedMember.member_id && (
+                      <div className="flex items-center justify-between">
+                        <span>{language === 'bn' ? 'সদস্য পরিচিতি নম্বর:' : 'Member ID:'}</span>
+                        <span className="font-mono font-bold text-[#0B6B3A]">{selectedMember.member_id}</span>
+                      </div>
+                    )}
+                    {selectedMember.email && (
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-slate-400" />
+                          <span>{language === 'bn' ? 'ইমেইল:' : 'Email:'}</span>
+                        </span>
+                        <span className="font-mono text-slate-700 truncate max-w-[200px]">{selectedMember.email}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -351,7 +395,7 @@ interface CommitteeCleanCardProps {
   onOpenInfo: () => void;
 }
 
-// Clean, borderless committee card matching original clean layout with (i) info button
+// Clean, borderless committee card with larger photos on mobile and colorful (i) info button beside name
 const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
   member,
   language,
@@ -368,19 +412,20 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
     e.currentTarget.src = fallbackImage;
   };
 
+  // Generous, larger mobile dimensions so mobile users see clear, impressive photos
   const imageSize = isPresident 
-    ? 'w-32 h-32 sm:w-40 sm:h-40' 
+    ? 'w-36 h-36 sm:w-44 sm:h-44' 
     : isTier2 
-    ? 'w-20 h-20 sm:w-28 sm:h-28' 
-    : 'w-20 h-20 sm:w-24 sm:h-24';
+    ? 'w-24 h-24 sm:w-32 sm:h-32' 
+    : 'w-26 h-26 sm:w-30 sm:h-30';
 
   return (
     <div className="text-center group flex flex-col items-center">
-      {/* Relative container for Circular Image + Badge + (i) Button */}
-      <div className="relative mb-3.5 inline-block">
+      {/* Relative container for Circular Image + Badge Pill */}
+      <div className="relative mb-3 inline-block">
         {/* Round Image with elegant green border */}
         <div className={`${imageSize} rounded-full overflow-hidden border-4 ${
-          isPresident ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' : 'border-[#0B6B3A]/20 group-hover:border-[#0B6B3A]'
+          isPresident ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' : 'border-[#0B6B3A]/25 group-hover:border-[#0B6B3A]'
         } transition-colors duration-300 mx-auto shadow-sm bg-slate-50`}>
           <img
             src={member.photo_url || fallbackImage}
@@ -390,23 +435,10 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
           />
         </div>
 
-        {/* Small (i) info icon button right beside the photo */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenInfo();
-          }}
-          title={language === 'bn' ? 'বিস্তারিত তথ্য দেখুন' : 'View Details'}
-          className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white text-slate-600 hover:text-[#0B6B3A] border border-slate-200/90 shadow-md flex items-center justify-center transition-all hover:scale-110 z-10 cursor-pointer"
-        >
-          <Info className="w-3.5 h-3.5 stroke-[2.3]" />
-        </button>
-
         {/* Position Badge Pill at bottom of circle */}
         <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 sm:px-3 py-0.5 rounded-full text-white font-bold whitespace-nowrap shadow-xs ${
           isPresident 
-            ? 'bg-[#0B6B3A] text-xs' 
+            ? 'bg-[#0B6B3A] text-xs sm:text-sm' 
             : isTier2
             ? 'bg-[#0B6B3A] text-[10px] sm:text-xs'
             : 'bg-[#0B6B3A] text-[10px] sm:text-xs'
@@ -415,12 +447,31 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
         </div>
       </div>
 
-      {/* Member Name */}
-      <h3 className={`font-heading font-bold text-slate-900 group-hover:text-[#0B6B3A] transition-colors leading-tight mt-1 ${
-        isPresident ? 'text-lg sm:text-2xl' : isTier2 ? 'text-xs sm:text-base line-clamp-2' : 'text-xs sm:text-sm line-clamp-1'
-      }`}>
-        {name}
-      </h3>
+      {/* Member Name Section with Distinctive Colorful (i) Button at Corner */}
+      <div className="flex items-center justify-center gap-1.5 mt-1.5 max-w-full px-1">
+        <h3 className={`font-heading font-extrabold text-slate-900 group-hover:text-[#0B6B3A] transition-colors leading-tight ${
+          isPresident 
+            ? 'text-lg sm:text-2xl' 
+            : isTier2 
+            ? 'text-xs sm:text-base line-clamp-2' 
+            : 'text-xs sm:text-sm line-clamp-1'
+        }`}>
+          {name}
+        </h3>
+
+        {/* Colorful Golden-Amber (i) Button at Name Corner */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenInfo();
+          }}
+          title={language === 'bn' ? 'বিস্তারিত তথ্য ও দায়িত্ব দেখুন' : 'View Profile & Role'}
+          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 border border-amber-300 shadow-xs hover:shadow-md hover:scale-115 active:scale-90 transition-all shrink-0 cursor-pointer flex items-center justify-center"
+        >
+          <Info className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.8]" />
+        </button>
+      </div>
     </div>
   );
 };

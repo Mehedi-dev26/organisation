@@ -54,7 +54,8 @@ const BloodDonationPreview: React.FC = () => {
       }
       return (data || []) as BloodDonor[];
     },
-    staleTime: 1000 * 60 * 3, // 3 minutes cache
+    staleTime: 1000 * 30,
+    placeholderData: (prev) => prev,
   });
 
   // Calculate count per blood group

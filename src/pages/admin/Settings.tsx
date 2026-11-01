@@ -64,6 +64,7 @@ import { sendKeepAlivePing, getKeepAliveStats, KeepAliveStats } from '@/services
 import { compressImage } from '@/lib/imageUtils';
 import { LogoCropModal } from '@/components/common/LogoCropModal';
 import { Switch } from '@/components/ui/switch';
+import { clearSiteSettingsCache } from '@/services/siteSettingsService';
 
 const STORAGE_LOGO_KEY = 'batighor_site_logo_url';
 
@@ -584,9 +585,7 @@ const Settings = () => {
 
       if (error) throw error;
 
-      try {
-        localStorage.removeItem('batighor_site_settings_cache');
-      } catch {}
+      clearSiteSettingsCache();
 
       queryClient.invalidateQueries({ queryKey: ['site-settings'] });
       queryClient.invalidateQueries({ queryKey: ['hero-banners'] });

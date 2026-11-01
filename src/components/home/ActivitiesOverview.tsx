@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSiteSettings } from '@/services/siteSettingsService';
 
 // Import high-definition generated assets and graphics
 import cardSapahar from '@/assets/activities/card-sapahar-hd.jpg';
@@ -129,6 +130,9 @@ const activitiesData: ActivityCard[] = [
 ];
 
 const ActivitiesOverview: React.FC = () => {
+  const { data: siteSettings } = useSiteSettings();
+  const customCardImages = (siteSettings?.activities_images || {}) as Record<string, string>;
+
   const { data: stats } = useQuery({
     queryKey: ['home-activities-stats'],
     queryFn: async () => {
@@ -262,7 +266,7 @@ const ActivitiesOverview: React.FC = () => {
                     )}
                   >
                     <img 
-                      src={card.image} 
+                      src={customCardImages[card.id] || card.image} 
                       alt={card.title} 
                       className="w-full h-full object-cover rounded-bl-[38px]"
                       loading="lazy"

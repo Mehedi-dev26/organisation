@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface HeroBannerData {
@@ -60,6 +61,16 @@ export interface CtaSectionData {
 const STORAGE_KEY_SETTINGS = 'batighor_site_settings_cache';
 const STORAGE_KEY_HERO_BANNERS = 'batighor_hero_banners_cache';
 
+// Helper to safely clear all site settings and banner caches
+export const clearSiteSettingsCache = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY_SETTINGS);
+    localStorage.removeItem(STORAGE_KEY_HERO_BANNERS);
+  } catch {
+    // Safe ignore
+  }
+};
+
 // Helper to get local storage cache safely
 export const getCachedSiteSettings = (): Record<string, any> | null => {
   try {
@@ -81,9 +92,32 @@ export const getCachedHeroBanners = (): BannerSlide[] | null => {
 
 /**
  * Universal hook to fetch all site settings in ONE single request
- * with instant local cache fallback
+ * with instant placeholder cache and background Supabase Realtime auto-sync
  */
 export const useSiteSettings = () => {
+  const queryClient = useQueryClient();
+
+  // Listen to realtime changes on site_settings
+  useEffect(() => {
+    const channel = supabase
+      .channel('site_settings_realtime_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        () => {
+          clearSiteSettingsCache();
+          queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+          queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
+          queryClient.invalidateQueries({ queryKey: ['site-logo'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const cached = getCachedSiteSettings();
 
   return useQuery({
@@ -113,14 +147,14 @@ export const useSiteSettings = () => {
 
       return map;
     },
-    initialData: cached || undefined,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    placeholderData: cached || undefined,
+    staleTime: 1000 * 15, // 15 seconds
   });
 };
 
 /**
  * Fetches hero banners directly from database (site_settings + gallery_images category='banner')
- * with instant local cache so there is no flicker or fallback delay
+ * with instant placeholder cache so newest uploads appear immediately
  */
 export const useHeroBanners = () => {
   const cachedBanners = getCachedHeroBanners();
@@ -185,8 +219,8 @@ export const useHeroBanners = () => {
           tagEn: hasContent ? ((mainHero as any).tagline_en || 'Always by your side - A voluntary welfare organization') : '',
           titleBn: hasContent ? ((mainHero as any).title_bn || 'সময়ের বাতিঘর — মানবতার সেবায় নিবেদিত') : '',
           titleEn: hasContent ? ((mainHero as any).title_en || 'Samoyer Batighor — Dedicated to Humanity') : '',
-          subtitleBn: hasContent ? ((mainHero as any).subtitle_bn || 'একটি অরাজনৈতিক, অলাভজনক ও সামাজিক স্বেচ্ছাসেবী সংগঠন। সমাজের সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানোই আমাদের মূল অঙ্গীকার।') : '',
-          subtitleEn: hasContent ? ((mainHero as any).subtitle_en || 'A non-political, non-profit humanitarian organization committed to serving underprivileged people.') : '',
+          subtitleBn: hasContent ? ((mainHero as any).subtitle_bn || '') : '',
+          subtitleEn: hasContent ? ((mainHero as any).subtitle_en || '') : '',
           showContent: hasContent,
         });
       }
@@ -201,8 +235,8 @@ export const useHeroBanners = () => {
             tagEn: img.title_en || 'Community Welfare Initiative',
             titleBn: img.title_bn || 'সময়ের বাতিঘর — একতাই শক্তি',
             titleEn: img.title_en || 'Samoyer Batighor',
-            subtitleBn: img.description_bn || 'মানবসেবায় নিবেদিত একদল স্বপ্নবাজ তরুণ ও সামাজিক নেতৃত্ব।',
-            subtitleEn: img.description_en || 'Dedicated to social welfare and community empowerment.',
+            subtitleBn: img.description_bn || '',
+            subtitleEn: img.description_en || '',
           });
         });
       }
@@ -233,7 +267,7 @@ export const useHeroBanners = () => {
 
       return defaultFallback;
     },
-    initialData: cachedBanners && cachedBanners.length > 0 ? cachedBanners : undefined,
-    staleTime: 1000 * 60 * 5,
+    placeholderData: cachedBanners && cachedBanners.length > 0 ? cachedBanners : undefined,
+    staleTime: 1000 * 15,
   });
 };

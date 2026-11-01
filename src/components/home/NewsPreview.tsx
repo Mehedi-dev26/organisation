@@ -55,6 +55,8 @@ const NewsPreview = () => {
       }
       return data || [];
     },
+    staleTime: 1000 * 30,
+    placeholderData: (prev) => prev,
   });
 
   const newsList = dbNews && dbNews.length > 0 ? dbNews : defaultNews;
