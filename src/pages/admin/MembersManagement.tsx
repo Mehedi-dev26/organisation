@@ -355,18 +355,75 @@ const MembersManagement: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // 1. Fetch member details before deleting for storage and relations cleanup
+      const { data: memberToDelete } = await supabase
+        .from('members')
+        .select('id, member_id, phone, photo_url, user_id')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (memberToDelete) {
+        // A. Free up Supabase storage: Delete member's uploaded photo from 'member-photos'
+        if (memberToDelete.photo_url) {
+          try {
+            const marker = '/member-photos/';
+            const markerIdx = memberToDelete.photo_url.indexOf(marker);
+            if (markerIdx !== -1) {
+              const rawPath = memberToDelete.photo_url.substring(markerIdx + marker.length).split('?')[0];
+              const cleanPath = decodeURIComponent(rawPath);
+              await supabase.storage.from('member-photos').remove([cleanPath]);
+            }
+          } catch (storageErr) {
+            console.warn('Storage image cleanup error:', storageErr);
+          }
+        }
+
+        // B. Delete associated blood donor record
+        try {
+          const conditions: string[] = [];
+          if (memberToDelete.member_id) conditions.push(`member_id.eq.${memberToDelete.member_id}`);
+          if (memberToDelete.phone) conditions.push(`phone.eq.${memberToDelete.phone}`);
+          if (conditions.length > 0) {
+            await supabase.from('blood_donors').delete().or(conditions.join(','));
+          }
+        } catch (bdErr) {
+          console.warn('Blood donor deletion error:', bdErr);
+        }
+
+        // C. Delete associated dues
+        try {
+          await supabase.from('member_dues').delete().eq('member_id', id);
+        } catch (duesErr) {
+          console.warn('Member dues deletion error:', duesErr);
+        }
+
+        // D. Delete associated user_roles if linked
+        if (memberToDelete.user_id) {
+          try {
+            await supabase.from('user_roles').delete().eq('user_id', memberToDelete.user_id);
+          } catch (rolesErr) {
+            console.warn('User roles deletion error:', rolesErr);
+          }
+        }
+      }
+
+      // E. Finally, delete member row
       const { error } = await supabase.from('members').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       invalidateAllMemberQueries();
+      queryClient.invalidateQueries({ queryKey: ['admin-blood-donors'] });
+      queryClient.invalidateQueries({ queryKey: ['blood-donors'] });
+      queryClient.invalidateQueries({ queryKey: ['storage-usage'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       refetch();
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
           language === 'bn'
-            ? 'সদস্য তালিকা থেকে মুছে ফেলা হয়েছে।'
-            : 'Member deleted from directory.',
+            ? 'সদস্য, সম্পর্কিত রক্তদাতা তথ্য ও ক্লাউড স্টোরেজের ছবি স্থায়ীভাবে মুছে ফেলা হয়েছে।'
+            : 'Member, donor profile and cloud photo completely deleted.',
       });
     },
     onError: (error: any) => {
@@ -380,23 +437,109 @@ const MembersManagement: React.FC = () => {
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, name }: { id: string; name?: string }) => {
-      const { error } = await supabase.from('members').update({ status: 'approved' }).eq('id', id);
-      if (error) throw error;
-      return { id, name };
+      // 1. Fetch full member data
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (!memberData) throw new Error('Member data not found');
+
+      // 2. Update member status to approved
+      const { error: memberError } = await supabase
+        .from('members')
+        .update({ status: 'approved' })
+        .eq('id', id);
+      if (memberError) throw memberError;
+
+      // 3. Automatically synchronize blood_donors table to 'approved'
+      if (memberData.blood_group) {
+        try {
+          const conditions: string[] = [];
+          if (memberData.member_id) conditions.push(`member_id.eq.${memberData.member_id}`);
+          if (memberData.phone) conditions.push(`phone.eq.${memberData.phone}`);
+
+          let existingDonor = null;
+          if (conditions.length > 0) {
+            const { data } = await supabase
+              .from('blood_donors')
+              .select('id')
+              .or(conditions.join(','))
+              .maybeSingle();
+            existingDonor = data;
+          }
+
+          if (existingDonor) {
+            await supabase
+              .from('blood_donors')
+              .update({
+                status: 'approved',
+                full_name: memberData.full_name,
+                phone: memberData.phone || '',
+                blood_group: memberData.blood_group,
+                member_id: memberData.member_id,
+                is_member: true,
+              })
+              .eq('id', existingDonor.id);
+          } else if (memberData.phone) {
+            await supabase.from('blood_donors').insert({
+              full_name: memberData.full_name,
+              phone: memberData.phone,
+              blood_group: memberData.blood_group,
+              address: memberData.present_address || memberData.address || '',
+              division: memberData.division || 'রাজশাহী',
+              district: memberData.district || 'নওগাঁ',
+              upazila: memberData.upazila || 'নওগাঁ সদর',
+              is_public_details: true,
+              is_member: true,
+              member_id: memberData.member_id,
+              status: 'approved',
+              notes: 'সদস্য আবেদন অনুমোদনের সাথে সাথে স্বয়ংক্রিয়ভাবে সক্রিয়',
+            });
+          }
+        } catch (donorSyncErr) {
+          console.warn('Blood donor auto-approval error:', donorSyncErr);
+        }
+      }
+
+      // 4. Automatically create login account if not yet linked
+      const phoneDigits = memberData.phone ? memberData.phone.replace(/\D/g, '') : '';
+      const loginEmail = memberData.email || (phoneDigits.length >= 10 ? `${phoneDigits}@batighor.org` : null);
+
+      if (loginEmail && !memberData.user_id) {
+        try {
+          await supabase.functions.invoke('create-member-user', {
+            body: {
+              email: loginEmail,
+              password: 'member@123',
+              memberId: memberData.id,
+              fullName: memberData.full_name,
+            },
+          });
+        } catch (accountErr) {
+          console.warn('Auto create member user account error:', accountErr);
+        }
+      }
+
+      return { id, name: memberData.full_name };
     },
     onSuccess: (data) => {
       invalidateAllMemberQueries();
+      queryClient.invalidateQueries({ queryKey: ['admin-blood-donors'] });
+      queryClient.invalidateQueries({ queryKey: ['blood-donors'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       refetch();
 
       // Automatically switch from 'pending' filter to 'all' so the newly approved member remains visible
       setSelectedStatus((prev) => (prev === 'pending' ? 'all' : prev));
 
       toast({
-        title: language === 'bn' ? 'সদস্য অনুমোদিত!' : 'Member Approved!',
+        title: language === 'bn' ? 'সদস্য অনুমোদিত ও সক্রিয়!' : 'Member Approved & Activated!',
         description:
           language === 'bn'
-            ? `${data?.name ? `"${data.name}" - ` : ''}সদস্য আবেদন অনুমোদিত হয়েছে এবং মোট সক্রিয় সদস্য তালিকায় যুক্ত হয়েছে।`
-            : `${data?.name ? `"${data.name}" - ` : ''}Member application approved and added to all active members.`,
+            ? `"${data?.name || ''}" - সদস্য অনুমোদন সম্পন্ন হয়েছে, রক্তদাতা তালিকা সক্রিয় হয়েছে এবং লগইন অ্যাকাউন্ট তৈরি হয়েছে।`
+            : `"${data?.name || ''}" application approved, blood donor activated, and login credentials generated.`,
       });
     },
     onError: (error: any) => {
@@ -410,18 +553,41 @@ const MembersManagement: React.FC = () => {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ id, name }: { id: string; name?: string }) => {
+      // 1. Fetch member to also suspend blood donor
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('member_id, phone, full_name')
+        .eq('id', id)
+        .maybeSingle();
+
       const { error } = await supabase.from('members').update({ status: 'rejected' }).eq('id', id);
       if (error) throw error;
+
+      if (memberData) {
+        try {
+          const conditions: string[] = [];
+          if (memberData.member_id) conditions.push(`member_id.eq.${memberData.member_id}`);
+          if (memberData.phone) conditions.push(`phone.eq.${memberData.phone}`);
+          if (conditions.length > 0) {
+            await supabase.from('blood_donors').update({ status: 'rejected' }).or(conditions.join(','));
+          }
+        } catch (e) {
+          console.warn('Blood donor rejection error:', e);
+        }
+      }
+
       return { id, name };
     },
     onSuccess: (data) => {
       invalidateAllMemberQueries();
+      queryClient.invalidateQueries({ queryKey: ['admin-blood-donors'] });
+      queryClient.invalidateQueries({ queryKey: ['blood-donors'] });
       refetch();
       toast({
         title: language === 'bn' ? 'স্থগিত / বাতিল' : 'Suspended / Rejected',
         description:
           language === 'bn'
-            ? `${data?.name ? `"${data.name}" - ` : ''}সদস্য আবেদন স্থগিত বা প্রত্যাখ্যাত হয়েছে।`
+            ? `${data?.name ? `"${data.name}" - ` : ''}সদস্য আবেদন স্থগিত বা প্রত্যাখ্যাত হয়েছে।`
             : `${data?.name ? `"${data.name}" - ` : ''}Member application rejected or suspended.`,
       });
     },
@@ -434,12 +600,15 @@ const MembersManagement: React.FC = () => {
     },
   });
 
-  // Account creation
+  // Account creation with automatic phone fallback
   const handleCreateMemberAccount = async (member: Member) => {
-    if (!member.email) {
+    const phoneDigits = member.phone ? member.phone.replace(/\D/g, '') : '';
+    const loginEmail = member.email || (phoneDigits.length >= 10 ? `${phoneDigits}@batighor.org` : null);
+
+    if (!loginEmail) {
       toast({
         title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: language === 'bn' ? 'সদস্যের ইমেইল নেই' : 'Member has no email address',
+        description: language === 'bn' ? 'সদস্যের ইমেইল অথবা মোবাইল নম্বর নেই' : 'Member has neither email nor phone number',
         variant: 'destructive',
       });
       return;
@@ -449,7 +618,7 @@ const MembersManagement: React.FC = () => {
     try {
       const response = await supabase.functions.invoke('create-member-user', {
         body: {
-          email: member.email,
+          email: loginEmail,
           password: 'member@123',
           memberId: member.id,
           fullName: member.full_name,
@@ -462,14 +631,14 @@ const MembersManagement: React.FC = () => {
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
           language === 'bn'
-            ? 'সদস্যের লগইন অ্যাকাউন্ট তৈরি হয়েছে। ডিফল্ট পাসওয়ার্ড: member@123'
+            ? `সদস্যের লগইন অ্যাকাউন্ট তৈরি হয়েছে। আইডি/মোবাইল: ${member.phone || member.email}, ডিফল্ট পাসওয়ার্ড: member@123`
             : 'Member account created. Default password: member@123',
       });
       queryClient.invalidateQueries({ queryKey: ['admin-members'] });
     } catch (error: any) {
       toast({
         title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: error.message || 'অ্যাকাউন্ট তৈরি করা যায়নি',
+        description: error.message || 'অ্যাকাউন্ট তৈরি করা যায়নি',
         variant: 'destructive',
       });
     } finally {
@@ -477,7 +646,7 @@ const MembersManagement: React.FC = () => {
     }
   };
 
-  // Reset form
+    // Reset form
   const resetForm = () => {
     setFormData({
       member_id: '',

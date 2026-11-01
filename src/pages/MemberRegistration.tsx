@@ -482,10 +482,13 @@ const MemberRegistration: React.FC = () => {
       const subAmountNum = isSubYes ? parseFloat(data.subscription_amount || '0') || 0 : 0;
 
       // 3. Fast direct insertion into members table
+      const cleanPhoneDigits = data.phone.trim().replace(/\D/g, '');
+      const finalAccountEmail = data.email?.trim() || (cleanPhoneDigits.length >= 10 ? `${cleanPhoneDigits}@batighor.org` : null);
+
       const { error: memberError } = await supabase.from('members').insert({
         member_id: memberIdToUse,
         full_name: data.full_name.trim(),
-        email: data.email?.trim() || null,
+        email: finalAccountEmail,
         phone: data.phone.trim(),
         address: combinedAddress,
         present_address: data.present_address.trim(),

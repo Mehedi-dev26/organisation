@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Loader2, CreditCard, Bell, User, LogOut, Calendar, AlertCircle, CheckCircle, Key, Eye, EyeOff, Printer, TrendingUp, Wallet, Shield } from 'lucide-react';
+import { Loader2, CreditCard, Bell, User, LogOut, Calendar, AlertCircle, CheckCircle, Key, Eye, EyeOff, Printer, TrendingUp, Wallet, Shield, Droplet, Heart, Camera, Upload, X, Clock, Sparkles, CheckCircle2 } from 'lucide-react';
+import { compressImage } from '@/lib/imageUtils';
+import { getDonationEligibility, formatBengaliDate } from '@/lib/bloodUtils';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -87,6 +89,128 @@ const MemberDashboard = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   
+  // Blood donation update state
+  const [isBloodDialogOpen, setIsBloodDialogOpen] = useState(false);
+  const [lastDonatedDate, setLastDonatedDate] = useState('');
+  const [donationPhoto, setDonationPhoto] = useState<File | null>(null);
+  const [donationPhotoPreview, setDonationPhotoPreview] = useState<string | null>(null);
+  const [donationNotes, setDonationNotes] = useState('');
+  const [isSavingBloodInfo, setIsSavingBloodInfo] = useState(false);
+
+  // Fetch member's blood donor info
+  const { data: bloodDonorInfo, refetch: refetchBloodDonor } = useQuery({
+    queryKey: ['member-blood-donor-info', memberData?.member_id, memberData?.phone],
+    queryFn: async () => {
+      if (!memberData) return null;
+      const conditions: string[] = [];
+      if (memberData.member_id) conditions.push(`member_id.eq.${memberData.member_id}`);
+      if (memberData.phone) conditions.push(`phone.eq.${memberData.phone}`);
+      if (conditions.length === 0) return null;
+
+      const { data, error } = await supabase
+        .from('blood_donors')
+        .select('*')
+        .or(conditions.join(','))
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Error fetching donor info:', error);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!memberData,
+  });
+
+  const handleOpenBloodDialog = () => {
+    setLastDonatedDate(bloodDonorInfo?.last_donated || '');
+    setDonationNotes(bloodDonorInfo?.notes || '');
+    setDonationPhoto(null);
+    setDonationPhotoPreview(null);
+    setIsBloodDialogOpen(true);
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setDonationPhoto(file);
+      setDonationPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSaveBloodDonation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memberData) return;
+
+    setIsSavingBloodInfo(true);
+    try {
+      let photoUrlToSave = '';
+      if (donationPhoto) {
+        const compressed = await compressImage(donationPhoto, { maxWidth: 1000, quality: 0.8 });
+        const fileName = `donations/${memberData.member_id || memberData.id}_${Date.now()}.jpg`;
+        const { error: uploadErr } = await supabase.storage
+          .from('member-photos')
+          .upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
+        
+        if (!uploadErr) {
+          const { data: urlData } = supabase.storage.from('member-photos').getPublicUrl(fileName);
+          photoUrlToSave = urlData.publicUrl;
+        }
+      }
+
+      const noteText = donationNotes.trim() + (photoUrlToSave ? ` [ছবি: ${photoUrlToSave}]` : '');
+
+      if (bloodDonorInfo?.id) {
+        // Update existing donor
+        const { error } = await supabase
+          .from('blood_donors')
+          .update({
+            last_donated: lastDonatedDate || null,
+            notes: noteText || bloodDonorInfo.notes,
+            blood_group: memberData.blood_group || bloodDonorInfo.blood_group || 'A+',
+            status: 'approved',
+            is_member: true,
+          })
+          .eq('id', bloodDonorInfo.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new donor
+        const { error } = await supabase
+          .from('blood_donors')
+          .insert({
+            member_id: memberData.member_id,
+            full_name: memberData.full_name,
+            phone: memberData.phone || '',
+            blood_group: memberData.blood_group || 'A+',
+            address: memberData.address || '',
+            last_donated: lastDonatedDate || null,
+            notes: noteText || 'সদস্য প্যানেল থেকে রক্তদানের তথ্য আপডেট',
+            status: 'approved',
+            is_public_details: true,
+            is_member: true,
+          });
+
+        if (error) throw error;
+      }
+
+      await refetchBloodDonor();
+      setIsBloodDialogOpen(false);
+      toast({
+        title: language === 'bn' ? 'সফল!' : 'Success!',
+        description: language === 'bn' ? 'রক্তদানের তথ্য সফলভাবে সংরক্ষিত হয়েছে।' : 'Blood donation information updated successfully.',
+      });
+    } catch (error: any) {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: error.message || 'সংরক্ষণ করা যায়নি',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingBloodInfo(false);
+    }
+  };
+
   // Voucher print state
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [printTransaction, setPrintTransaction] = useState<TransactionData | null>(null);
@@ -374,6 +498,181 @@ const MemberDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Blood Donation Status & Update Card (Mobile Responsive) */}
+        {(() => {
+          const donorEligibility = getDonationEligibility(bloodDonorInfo?.last_donated || null);
+          const donorBloodGroup = memberData.blood_group || bloodDonorInfo?.blood_group || 'অনির্ধারিত';
+          
+          return (
+            <Card className="rounded-[24px] border border-rose-100 shadow-[0_8px_30px_rgba(225,29,72,0.06)] overflow-hidden bg-white relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-rose-100/40 via-rose-50/20 to-transparent pointer-events-none rounded-bl-full" />
+              
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Droplet className="w-6 h-6 stroke-[2.4] fill-rose-500/20 text-rose-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-heading font-black text-base sm:text-lg text-slate-800">
+                          {language === 'bn' ? 'রক্তদানের তথ্য ও প্রস্তুতি' : 'Blood Donation Status'}
+                        </h3>
+                        <Badge className="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-extrabold text-xs">
+                          {donorBloodGroup}
+                        </Badge>
+                        <Badge 
+                          className={`text-xs font-bold ${
+                            donorEligibility.isReady 
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}
+                        >
+                          {donorEligibility.isReady ? (
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              {language === 'bn' ? 'রক্তদানের জন্য প্রস্তুত' : 'Ready to Donate'}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-amber-600" />
+                              {language === 'bn' ? donorEligibility.labelBn : donorEligibility.labelEn}
+                            </span>
+                          )}
+                        </Badge>
+                      </div>
+
+                      <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                        {language === 'bn' ? 'সর্বশেষ রক্তদান: ' : 'Last Donated: '}
+                        <span className="font-bold text-slate-800">
+                          {bloodDonorInfo?.last_donated ? formatBengaliDate(bloodDonorInfo.last_donated) : (language === 'bn' ? 'এখনও তথ্য যুক্ত করা হয়নি' : 'Not recorded yet')}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleOpenBloodDialog}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#0B6B3A] hover:bg-[#08522c] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  >
+                    <Heart className="w-4 h-4 fill-white/30" />
+                    <span>{language === 'bn' ? 'সর্বশেষ রক্তদান আপডেট করুন' : 'Update Last Donation'}</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+        {/* Dialog to Update Last Blood Donation Date & Photo */}
+        <Dialog open={isBloodDialogOpen} onOpenChange={setIsBloodDialogOpen}>
+          <DialogContent className="max-w-md rounded-[24px] p-6 bg-white shadow-2xl">
+            <DialogHeader className="pb-3 border-b border-slate-100">
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-800 font-heading">
+                <span className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <Droplet className="w-4 h-4" />
+                </span>
+                {language === 'bn' ? 'রক্তদানের তথ্য আপডেট' : 'Update Blood Donation Info'}
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleSaveBloodDonation} className="space-y-4 pt-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="last-donation-date" className="text-xs font-bold text-slate-700">
+                  {language === 'bn' ? 'সর্বশেষ কত তারিখে রক্ত দিয়েছেন? *' : 'Last Donation Date *'}
+                </Label>
+                <Input
+                  id="last-donation-date"
+                  type="date"
+                  value={lastDonatedDate}
+                  onChange={(e) => setLastDonatedDate(e.target.value)}
+                  className="rounded-xl border-slate-200 h-11 text-sm font-medium"
+                  required
+                />
+                <p className="text-[11px] text-slate-500">
+                  {language === 'bn' ? 'তারিখ দিলে স্বয়ংক্রিয়ভাবে পরবর্তী রক্তদানের হিসাব প্রস্তুত হবে।' : 'Calculates 90-day rest and next eligibility automatically.'}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-700">
+                  {language === 'bn' ? 'রক্তদানের ছবি বা প্রশংসাপত্র (ঐচ্ছিক)' : 'Donation Photo or Certificate (Optional)'}
+                </Label>
+                
+                {donationPhotoPreview ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 h-36 bg-slate-50 flex items-center justify-center">
+                    <img src={donationPhotoPreview} alt="Donation preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDonationPhoto(null);
+                        setDonationPhotoPreview(null);
+                      }}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/70 text-white hover:bg-slate-900 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50/50 hover:bg-emerald-50/20">
+                    <Camera className="w-7 h-7 text-slate-400 mb-1" />
+                    <span className="text-xs font-bold text-slate-600">
+                      {language === 'bn' ? 'ছবি আপলোড করতে ক্লিক করুন' : 'Click to upload photo'}
+                    </span>
+                    <span className="text-[10px] text-slate-400">JPG, PNG (Max 5MB)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoSelect}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="donation-notes" className="text-xs font-bold text-slate-700">
+                  {language === 'bn' ? 'রক্তদানের স্থান / বিবরণ (ঐচ্ছিক)' : 'Location or Details (Optional)'}
+                </Label>
+                <Input
+                  id="donation-notes"
+                  type="text"
+                  placeholder={language === 'bn' ? 'যেমন: নওগাঁ সদর হাসপাতাল' : 'e.g., Naogaon Sadar Hospital'}
+                  value={donationNotes}
+                  onChange={(e) => setDonationNotes(e.target.value)}
+                  className="rounded-xl border-slate-200 h-10 text-sm"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsBloodDialogOpen(false)}
+                  className="rounded-xl text-xs font-bold"
+                  disabled={isSavingBloodInfo}
+                >
+                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSavingBloodInfo}
+                  className="rounded-xl bg-[#0B6B3A] hover:bg-[#08522c] text-white text-xs font-bold px-5"
+                >
+                  {isSavingBloodInfo ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                      {language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...'}
+                    </>
+                  ) : (
+                    language === 'bn' ? 'সংরক্ষণ করুন' : 'Save Details'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <div id="dues" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="overflow-hidden border-0 shadow-lg">
