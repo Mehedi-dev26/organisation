@@ -1232,22 +1232,21 @@ const MembersManagement: React.FC = () => {
 
                       {/* Status */}
                       <TableCell className="text-center py-3">
-                        <div className="flex flex-col items-center gap-1.5">
+                        <div className="inline-flex items-center justify-center gap-1.5">
                           {getStatusBadge(member.status)}
                           {member.status === 'approved' && !member.user_id && (
                             <button
                               type="button"
                               onClick={() => handleCreateMemberAccount(member)}
                               disabled={isCreatingAccount === member.id}
-                              className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-all inline-flex items-center gap-1 shadow-2xs active:scale-95"
-                              title={language === 'bn' ? 'লগইন অ্যাকাউন্ট সক্রিয় করতে ক্লিক করুন' : 'Click to activate login'}
+                              className="w-6 h-6 rounded-full bg-amber-500/10 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/40 transition-all inline-flex items-center justify-center shadow-2xs active:scale-90"
+                              title={language === 'bn' ? 'লগইন অ্যাকাউন্ট সক্রিয় করতে ক্লিক করুন (পাসওয়ার্ড: member@123)' : 'Click to activate member login'}
                             >
                               {isCreatingAccount === member.id ? (
-                                <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-600" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
                               ) : (
-                                <Key className="w-2.5 h-2.5 text-blue-600" />
+                                <Key className="w-3.5 h-3.5 text-amber-600" />
                               )}
-                              <span>{language === 'bn' ? 'লগইন সক্রিয় করুন' : 'Activate Login'}</span>
                             </button>
                           )}
                         </div>

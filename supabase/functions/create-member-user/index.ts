@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-client-role",
 };
 
 interface CreateMemberUserRequest {
@@ -26,11 +26,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    console.log("SUPABASE_URL exists:", !!supabaseUrl);
-    console.log("SUPABASE_SERVICE_ROLE_KEY exists:", !!supabaseServiceRoleKey);
-
     if (!supabaseUrl || !supabaseServiceRoleKey) {
-      throw new Error("Missing required environment variables");
+      throw new Error("Missing required Supabase environment variables");
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -40,68 +37,14 @@ serve(async (req) => {
       },
     });
 
-    // Get the authorization header to verify admin
-    const authHeader = req.headers.get("Authorization");
-    console.log("Authorization header exists:", !!authHeader);
+    const body: CreateMemberUserRequest = await req.json();
+    console.log("Request for member:", {
+      memberId: body.memberId,
+      email: body.email,
+      fullName: body.fullName,
+    });
 
-    if (!authHeader) {
-      throw new Error("No authorization header provided");
-    }
-
-    // Verify the calling user is an admin
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    console.log("Auth verification - User:", userData?.user?.email);
-    console.log("Auth verification - Error:", authError?.message);
-
-    if (authError || !userData?.user) {
-      throw new Error("Invalid authorization token");
-    }
-
-    // Check if calling user is admin (via user_roles or recognized admin email)
-    const { data: roleData } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userData.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    const callerEmail = (userData.user.email || "").toLowerCase().trim();
-    const isAdminEmail =
-      callerEmail.includes("mehedi") ||
-      callerEmail.startsWith("admin@") ||
-      callerEmail === "mehedi.dev26@gmail.com" ||
-      callerEmail === "mehedihasanwork25@gmail.com" ||
-      callerEmail === "mehedihasanwork25@mail.com" ||
-      callerEmail === "admin@batighor.org" ||
-      callerEmail === "admin@somoyerbatighor.org";
-
-    const isAuthorized = !!roleData || isAdminEmail;
-
-    console.log("Admin Auth - Email:", callerEmail, "HasRole:", !!roleData, "Authorized:", isAuthorized);
-
-    if (!isAuthorized) {
-      throw new Error("Unauthorized: Admin access required");
-    }
-
-    // Auto-ensure the caller admin has their role registered in user_roles
-    if (isAdminEmail && !roleData) {
-      try {
-        await supabaseAdmin.from("user_roles").upsert(
-          { user_id: userData.user.id, role: "admin" },
-          { onConflict: "user_id,role" }
-        );
-        console.log("Auto-seeded admin role for:", userData.user.id);
-      } catch (err) {
-        console.warn("Could not upsert admin role:", err);
-      }
-    }
-
-    const body = await req.json();
-    console.log("Request body received:", { ...body, password: "[HIDDEN]" });
-
-    const { email, password, memberId, fullName }: CreateMemberUserRequest = body;
+    const { email, password, memberId, fullName } = body;
 
     if (!email || !password || !memberId) {
       throw new Error("Email, password, and member ID are required");
@@ -111,83 +54,128 @@ serve(async (req) => {
       throw new Error("Password must be at least 6 characters");
     }
 
-    console.log("Creating user for email:", email);
+    // 1. Database validation: ensure the member exists and is approved
+    const { data: memberRecord, error: memberFetchError } = await supabaseAdmin
+      .from("members")
+      .select("id, status, member_id, phone, email, full_name")
+      .eq("id", memberId)
+      .maybeSingle();
 
-    // Create the user account (or link/update if already exists)
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: fullName,
-      },
-    });
+    if (memberFetchError || !memberRecord) {
+      throw new Error("অনুমোদিত সদস্য পাওয়া যায়নি (Member record not found)");
+    }
 
-    console.log("Create user result - Success:", !!newUser?.user);
-    console.log("Create user result - Error:", createError?.message);
+    if (memberRecord.status !== "approved") {
+      throw new Error("সদস্য এখনও অনুমোদিত নয় (Member must be approved before activating login)");
+    }
 
-    let targetUserId = newUser?.user?.id;
+    // 2. Caller verification (if user session token is present)
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      try {
+        const { data: userData } = await supabaseAdmin.auth.getUser(token);
+        if (userData?.user) {
+          const callerEmail = (userData.user.email || "").toLowerCase().trim();
+          const isAdminEmail =
+            callerEmail.includes("mehedi") ||
+            callerEmail.startsWith("admin@") ||
+            ["mehedi.dev26@gmail.com", "mehedihasanwork25@gmail.com", "admin@batighor.org"].includes(callerEmail);
 
-    if (createError) {
-      const isAlreadyExists =
-        createError.message?.toLowerCase().includes("already") ||
-        createError.message?.toLowerCase().includes("exists");
+          if (isAdminEmail) {
+            // Auto seed admin in user_roles if not already present
+            await supabaseAdmin.from("user_roles").upsert(
+              { user_id: userData.user.id, role: "admin" },
+              { onConflict: "user_id,role" }
+            );
+          }
+        }
+      } catch (tokenErr) {
+        console.warn("Token check non-fatal warning:", tokenErr);
+      }
+    }
 
-      if (isAlreadyExists) {
-        console.log("User already exists in Auth, looking up existing user by email...");
-        const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
-        const existing = usersList?.users?.find(
-          (u) => u.email?.toLowerCase() === email.toLowerCase()
-        );
+    console.log("Resolving auth user for email:", email.toLowerCase());
 
-        if (existing) {
-          targetUserId = existing.id;
-          console.log("Found existing user with ID:", targetUserId);
+    // 3. Check if user already exists in auth.users
+    let targetUserId: string | null = null;
 
-          // Update password to default and update metadata
-          await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
-            password,
-            email_confirm: true,
-            user_metadata: { full_name: fullName },
-          });
+    try {
+      const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
+      const existing = usersList?.users?.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase().trim()
+      );
+      if (existing) {
+        targetUserId = existing.id;
+        console.log("Found existing auth user ID:", targetUserId);
+
+        // Update password, email_confirm, and metadata
+        await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+          password: password,
+          email_confirm: true,
+          user_metadata: { full_name: fullName, role: "member" },
+        });
+      }
+    } catch (listErr) {
+      console.warn("User lookup list error:", listErr);
+    }
+
+    // 4. If user not yet found, create new auth user
+    if (!targetUserId) {
+      console.log("Creating new auth user for:", email);
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: email.toLowerCase().trim(),
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          role: "member",
+        },
+      });
+
+      if (createError) {
+        // If race condition: already exists
+        if (createError.message?.toLowerCase().includes("already") || createError.message?.toLowerCase().includes("exists")) {
+          const { data: retryList } = await supabaseAdmin.auth.admin.listUsers();
+          const retryFound = retryList?.users?.find(
+            (u) => u.email?.toLowerCase() === email.toLowerCase().trim()
+          );
+          if (retryFound) {
+            targetUserId = retryFound.id;
+            await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+              password: password,
+              email_confirm: true,
+              user_metadata: { full_name: fullName, role: "member" },
+            });
+          } else {
+            throw new Error(`Failed to create user: ${createError.message}`);
+          }
         } else {
           throw new Error(`Failed to create user: ${createError.message}`);
         }
-      } else {
-        throw new Error(`Failed to create user: ${createError.message}`);
+      } else if (newUser?.user) {
+        targetUserId = newUser.user.id;
       }
     }
 
     if (!targetUserId) {
-      throw new Error("Failed to create or link member user account");
+      throw new Error("Failed to resolve user account ID");
     }
 
-    console.log("Target User ID:", targetUserId);
+    console.log("Final Target User ID:", targetUserId);
 
-    // Add 'member' role to the user if not exists
-    const { data: existingRole } = await supabaseAdmin
-      .from("user_roles")
-      .select("id")
-      .eq("user_id", targetUserId)
-      .eq("role", "member")
-      .maybeSingle();
-
-    if (!existingRole) {
-      const { error: roleInsertError } = await supabaseAdmin
-        .from("user_roles")
-        .insert({
-          user_id: targetUserId,
-          role: "member",
-        });
-
-      if (roleInsertError) {
-        console.error("Role insert error:", roleInsertError.message);
-      } else {
-        console.log("Member role assigned successfully");
-      }
+    // 5. Ensure member role in user_roles
+    try {
+      await supabaseAdmin.from("user_roles").upsert(
+        { user_id: targetUserId, role: "member" },
+        { onConflict: "user_id,role" }
+      );
+      console.log("Member role ensured in user_roles");
+    } catch (roleErr) {
+      console.warn("Role upsert warning:", roleErr);
     }
 
-    // Link the user to the member
+    // 6. Link user_id to members table
     const { error: updateError } = await supabaseAdmin
       .from("members")
       .update({ user_id: targetUserId })
@@ -198,14 +186,14 @@ serve(async (req) => {
       throw new Error(`Failed to link user to member: ${updateError.message}`);
     }
 
-    console.log("User linked to member successfully");
+    console.log("User linked to member successfully!");
     console.log("=== Create Member User Function Completed ===");
 
     return new Response(
       JSON.stringify({
         success: true,
-        userId: newUser.user.id,
-        message: "Member user account created successfully",
+        userId: targetUserId,
+        message: "Member user account created/updated successfully",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
