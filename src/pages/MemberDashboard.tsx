@@ -496,7 +496,7 @@ const MemberDashboard = () => {
             {language === 'bn' ? 'স্বাগতম,' : 'Welcome,'} {memberData.full_name.split(' ')[0]}!
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            {language === 'bn' ? 'সময়ের বাতিঘর সমাজ কল্যাণ সমিতি' : 'Samoyer Batighor Social Welfare Association'}
+            {language === 'bn' ? 'সময়ের বাতিঘর ফাউন্ডেশন' : 'Somoyer Batighor Foundation'}
           </p>
         </div>
 
@@ -989,7 +989,7 @@ const MemberDashboard = () => {
 
       {/* Footer */}
       <footer className="py-6 text-center text-sm text-muted-foreground border-t mt-8 mb-16 md:mb-0">
-        <p>© {new Date().getFullYear()} {language === 'bn' ? 'সময়ের বাতিঘর সমাজ কল্যাণ সমিতি' : 'Samoyer Batighor Social Welfare Association'}</p>
+        <p>© {new Date().getFullYear()} {language === 'bn' ? 'সময়ের বাতিঘর ফাউন্ডেশন' : 'Somoyer Batighor Foundation'}</p>
       </footer>
 
       {/* Mobile Bottom Navigation */}

@@ -26,7 +26,11 @@ const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Lazy-loaded Member portal
-const MemberDashboard = lazy(() => import("./pages/MemberDashboard"));
+const MemberLayout = lazy(() => import("./components/member/MemberLayout"));
+const MemberDashboardHome = lazy(() => import("./pages/member/MemberDashboardHome"));
+const MemberDuesPage = lazy(() => import("./pages/member/MemberDuesPage"));
+const MemberProfilePage = lazy(() => import("./pages/member/MemberProfilePage"));
+const MemberSecurityPage = lazy(() => import("./pages/member/MemberSecurityPage"));
 const PayDues = lazy(() => import("./pages/member/PayDues"));
 
 // Lazy-loaded Admin portal
@@ -110,10 +114,23 @@ const App = () => {
                   <Route path="/blood-donors" element={<BloodDonors />} />
                   <Route path="/blood" element={<BloodDonors />} />
                   <Route path="/member-registration" element={<MemberRegistration />} />
-                  <Route path="/member-dashboard" element={<MemberDashboard />} />
-                  <Route path="/member-dashboard/pay-dues" element={<PayDues />} />
-                  <Route path="/member/pay-dues" element={<PayDues />} />
-                  <Route path="/pay-dues" element={<PayDues />} />
+                  {/* Member Portal Multi-Page Architecture */}
+                  <Route path="/member" element={<MemberLayout />}>
+                    <Route index element={<MemberDashboardHome />} />
+                    <Route path="dues" element={<MemberDuesPage />} />
+                    <Route path="profile" element={<MemberProfilePage />} />
+                    <Route path="security" element={<MemberSecurityPage />} />
+                    <Route path="pay-dues" element={<PayDues />} />
+                  </Route>
+                  {/* Member Dashboard alias routes */}
+                  <Route path="/member-dashboard" element={<MemberLayout />}>
+                    <Route index element={<MemberDashboardHome />} />
+                    <Route path="dues" element={<MemberDuesPage />} />
+                    <Route path="profile" element={<MemberProfilePage />} />
+                    <Route path="security" element={<MemberSecurityPage />} />
+                    <Route path="pay-dues" element={<PayDues />} />
+                  </Route>
+                  <Route path="/pay-dues" element={<Navigate to="/member/pay-dues" replace />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Auth />} />
                   <Route path="/admin" element={<AdminLayout />}>
