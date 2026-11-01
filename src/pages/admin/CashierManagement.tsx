@@ -39,7 +39,12 @@ import {
   ShieldCheck, 
   ExternalLink,
   CheckCircle2,
-  DollarSign
+  DollarSign,
+  Receipt,
+  FileCheck,
+  Calendar,
+  Layers,
+  Heart
 } from 'lucide-react';
 import { useMultiTableRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
@@ -52,7 +57,90 @@ interface TeamCashier {
   is_active: boolean;
   created_at: string;
   roles?: string[];
+  permissions?: string[];
 }
+
+interface AccessModule {
+  id: string;
+  labelBn: string;
+  labelEn: string;
+  category: 'cashier' | 'additional';
+  descriptionBn: string;
+  icon: React.ElementType;
+}
+
+const ACCESS_MODULES: AccessModule[] = [
+  // Cashier Core Modules
+  {
+    id: 'finance_manage',
+    labelBn: 'আর্থিক লেনদেন এন্ট্রি',
+    labelEn: 'Financial Transactions',
+    category: 'cashier',
+    descriptionBn: 'আয় ও ব্যয়ের দৈনন্দিন হিসাব এন্ট্রি ও সম্পাদন',
+    icon: Wallet,
+  },
+  {
+    id: 'dues_collection',
+    labelBn: 'মাসিক চাঁদা আদায়',
+    labelEn: 'Monthly Dues Collection',
+    category: 'cashier',
+    descriptionBn: 'সদস্যদের চাঁদা কালেকশন ও রসিদ প্রস্তুত',
+    icon: Receipt,
+  },
+  {
+    id: 'payment_verify',
+    labelBn: 'অনলাইন পেমেন্ট যাচাই',
+    labelEn: 'Payment Verification',
+    category: 'cashier',
+    descriptionBn: 'অনলাইন চাঁদা ও অনুদান পেমেন্ট অনুমোদন',
+    icon: FileCheck,
+  },
+  {
+    id: 'yearly_reports',
+    labelBn: 'বার্ষিক হিসাব ও ব্যালেন্স',
+    labelEn: 'Yearly Accounts & Balance',
+    category: 'cashier',
+    descriptionBn: 'মাসভিত্তিক আর্থিক বিবরণী ও ব্যালেন্স নিরীক্ষা',
+    icon: Calendar,
+  },
+  // Additional System Modules
+  {
+    id: 'members_verify',
+    labelBn: 'সদস্য আবেদন ও অনুমোদন',
+    labelEn: 'Member Verification',
+    category: 'additional',
+    descriptionBn: 'নতুন সদস্য আবেদন অনুমোদন ও সদস্য তালিকা নিয়ন্ত্রণ',
+    icon: Users,
+  },
+  {
+    id: 'blood_donors',
+    labelBn: 'রক্তদাতা ও সেবা পরিচালনা',
+    labelEn: 'Blood Donors Management',
+    category: 'additional',
+    descriptionBn: 'রক্তদাতা ডাটাবেস ও জরুরি রক্তের অনুরোধ পরিচালনা',
+    icon: Heart,
+  },
+  {
+    id: 'notices_content',
+    labelBn: 'সংবাদ ও জরুরি নোটিশ',
+    labelEn: 'News & Announcements',
+    category: 'additional',
+    descriptionBn: 'ফাউন্ডেশনের নোটিশ, সংবাদ ও কার্যক্রম প্রকাশ',
+    icon: Layers,
+  },
+  {
+    id: 'gallery_manage',
+    labelBn: 'গ্যালারি ও ইভেন্ট অ্যালবাম',
+    labelEn: 'Gallery & Event Photos',
+    category: 'additional',
+    descriptionBn: 'ইভেন্ট ও সমাজসেবামূলক কাজের ছবি আপলোড',
+    icon: ExternalLink,
+  },
+];
+
+const CASHIER_DEFAULT_PERMISSIONS = ['finance_manage', 'dues_collection', 'payment_verify', 'yearly_reports'];
+const MODERATOR_DEFAULT_PERMISSIONS = ['members_verify', 'blood_donors', 'notices_content', 'gallery_manage'];
+const ADMIN_DEFAULT_PERMISSIONS = ACCESS_MODULES.map(m => m.id);
 
 const CashierManagement = () => {
   const { language } = useLanguage();
@@ -63,7 +151,7 @@ const CashierManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'cashier' | 'moderator' | 'admin'>('cashier');
-  const [permissions, setPermissions] = useState<string[]>(['finance_dues']);
+  const [permissions, setPermissions] = useState<string[]>(CASHIER_DEFAULT_PERMISSIONS);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -132,6 +220,24 @@ const CashierManagement = () => {
     enabled: isAdmin,
     refetchInterval: 5000,
   });
+
+  // Role selector with smart automatic module pre-selection
+  const handleRoleSelect = (role: 'cashier' | 'moderator' | 'admin') => {
+    setSelectedRole(role);
+    if (role === 'cashier') {
+      setPermissions(CASHIER_DEFAULT_PERMISSIONS);
+    } else if (role === 'moderator') {
+      setPermissions(MODERATOR_DEFAULT_PERMISSIONS);
+    } else if (role === 'admin') {
+      setPermissions(ADMIN_DEFAULT_PERMISSIONS);
+    }
+  };
+
+  const handleTogglePermission = (permId: string) => {
+    setPermissions((prev) =>
+      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
+    );
+  };
 
   // Create team / cashier user mutation
   const createCashierMutation = useMutation({
@@ -245,13 +351,7 @@ const CashierManagement = () => {
       password: '',
     });
     setSelectedRole('cashier');
-    setPermissions(['finance_dues']);
-  };
-
-  const handleTogglePermission = (perm: string) => {
-    setPermissions((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
-    );
+    setPermissions(CASHIER_DEFAULT_PERMISSIONS);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -287,24 +387,28 @@ const CashierManagement = () => {
     );
   }
 
+  // Real live metrics
   const totalMembersCount = teamMembers?.length || 0;
   const activeCashiersCount = teamMembers?.filter((c) => c.is_active && (c.roles?.includes('cashier') || true)).length || 0;
   const adminModeratorCount = (rolesCount?.admin || 1) + (rolesCount?.moderator || 0);
 
+  const cashierModules = ACCESS_MODULES.filter(m => m.category === 'cashier');
+  const additionalModules = ACCESS_MODULES.filter(m => m.category === 'additional');
+
   return (
-    <div className="space-y-4 sm:space-y-5 pb-10">
+    <div className="space-y-4 sm:space-y-4.5 pb-10">
       {/* 1. Signature Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-bold shadow-2xs">
             <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>{language === 'bn' ? 'টিম ও রোল পারমিশন' : 'Team & Role Permissions'}</span>
           </div>
-          <div className="mt-1.5">
-            <h2 className="text-2xl sm:text-3xl font-black text-[#14231B] font-heading tracking-tight leading-tight">
+          <div className="mt-1">
+            <h2 className="text-xl sm:text-2xl font-black text-[#14231B] font-heading tracking-tight leading-tight">
               {language === 'bn' ? 'টিম ও ক্যাশিয়ার ব্যবস্থাপনা' : 'Team & Cashier Management'}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               {language === 'bn' 
                 ? 'ক্যাশিয়ার, মডারেটর ও প্রশাসনিক সদস্যদের বিভিন্ন প্যানেলের অ্যাক্সেস নিয়ন্ত্রণ করুন' 
                 : 'Manage cashiers, moderators and team access across panels'}
@@ -316,13 +420,14 @@ const CashierManagement = () => {
           <Link
             to="/cashier"
             target="_blank"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-xs"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-xs"
           >
             <Wallet className="w-3.5 h-3.5 text-[#059669]" />
             <span>{language === 'bn' ? 'ক্যাশিয়ার প্যানেল' : 'Cashier Panel'}</span>
             <ExternalLink className="w-3 h-3 text-slate-400" />
           </Link>
 
+          {/* Modal with Smooth Scrolling (never overflows or cuts off) */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="rounded-xl px-4 py-2 font-bold text-xs gap-2 bg-[#0B6B3A] hover:bg-[#09572E] text-white shadow-sm hover:shadow-md transition-all">
@@ -330,288 +435,365 @@ const CashierManagement = () => {
                 {language === 'bn' ? 'নতুন টিম সদস্য' : 'Add Team Member'}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md rounded-[24px]">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold font-heading text-[#14231B]">
+            
+            <DialogContent className="max-w-lg w-[95vw] sm:w-full max-h-[85vh] flex flex-col p-0 rounded-[24px] overflow-hidden bg-white shadow-2xl">
+              <DialogHeader className="p-4 sm:p-5 pb-3 border-b border-slate-100 shrink-0">
+                <DialogTitle className="text-lg font-bold font-heading text-[#14231B]">
                   {language === 'bn' ? 'নতুন টিম সদস্য বা ক্যাশিয়ার তৈরি' : 'Add Team Member / Cashier'}
                 </DialogTitle>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {language === 'bn' ? 'সদস্যের তথ্য পূরণ করে দায়িত্ব ও প্যানেল অ্যাক্সেস নির্ধারণ করুন' : 'Fill info and assign role permissions'}
+                </p>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="fullName" className="text-xs font-bold text-slate-700">
-                    {language === 'bn' ? 'পুরো নাম' : 'Full Name'} *
-                  </Label>
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder={language === 'bn' ? 'সদস্যের নাম লিখুন' : 'Enter name'}
-                    className="rounded-xl text-sm"
-                    required
-                  />
-                </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-bold text-slate-700">
-                    {language === 'bn' ? 'ইমেইল' : 'Email'} *
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="member@somoyerbatighor.org"
-                    className="rounded-xl text-sm"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone" className="text-xs font-bold text-slate-700">
-                    {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'}
-                  </Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="01XXXXXXXXX"
-                    className="rounded-xl text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="password" className="text-xs font-bold text-slate-700">
-                    {language === 'bn' ? 'লগইন পাসওয়ার্ড' : 'Login Password'} *
-                  </Label>
-                  <div className="relative">
+              {/* Scrollable Form Body */}
+              <div className="overflow-y-auto px-4 sm:px-6 py-4 space-y-4 flex-1">
+                <form id="team-member-form" onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fullName" className="text-xs font-bold text-slate-700">
+                      {language === 'bn' ? 'পুরো নাম' : 'Full Name'} *
+                    </Label>
                     <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="••••••••"
-                      className="rounded-xl text-sm pr-10"
+                      id="fullName"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      placeholder={language === 'bn' ? 'যেমন: মোঃ মেহেদী হাসান' : 'Enter name'}
+                      className="rounded-xl text-sm"
                       required
-                      minLength={6}
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-slate-600"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
                   </div>
-                </div>
 
-                {/* Role Selection */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">
-                    {language === 'bn' ? 'দায়িত্ব / রোল নির্বাচন' : 'Assign Primary Role'} *
-                  </Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedRole('cashier');
-                        if (!permissions.includes('finance_dues')) setPermissions([...permissions, 'finance_dues']);
-                      }}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
-                        selectedRole === 'cashier'
-                          ? 'border-[#0B6B3A] bg-[#E6F4EA] text-[#0B6B3A] ring-1 ring-[#0B6B3A]'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <Wallet className="w-4 h-4" />
-                      <span>{language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier'}</span>
-                    </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="email" className="text-xs font-bold text-slate-700">
+                        {language === 'bn' ? 'ইমেইল' : 'Email'} *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="cashier@batighor.org"
+                        className="rounded-xl text-sm"
+                        required
+                      />
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRole('moderator')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
-                        selectedRole === 'moderator'
-                          ? 'border-[#7C3AED] bg-[#F3E8FF] text-[#7C3AED] ring-1 ring-[#7C3AED]'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <Shield className="w-4 h-4" />
-                      <span>{language === 'bn' ? 'মডারেটর' : 'Moderator'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRole('admin')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
-                        selectedRole === 'admin'
-                          ? 'border-[#D97706] bg-[#FEF3C7] text-[#D97706] ring-1 ring-[#D97706]'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>{language === 'bn' ? 'অ্যাডমিন' : 'Admin'}</span>
-                    </button>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="phone" className="text-xs font-bold text-slate-700">
+                        {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone'}
+                      </Label>
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="01XXXXXXXXX"
+                        className="rounded-xl text-sm"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* Custom Module Permissions */}
-                <div className="space-y-1.5 pt-1">
-                  <Label className="text-xs font-bold text-slate-700">
-                    {language === 'bn' ? 'কাস্টম মডিউল অ্যাক্সেস' : 'Custom Module Access'}
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {[
-                      { id: 'finance_dues', label: language === 'bn' ? 'আর্থিক ও চাঁদা' : 'Finance & Dues' },
-                      { id: 'members_verify', label: language === 'bn' ? 'সদস্য অনুমোদন' : 'Member Verify' },
-                      { id: 'blood_donors', label: language === 'bn' ? 'রক্তদান পরিচালনা' : 'Blood Donors' },
-                      { id: 'notices_content', label: language === 'bn' ? 'নোটিশ ও নিউজ' : 'Notices & News' },
-                    ].map((p) => (
-                      <label
-                        key={p.id}
-                        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer select-none transition-all ${
-                          permissions.includes(p.id)
-                            ? 'border-[#C8E6C9] bg-[#E6F4EA]/60 text-[#0B6B3A] font-bold'
-                            : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                        }`}
-                        onClick={() => handleTogglePermission(p.id)}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password" className="text-xs font-bold text-slate-700">
+                      {language === 'bn' ? 'লগইন পাসওয়ার্ড' : 'Login Password'} *
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="••••••••"
+                        className="rounded-xl text-sm pr-10"
+                        required
+                        minLength={6}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-slate-600"
+                        onClick={() => setShowPassword(!showPassword)}
                       >
-                        <input
-                          type="checkbox"
-                          className="rounded text-[#0B6B3A] focus:ring-[#0B6B3A]"
-                          checked={permissions.includes(p.id)}
-                          onChange={() => {}}
-                        />
-                        <span className="truncate">{p.label}</span>
-                      </label>
-                    ))}
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      {language === 'bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'At least 6 characters.'}
+                    </p>
                   </div>
-                </div>
 
+                  {/* Primary Role Selector */}
+                  <div className="space-y-1.5 pt-1">
+                    <Label className="text-xs font-bold text-slate-700">
+                      {language === 'bn' ? 'মূল দায়িত্ব / রোল নির্বাচন করুন' : 'Assign Primary Role'} *
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRoleSelect('cashier')}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                          selectedRole === 'cashier'
+                            ? 'border-[#0B6B3A] bg-[#E6F4EA] text-[#0B6B3A] ring-2 ring-[#0B6B3A]/30 font-black'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Wallet className="w-4 h-4" />
+                        <span>{language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier'}</span>
+                        <span className="text-[9px] font-normal text-slate-400">আর্থিক হিসাব</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRoleSelect('moderator')}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                          selectedRole === 'moderator'
+                            ? 'border-[#7C3AED] bg-[#F3E8FF] text-[#7C3AED] ring-2 ring-[#7C3AED]/30 font-black'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Shield className="w-4 h-4" />
+                        <span>{language === 'bn' ? 'মডারেটর' : 'Moderator'}</span>
+                        <span className="text-[9px] font-normal text-slate-400">যাচাই ও সেবা</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRoleSelect('admin')}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                          selectedRole === 'admin'
+                            ? 'border-[#D97706] bg-[#FEF3C7] text-[#D97706] ring-2 ring-[#D97706]/30 font-black'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>{language === 'bn' ? 'অ্যাডমিন' : 'Admin'}</span>
+                        <span className="text-[9px] font-normal text-slate-400">পূর্ণ নিয়ন্ত্রণ</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cashier Specific Default Modules */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <Wallet className="w-3.5 h-3.5 text-[#0B6B3A]" />
+                        <span>{language === 'bn' ? 'ক্যাশিয়ার প্যানেল মডিউল অ্যাক্সেস' : 'Cashier Desk Modules'}</span>
+                      </Label>
+                      <span className="text-[10px] text-slate-400">
+                        {language === 'bn' ? 'স্বয়ংক্রিয় নির্বাচন (কাস্টমাইজ যোগ্য)' : 'Auto-selected'}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {cashierModules.map((m) => {
+                        const Icon = m.icon;
+                        const isChecked = permissions.includes(m.id);
+
+                        return (
+                          <label
+                            key={m.id}
+                            className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer select-none transition-all ${
+                              isChecked
+                                ? 'border-[#C8E6C9] bg-[#E6F4EA]/70 text-[#0B6B3A] shadow-2xs font-bold'
+                                : 'border-slate-200 bg-slate-50/50 text-slate-500 hover:bg-slate-100'
+                            }`}
+                            onClick={() => handleTogglePermission(m.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 rounded text-[#0B6B3A] focus:ring-[#0B6B3A]"
+                              checked={isChecked}
+                              onChange={() => {}}
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs truncate">{m.labelBn}</p>
+                              <p className="text-[10px] text-slate-400 font-normal leading-tight">{m.descriptionBn}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Additional Feature Modules (can be checked/unchecked) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-[#7C3AED]" />
+                        <span>{language === 'bn' ? 'অতিরিক্ত কাস্টম পারমিশন মডিউল' : 'Additional Custom Access'}</span>
+                      </Label>
+                      <span className="text-[10px] text-slate-400">
+                        {language === 'bn' ? 'প্রয়োজনমতো যুক্ত/বাতিল করুন' : 'Toggle as needed'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {additionalModules.map((m) => {
+                        const isChecked = permissions.includes(m.id);
+
+                        return (
+                          <label
+                            key={m.id}
+                            className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer select-none transition-all ${
+                              isChecked
+                                ? 'border-purple-200 bg-[#F3E8FF]/70 text-[#7C3AED] shadow-2xs font-bold'
+                                : 'border-slate-200 bg-slate-50/50 text-slate-500 hover:bg-slate-100'
+                            }`}
+                            onClick={() => handleTogglePermission(m.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 rounded text-[#7C3AED] focus:ring-[#7C3AED]"
+                              checked={isChecked}
+                              onChange={() => {}}
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs truncate">{m.labelBn}</p>
+                              <p className="text-[10px] text-slate-400 font-normal leading-tight">{m.descriptionBn}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* Pinned Bottom Actions */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="rounded-xl text-xs font-bold"
+                >
+                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                </Button>
                 <Button 
+                  form="team-member-form"
                   type="submit" 
-                  className="w-full mt-3 rounded-xl bg-[#0B6B3A] hover:bg-[#09572E] text-white font-bold text-sm py-2.5" 
+                  className="rounded-xl bg-[#0B6B3A] hover:bg-[#09572E] text-white font-bold text-xs px-5" 
                   disabled={createCashierMutation.isPending}
                 >
                   {createCashierMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  {language === 'bn' ? 'টিম সদস্য তৈরি করুন' : 'Create Team Account'}
+                  {language === 'bn' ? 'টিম সদস্য তৈরি করুন' : 'Create Member'}
                 </Button>
-              </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      {/* 2. Top Row: 4 Main Activity Stat Cards (matching Dashboard aesthetic) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      {/* 2. Top Row: 4 Main Activity Stat Cards (Compact height, real live data) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: মোট টিম সদস্য */}
-        <div className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
-          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
+        <div className="group bg-white rounded-[18px] py-3 px-4 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 flex items-center justify-between gap-3 relative overflow-hidden">
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-4 pointer-events-none overflow-hidden opacity-70">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#3B82F6]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#EEF4FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Users className="w-6 h-6 stroke-[2.2] text-[#2563EB]" />
+          <div className="flex items-center gap-3 min-w-0 z-10">
+            <div className="w-10 h-10 rounded-xl bg-[#EEF4FF] flex items-center justify-center shrink-0 shadow-2xs">
+              <Users className="w-5 h-5 stroke-[2.2] text-[#2563EB]" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
-                {language === 'bn' ? 'মোট টিম সদস্য' : 'Total Team Staff'}
+              <p className="text-[11px] font-bold text-slate-500 truncate">
+                {language === 'bn' ? 'মোট টিম সদস্য' : 'Total Staff'}
               </p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
                 {totalMembersCount}
               </p>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#EEF4FF] text-[#2563EB] flex items-center justify-center shrink-0 z-10 shadow-2xs">
-            <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
+          <div className="w-7 h-7 rounded-full bg-[#EEF4FF] text-[#2563EB] flex items-center justify-center shrink-0 z-10">
+            <ArrowUpRight className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
         </div>
 
         {/* Card 2: সক্রিয় ক্যাশিয়ার */}
-        <div className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
-          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
+        <div className="group bg-white rounded-[18px] py-3 px-4 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 flex items-center justify-between gap-3 relative overflow-hidden">
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-4 pointer-events-none overflow-hidden opacity-70">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#059669]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#E6F4EA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Wallet className="w-6 h-6 stroke-[2.2] text-[#059669]" />
+          <div className="flex items-center gap-3 min-w-0 z-10">
+            <div className="w-10 h-10 rounded-xl bg-[#E6F4EA] flex items-center justify-center shrink-0 shadow-2xs">
+              <Wallet className="w-5 h-5 stroke-[2.2] text-[#059669]" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
+              <p className="text-[11px] font-bold text-slate-500 truncate">
                 {language === 'bn' ? 'সক্রিয় ক্যাশিয়ার' : 'Active Cashiers'}
               </p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
                 {activeCashiersCount}
               </p>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#E6F4EA] text-[#059669] flex items-center justify-center shrink-0 z-10 shadow-2xs">
-            <DollarSign className="w-4 h-4 stroke-[2.5]" />
+          <div className="w-7 h-7 rounded-full bg-[#E6F4EA] text-[#059669] flex items-center justify-center shrink-0 z-10">
+            <DollarSign className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
         </div>
 
         {/* Card 3: মডারেটর ও অ্যাডমিন */}
-        <div className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
-          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
+        <div className="group bg-white rounded-[18px] py-3 px-4 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 flex items-center justify-between gap-3 relative overflow-hidden">
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-4 pointer-events-none overflow-hidden opacity-70">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#7C3AED]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#F3E8FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Shield className="w-6 h-6 stroke-[2.2] text-[#7C3AED]" />
+          <div className="flex items-center gap-3 min-w-0 z-10">
+            <div className="w-10 h-10 rounded-xl bg-[#F3E8FF] flex items-center justify-center shrink-0 shadow-2xs">
+              <Shield className="w-5 h-5 stroke-[2.2] text-[#7C3AED]" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
+              <p className="text-[11px] font-bold text-slate-500 truncate">
                 {language === 'bn' ? 'মডারেটর ও অ্যাডমিন' : 'Admins & Mods'}
               </p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
                 {adminModeratorCount}
               </p>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#F3E8FF] text-[#7C3AED] flex items-center justify-center shrink-0 z-10 shadow-2xs">
-            <ShieldCheck className="w-4 h-4 stroke-[2.5]" />
+          <div className="w-7 h-7 rounded-full bg-[#F3E8FF] text-[#7C3AED] flex items-center justify-center shrink-0 z-10">
+            <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
         </div>
 
         {/* Card 4: কাস্টম রোল পারমিশন */}
-        <div className="group bg-white rounded-[22px] p-4 sm:p-5 border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between gap-3 relative overflow-hidden">
-          <div className="absolute -bottom-0.5 -right-2 -left-2 h-7 pointer-events-none overflow-hidden opacity-75">
+        <div className="group bg-white rounded-[18px] py-3 px-4 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 flex items-center justify-between gap-3 relative overflow-hidden">
+          <div className="absolute -bottom-0.5 -right-2 -left-2 h-4 pointer-events-none overflow-hidden opacity-70">
             <svg viewBox="0 0 500 50" preserveAspectRatio="none" className="w-full h-full fill-[#F59E0B]">
               <path d="M0,25 C150,55 350,-5 500,25 L500,50 L0,50 Z" />
             </svg>
           </div>
-          <div className="flex items-center gap-3.5 min-w-0 z-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#FEF3C7] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-              <Sliders className="w-6 h-6 stroke-[2.2] text-[#D97706]" />
+          <div className="flex items-center gap-3 min-w-0 z-10">
+            <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] flex items-center justify-center shrink-0 shadow-2xs">
+              <Sliders className="w-5 h-5 stroke-[2.2] text-[#D97706]" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-500 truncate">
+              <p className="text-[11px] font-bold text-slate-500 truncate">
                 {language === 'bn' ? 'কাস্টম পারমিশন' : 'Role Permissions'}
               </p>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">
-                ৪টি মডিউল
+              <p className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+                ৮টি মডিউল
               </p>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0 z-10 shadow-2xs">
-            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+          <div className="w-7 h-7 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0 z-10">
+            <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
         </div>
       </div>
 
       {/* 3. Team Members Table */}
-      <Card className="rounded-[24px] border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base sm:text-lg font-black text-slate-900 font-heading">
+      <Card className="rounded-[22px] border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.02)] overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm sm:text-base font-black text-slate-900 font-heading">
             {language === 'bn' ? 'টিম সদস্য ও ক্যাশিয়ার তালিকা' : 'Team Members & Cashier Roster'}
           </h3>
           <span className="text-xs text-slate-500 font-medium">
@@ -620,8 +802,8 @@ const CashierManagement = () => {
         </div>
         <CardContent className="p-0">
           {teamLoading ? (
-            <div className="flex justify-center p-12">
-              <Loader2 className="h-8 w-8 animate-spin text-[#0B6B3A]" />
+            <div className="flex justify-center p-10">
+              <Loader2 className="h-7 w-7 animate-spin text-[#0B6B3A]" />
             </div>
           ) : teamMembers && teamMembers.length > 0 ? (
             <div className="overflow-x-auto">
@@ -645,12 +827,12 @@ const CashierManagement = () => {
                       <TableRow key={member.id} className="hover:bg-slate-50/60 border-slate-100">
                         <TableCell className="font-bold text-slate-900 text-sm">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-[#E6F4EA] text-[#0B6B3A] flex items-center justify-center font-black text-xs shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-[#E6F4EA] text-[#0B6B3A] flex items-center justify-center font-black text-xs shrink-0 aspect-square">
                               {member.full_name?.charAt(0) || 'T'}
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate">{member.full_name}</p>
-                              <p className="text-[11px] text-slate-400 font-normal">
+                              <p className="truncate text-xs sm:text-sm">{member.full_name}</p>
+                              <p className="text-[10px] text-slate-400 font-normal">
                                 {new Date(member.created_at).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US')}
                               </p>
                             </div>
@@ -663,17 +845,17 @@ const CashierManagement = () => {
                         <TableCell>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {isAdminRole && (
-                              <Badge className="bg-[#FEF3C7] text-[#D97706] hover:bg-[#FEF3C7] border-amber-200 text-[11px] font-bold">
+                              <Badge className="bg-[#FEF3C7] text-[#D97706] hover:bg-[#FEF3C7] border-amber-200 text-[10px] font-bold">
                                 {language === 'bn' ? 'অ্যাডমিন' : 'Admin'}
                               </Badge>
                             )}
                             {isModRole && (
-                              <Badge className="bg-[#F3E8FF] text-[#7C3AED] hover:bg-[#F3E8FF] border-purple-200 text-[11px] font-bold">
+                              <Badge className="bg-[#F3E8FF] text-[#7C3AED] hover:bg-[#F3E8FF] border-purple-200 text-[10px] font-bold">
                                 {language === 'bn' ? 'মডারেটর' : 'Moderator'}
                               </Badge>
                             )}
                             {isCashierRole && (
-                              <Badge className="bg-[#E6F4EA] text-[#0B6B3A] hover:bg-[#E6F4EA] border-[#C8E6C9] text-[11px] font-bold">
+                              <Badge className="bg-[#E6F4EA] text-[#0B6B3A] hover:bg-[#E6F4EA] border-[#C8E6C9] text-[10px] font-bold">
                                 {language === 'bn' ? 'ক্যাশিয়ার' : 'Cashier'}
                               </Badge>
                             )}
@@ -682,7 +864,7 @@ const CashierManagement = () => {
                         <TableCell>
                           <Badge 
                             variant="outline" 
-                            className={`text-[11px] font-bold ${
+                            className={`text-[10px] font-bold ${
                               member.is_active 
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : 'bg-slate-50 text-slate-500 border-slate-200'
@@ -762,9 +944,9 @@ const CashierManagement = () => {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-12 text-slate-400">
-              <Users className="w-12 h-12 mx-auto stroke-1 text-slate-300 mb-2" />
-              <p className="text-sm font-medium">
+            <div className="text-center py-10 text-slate-400">
+              <Users className="w-10 h-10 mx-auto stroke-1 text-slate-300 mb-2" />
+              <p className="text-xs font-medium">
                 {language === 'bn' ? 'কোনো টিম সদস্য বা ক্যাশিয়ার পাওয়া যায়নি' : 'No team members or cashiers found'}
               </p>
             </div>
