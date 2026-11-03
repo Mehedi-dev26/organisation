@@ -27,6 +27,8 @@ export interface DuesData {
   is_paid: boolean;
   paid_date: string | null;
   transaction_id: string | null;
+  payment_status?: string | null;
+  payment_method?: string | null;
 }
 
 interface MemberContextType {

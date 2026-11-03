@@ -554,3 +554,4 @@ export const IdCardCustomizer: React.FC<IdCardCustomizerProps> = ({
     </div>
   );
 };
+

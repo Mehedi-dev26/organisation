@@ -28,7 +28,8 @@ import {
   Key, 
   Sparkles,
   ArrowRight,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { bn, enUS } from 'date-fns/locale';
@@ -293,6 +294,37 @@ const MemberDashboardHome = () => {
           </div>
         </div>
       </div>
+
+      {/* 2.5 Unpaid Due Action Banner */}
+      {unpaidMonths.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-100/30 border-2 border-amber-300 rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_4px_20px_rgba(245,158,11,0.06)]">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0 shadow-2xs">
+              <AlertCircle className="w-6 h-6 text-rose-600" />
+            </div>
+            <div>
+              <p className="font-heading font-black text-slate-900 text-sm sm:text-base">
+                {language === 'bn' 
+                  ? `আপনার ${unpaidMonths.length} মাসের চাঁদা বকেয়া রয়েছে (মোট: ৳${unpaidDues.toLocaleString()})` 
+                  : `You have ${unpaidMonths.length} unpaid due(s) pending (Total: ৳${unpaidDues.toLocaleString()})`}
+              </p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                {language === 'bn'
+                  ? 'বিকাশ, নগদ, রকেট বা ব্যাংক অ্যাকাউন্টে চাঁদা পরিশোধ করে ট্রানজেকশন আইডি জমা দিন।'
+                  : 'Pay now via bKash, Nagad, Rocket, or Bank and submit your Transaction ID.'}
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/member/dues"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0B6B3A] hover:bg-[#09572E] text-white font-bold text-xs shadow-xs shrink-0 transition-transform active:scale-95"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>{language === 'bn' ? 'চাঁদা পরিশোধ করুন' : 'Pay Dues'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* 3. Blood Donation Status Highlight Card */}
       <Card className="rounded-[24px] border border-rose-100 shadow-[0_4px_25px_rgba(225,29,72,0.04)] overflow-hidden bg-white relative">

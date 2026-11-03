@@ -452,3 +452,4 @@ const MemberIdCardPage: React.FC = () => {
 };
 
 export default MemberIdCardPage;
+

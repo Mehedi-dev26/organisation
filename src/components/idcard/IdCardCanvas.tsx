@@ -450,3 +450,4 @@ export const IdCardCanvas = forwardRef<HTMLDivElement, IdCardCanvasProps>(
 );
 
 IdCardCanvas.displayName = 'IdCardCanvas';
+

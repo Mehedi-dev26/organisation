@@ -137,6 +137,24 @@ const PayDues = () => {
     enabled: !!memberData?.id,
   });
 
+  // Auto-select unpaid due or due from URL query parameter
+  useEffect(() => {
+    if (duesData && duesData.length > 0 && !selectedDue) {
+      const dueIdParam = searchParams.get('dueId');
+      if (dueIdParam) {
+        const found = duesData.find((d) => d.id === dueIdParam);
+        if (found) {
+          setSelectedDue(found);
+          return;
+        }
+      }
+      const firstUnpaid = duesData.find((d) => !d.is_paid && d.payment_status !== 'submitted');
+      if (firstUnpaid) {
+        setSelectedDue(firstUnpaid);
+      }
+    }
+  }, [duesData, searchParams, selectedDue]);
+
   // Submit payment mutation
   const submitPaymentMutation = useMutation({
     mutationFn: async ({ dueId, txnId, paymentMethod }: { dueId: string; txnId: string; paymentMethod: string }) => {

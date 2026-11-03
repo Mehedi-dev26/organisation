@@ -18,7 +18,7 @@ const MemberLayoutContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAF9]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F4FAF6]">
         <div className="text-center p-8">
           <Loader2 className="h-10 w-10 animate-spin text-[#0B6B3A] mx-auto mb-3" />
           <p className="text-sm font-bold text-slate-500">
@@ -35,7 +35,7 @@ const MemberLayoutContent = () => {
 
   if (memberLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAF9]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F4FAF6]">
         <div className="text-center p-8">
           <Loader2 className="h-10 w-10 animate-spin text-[#0B6B3A] mx-auto mb-3" />
           <p className="text-sm font-bold text-slate-500">
@@ -48,7 +48,7 @@ const MemberLayoutContent = () => {
 
   if (!memberData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAF9] p-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#F4FAF6] p-4">
         <Card className="max-w-md w-full rounded-[24px] border-slate-100 shadow-xl overflow-hidden">
           <CardContent className="p-8 text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
@@ -80,16 +80,16 @@ const MemberLayoutContent = () => {
   }
 
   return (
-    <div className="min-h-screen flex w-full bg-[#F8FAF9]">
-      {/* Desktop Sidebar */}
+    <div className="min-h-screen flex w-full bg-[#F4FAF6]">
+      {/* Desktop Sidebar (matching Admin UI) */}
       <div className="hidden md:block">
         <MemberSidebar />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F4FAF6]">
         <MemberHeader />
-        <main className="flex-1 p-3 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto pb-24 md:pb-10">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-12">
           <Outlet />
         </main>
       </div>
@@ -109,4 +109,3 @@ const MemberLayout = () => {
 };
 
 export default MemberLayout;
-

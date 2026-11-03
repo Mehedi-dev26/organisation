@@ -70,3 +70,4 @@ export const extractMemberSerial = (memberId: string | null | undefined): string
   }
   return '01';
 };
+

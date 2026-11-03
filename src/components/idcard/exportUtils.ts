@@ -84,3 +84,4 @@ export async function downloadElementAsPdf(
   pdf.addImage(dataUrl, 'PNG', 0, 0, 100, 150, undefined, 'FAST');
   pdf.save(filename);
 }
+
