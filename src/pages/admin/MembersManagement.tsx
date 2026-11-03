@@ -59,6 +59,7 @@ import { compressImage, formatFileSize } from '@/lib/imageUtils';
 import { useReactToPrint } from 'react-to-print';
 import { bangladeshGeoData, professionsList, getUnionsForUpazila } from '@/data/bangladeshGeoData';
 import { useSiteLogo } from '@/hooks/useSiteLogo';
+import { computeNextMemberId, generateNextMemberId } from '@/lib/memberIdUtils';
 
 export interface Member {
   id: string;
@@ -253,20 +254,45 @@ const MembersManagement: React.FC = () => {
     });
   }, [members, selectedStatus, selectedMemberType, selectedBloodGroup, searchQuery]);
 
-  // Generate Next Member ID
-  const generateMemberId = () => {
-    if (!members || members.length === 0) {
-      return 'SB-0001';
-    }
-    const memberIds = members
-      .map((m) => m.member_id)
-      .filter((id) => id?.startsWith('SB-'))
-      .map((id) => parseInt(id.replace('SB-', ''), 10))
-      .filter((num) => !isNaN(num));
+  // One-time auto-migration for legacy member ID format to sequential SB-001
+  const migrationAttempted = useRef(false);
+  useEffect(() => {
+    if (!members || members.length === 0 || migrationAttempted.current || !isAdmin) return;
+    const legacyMember = members.find(
+      (m) => m.member_id === 'SB-2026-2719' || m.member_id === 'SB-0001'
+    );
+    if (legacyMember) {
+      migrationAttempted.current = true;
+      const migrateLegacyId = async () => {
+        try {
+          const oldId = legacyMember.member_id;
+          const { error: memberErr } = await supabase
+            .from('members')
+            .update({ member_id: 'SB-001' })
+            .eq('id', legacyMember.id);
 
-    const maxId = memberIds.length > 0 ? Math.max(...memberIds) : 0;
-    const nextId = maxId + 1;
-    return `SB-${nextId.toString().padStart(4, '0')}`;
+          if (!memberErr) {
+            // Also synchronize blood donors table
+            await supabase
+              .from('blood_donors')
+              .update({ member_id: 'SB-001' })
+              .eq('member_id', oldId);
+
+            refetch();
+            console.log(`Successfully migrated legacy member ${oldId} to SB-001`);
+          }
+        } catch (e) {
+          console.warn('Auto-migration error:', e);
+        }
+      };
+      migrateLegacyId();
+    }
+  }, [members, isAdmin, refetch]);
+
+  // Generate Next Member ID (Sequential: SB-001, SB-002, ...)
+  const generateMemberId = () => {
+    const ids = members?.map((m) => m.member_id) || [];
+    return computeNextMemberId(ids, { prefix: 'SB-', padLength: 3 });
   };
 
   // Mutations

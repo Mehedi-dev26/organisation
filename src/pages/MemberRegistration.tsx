@@ -52,6 +52,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
+import { generateNextMemberId } from '@/lib/memberIdUtils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   bangladeshGeoData,
@@ -289,10 +290,8 @@ const MemberRegistration: React.FC = () => {
     }
   };
 
-  const generateMemberId = () => {
-    const year = new Date().getFullYear();
-    const random = Math.floor(Math.random() * 9000) + 1000;
-    return `SB-${year}-${random}`;
+  const generateMemberId = async () => {
+    return await generateNextMemberId({ prefix: 'SB-', padLength: 3 });
   };
 
   // Step 1 Validation & Next transition
@@ -477,7 +476,7 @@ const MemberRegistration: React.FC = () => {
 
       const memberIdToUse = memberType === 'existing' && previousMemberId.trim()
         ? previousMemberId.trim()
-        : generateMemberId();
+        : await generateMemberId();
 
       const isDonateYes = data.willing_to_donate_blood === 'yes';
       const isSubYes = data.willing_to_pay_subscription === 'yes';
@@ -842,7 +841,7 @@ const MemberRegistration: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                   <Input
-                    placeholder={language === 'bn' ? 'সদস্য আইডি লিখুন (উদা: SB-2026-XXXX)' : 'Enter ID (e.g. SB-2026-XXXX)'}
+                    placeholder={language === 'bn' ? 'সদস্য আইডি লিখুন (যেমন: SB-001)' : 'Enter ID (e.g. SB-001)'}
                     value={statusSearchId || createdMemberId}
                     onChange={(e) => setStatusSearchId(e.target.value)}
                     className="h-10 text-sm font-mono rounded-xl border-slate-300 dark:border-slate-700 w-full sm:w-64"
@@ -1097,7 +1096,7 @@ const MemberRegistration: React.FC = () => {
 
                 <div className="flex gap-2">
                   <Input
-                    placeholder={language === 'bn' ? 'আপনার আবেদন ট্র্যাকিং আইডি লিখুন (যেমন: SB-2026-1234)' : 'Enter tracking ID (e.g. SB-2026-1234)'}
+                    placeholder={language === 'bn' ? 'আপনার আবেদন ট্র্যাকিং আইডি লিখুন (যেমন: SB-001)' : 'Enter tracking ID (e.g. SB-001)'}
                     value={statusSearchId}
                     onChange={(e) => setStatusSearchId(e.target.value)}
                     className="h-11 rounded-xl font-mono text-sm border-slate-300 dark:border-slate-700"
@@ -1361,7 +1360,7 @@ const MemberRegistration: React.FC = () => {
                               </Label>
                               <Input
                                 id="previous_member_id"
-                                placeholder={language === 'bn' ? 'যেমন: SB-2023-1234' : 'e.g., SB-2023-1234'}
+                                placeholder={language === 'bn' ? 'যেমন: SB-001' : 'e.g., SB-001'}
                                 value={previousMemberId}
                                 onChange={(e) => setPreviousMemberId(e.target.value)}
                                 className="h-10 text-sm rounded-xl border-slate-300 dark:border-slate-700"

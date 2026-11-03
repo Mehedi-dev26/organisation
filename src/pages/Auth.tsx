@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getCandidateMemberIds } from '@/lib/memberIdUtils';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -139,15 +140,25 @@ const Auth = () => {
           if (memberData?.email && !candidateEmails.includes(memberData.email.toLowerCase())) {
             candidateEmails.unshift(memberData.email.toLowerCase());
           } else {
+            const candidateIds = getCandidateMemberIds(cleanInput);
             const { data: memberById } = await supabase
               .from('members')
-              .select('email')
-              .eq('member_id', cleanInput)
+              .select('email, phone')
+              .in('member_id', candidateIds)
               .limit(1)
               .maybeSingle();
 
             if (memberById?.email && !candidateEmails.includes(memberById.email.toLowerCase())) {
               candidateEmails.unshift(memberById.email.toLowerCase());
+            } else if (memberById?.phone) {
+              const mDigits = memberById.phone.replace(/\D/g, '');
+              const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
+              if (mStd.length >= 10) {
+                const synth = `${mStd}@batighor.org`;
+                if (!candidateEmails.includes(synth)) {
+                  candidateEmails.unshift(synth);
+                }
+              }
             }
           }
         } catch (e) {
@@ -432,10 +443,10 @@ const Auth = () => {
                 <CardContent className="px-4 sm:px-8 pb-6 sm:pb-8 pt-5 sm:pt-6">
                   <form onSubmit={handleSignIn} className="space-y-4">
                     
-                    {/* Identifier: Mobile or Email */}
+                    {/* Identifier: Mobile, Member ID or Email */}
                     <div className="space-y-1.5">
                       <Label htmlFor="login-identifier" className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center justify-between">
-                        <span>{language === 'bn' ? 'মোবাইল নম্বর বা ইমেইল' : 'Mobile Number or Email'}</span>
+                        <span>{language === 'bn' ? 'মোবাইল নম্বর, সদস্য আইডি বা ইমেইল' : 'Mobile Number, Member ID or Email'}</span>
                         <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/50">
                           {language === 'bn' ? 'স্বয়ংক্রিয় সনাক্তকরণ' : 'Auto-detected'}
                         </span>
@@ -444,7 +455,7 @@ const Auth = () => {
                         <Input
                           id="login-identifier"
                           type="text"
-                          placeholder={language === 'bn' ? '০১৭১২xxxxxx অথবা user@mail.com' : '01712xxxxxx or user@mail.com'}
+                          placeholder={language === 'bn' ? '০১৭১২xxxxxx / SB-001 / ইমেইল' : '01712xxxxxx / SB-001 / Email'}
                           value={identifier}
                           onChange={(e) => setIdentifier(e.target.value)}
                           className="pl-10 h-11 text-sm rounded-xl border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-600 bg-white dark:bg-slate-900"
