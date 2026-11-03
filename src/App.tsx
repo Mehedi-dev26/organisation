@@ -30,6 +30,7 @@ const MemberLayout = lazy(() => import("./components/member/MemberLayout"));
 const MemberDashboardHome = lazy(() => import("./pages/member/MemberDashboardHome"));
 const MemberDuesPage = lazy(() => import("./pages/member/MemberDuesPage"));
 const MemberProfilePage = lazy(() => import("./pages/member/MemberProfilePage"));
+const MemberIdCardPage = lazy(() => import("./pages/member/MemberIdCardPage"));
 const MemberSecurityPage = lazy(() => import("./pages/member/MemberSecurityPage"));
 const PayDues = lazy(() => import("./pages/member/PayDues"));
 
@@ -119,6 +120,7 @@ const App = () => {
                     <Route index element={<MemberDashboardHome />} />
                     <Route path="dues" element={<MemberDuesPage />} />
                     <Route path="profile" element={<MemberProfilePage />} />
+                    <Route path="id-card" element={<MemberIdCardPage />} />
                     <Route path="security" element={<MemberSecurityPage />} />
                     <Route path="pay-dues" element={<PayDues />} />
                   </Route>
@@ -127,9 +129,11 @@ const App = () => {
                     <Route index element={<MemberDashboardHome />} />
                     <Route path="dues" element={<MemberDuesPage />} />
                     <Route path="profile" element={<MemberProfilePage />} />
+                    <Route path="id-card" element={<MemberIdCardPage />} />
                     <Route path="security" element={<MemberSecurityPage />} />
                     <Route path="pay-dues" element={<PayDues />} />
                   </Route>
+                  <Route path="/id-card" element={<Navigate to="/member/id-card" replace />} />
                   <Route path="/pay-dues" element={<Navigate to="/member/pay-dues" replace />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Auth />} />

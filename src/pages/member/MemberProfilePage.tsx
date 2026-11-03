@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMember } from '@/components/member/MemberContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +24,8 @@ import {
   Droplet, 
   Calendar,
   Loader2,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { compressImage } from '@/lib/imageUtils';
@@ -162,7 +164,36 @@ const MemberProfilePage = () => {
         </div>
       </div>
 
-      {/* 2. Digital Membership ID Card (Printable & Beautiful) */}
+      {/* 2. Photo ID Card Generator Callout */}
+      <div className="bg-gradient-to-r from-[#0B6B3A] via-[#09572F] to-[#04331B] rounded-[24px] p-5 sm:p-6 text-white shadow-xl relative overflow-hidden border border-emerald-600/40">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-[#FFE21D] text-xs font-bold backdrop-blur-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'নতুন প্রিমিয়াম ফিচার' : 'New Premium Feature'}</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-white">
+              {language === 'bn' ? 'ফটো আইডি কার্ড ডিজাইনার ও জেনারেটর' : 'Photo ID Card Designer & Generator'}
+            </h3>
+            <p className="text-xs sm:text-sm text-emerald-100 leading-relaxed">
+              {language === 'bn'
+                ? 'আপনার অফিসিয়াল প্রাতিষ্ঠানিক ছবিসহ পূর্ণাঙ্গ মেম্বার আইডি কার্ড ড্র্যাগ অ্যান্ড ড্রপ করে পজিশন করুন, লাইভ প্রিভিউ দেখুন এবং এইচডি PNG, JPG বা PDF ডাউনলোড করুন।'
+                : 'Customize your official photo ID card with interactive drag-and-drop photo positioning, live preview, and HD export.'}
+            </p>
+          </div>
+
+          <Link
+            to="/member/id-card"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#9BD038] hover:bg-[#8bc12e] text-[#14231B] font-black text-sm shadow-md transition-all shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <span>{language === 'bn' ? 'আইডি কার্ড তৈরি ও ডাউনলোড করুন' : 'Open ID Card Designer'}</span>
+            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+          </Link>
+        </div>
+      </div>
+
+      {/* 3. Digital Membership ID Card (Printable & Beautiful) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-base sm:text-lg font-black text-slate-900 font-heading">

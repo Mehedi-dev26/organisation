@@ -49,7 +49,14 @@ const MemberSidebar = () => {
       badge: null,
     },
     {
-      title: language === 'bn' ? 'প্রোফাইল ও আইডি কার্ড' : 'Profile & ID Card',
+      title: language === 'bn' ? 'ফটো আইডি কার্ড' : 'Photo ID Card',
+      url: '/member/id-card',
+      exact: false,
+      icon: Sparkles,
+      badge: language === 'bn' ? 'নতুন' : 'New',
+    },
+    {
+      title: language === 'bn' ? 'প্রোফাইল তথ্য' : 'Member Profile',
       url: '/member/profile',
       exact: false,
       icon: User,

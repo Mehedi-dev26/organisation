@@ -394,21 +394,21 @@ const MemberDashboardHome = () => {
         </Link>
 
         <Link
-          to="/member/profile"
-          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between"
+          to="/member/id-card"
+          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EEF4FF] text-[#2563EB] flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#E6F4EA] text-[#0B6B3A] flex items-center justify-center group-hover:scale-110 transition-transform">
               <User className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3]" />
             </div>
-            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#0B6B3A] group-hover:translate-x-1 transition-all" />
           </div>
           <div className="mt-3 sm:mt-4">
             <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
-              {language === 'bn' ? 'ডিজিটাল আইডি কার্ড' : 'Digital ID Card'}
+              {language === 'bn' ? 'ফটো আইডি কার্ড' : 'Photo ID Card'}
             </h4>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">
-              {language === 'bn' ? 'আইডি কার্ড ও প্রোফাইল তথ্য' : 'View ID card & edit profile'}
+              {language === 'bn' ? 'কাস্টমাইজ, প্রিন্ট ও ডাউনলোড' : 'Customize, print & download'}
             </p>
           </div>
         </Link>

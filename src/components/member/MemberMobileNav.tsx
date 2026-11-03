@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, CreditCard, User, Key, LogOut } from 'lucide-react';
+import { LayoutDashboard, CreditCard, User, Key, LogOut, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MemberMobileNav = () => {
@@ -32,6 +32,14 @@ const MemberMobileNav = () => {
       icon: CreditCard,
       labelBn: 'চাঁদা',
       labelEn: 'Dues',
+    },
+    {
+      id: 'id-card',
+      url: '/member/id-card',
+      exact: false,
+      icon: Sparkles,
+      labelBn: 'আইডি কার্ড',
+      labelEn: 'ID Card',
     },
     {
       id: 'profile',
