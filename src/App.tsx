@@ -48,6 +48,7 @@ const GalleryManagement = lazy(() => import("./pages/admin/GalleryManagement"));
 const YearlyAccounts = lazy(() => import("./pages/admin/YearlyAccounts"));
 const CashierManagement = lazy(() => import("./pages/admin/CashierManagement"));
 const PaymentVerification = lazy(() => import("./pages/admin/PaymentVerification"));
+const PaymentGateways = lazy(() => import("./pages/admin/PaymentGateways"));
 const BloodDonorsManagement = lazy(() => import("./pages/admin/BloodDonorsManagement"));
 
 // Lazy-loaded Cashier portal
@@ -148,6 +149,7 @@ const App = () => {
                     <Route path="finance" element={<FinanceManagement />} />
                     <Route path="dues" element={<DuesManagement />} />
                     <Route path="payment-verification" element={<PaymentVerification />} />
+                    <Route path="payment-gateways" element={<PaymentGateways />} />
                     <Route path="yearly-accounts" element={<YearlyAccounts />} />
                     <Route path="cashiers" element={<CashierManagement />} />
                     <Route path="settings" element={<AdminSettings />} />

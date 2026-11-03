@@ -72,7 +72,7 @@ const PayDues = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [transactionId, setTransactionId] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [paymentMode, setPaymentMode] = useState<'manual' | 'piprapay'>('piprapay');
+  const [paymentMode, setPaymentMode] = useState<'manual' | 'piprapay'>('manual');
   const [isProcessingPipraPay, setIsProcessingPipraPay] = useState(false);
 
   // Check for payment status in URL
@@ -136,6 +136,16 @@ const PayDues = () => {
     },
     enabled: !!memberData?.id,
   });
+
+  // Auto-select first active payment method
+  useEffect(() => {
+    if (paymentMethods && paymentMethods.length > 0 && !selectedPaymentMethod) {
+      const active = paymentMethods.find((m) => m.is_active);
+      if (active) {
+        setSelectedPaymentMethod(active.method_type);
+      }
+    }
+  }, [paymentMethods, selectedPaymentMethod]);
 
   // Auto-select unpaid due or due from URL query parameter
   useEffect(() => {

@@ -17,6 +17,7 @@ import {
   ImageIcon,
   Wallet,
   Receipt,
+  CreditCard,
   CheckSquare,
   History,
   UserCog2,
@@ -85,6 +86,11 @@ const AdminSidebar = () => {
       title: language === 'bn' ? 'পেমেন্ট যাচাই' : 'Payment Verification', 
       url: '/admin/payment-verification', 
       icon: CheckSquare 
+    },
+    { 
+      title: language === 'bn' ? 'পেমেন্ট গেটওয়ে' : 'Payment Gateways', 
+      url: '/admin/payment-gateways', 
+      icon: CreditCard 
     },
     { 
       title: language === 'bn' ? 'বিগত বছরের হিসাব' : 'Yearly Accounts', 
