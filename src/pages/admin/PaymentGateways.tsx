@@ -4,14 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  CreditCard, 
-  Save, 
-  Sparkles, 
-  Check, 
-  Smartphone, 
-  Building2, 
-  ShieldCheck, 
+import {
+  CreditCard,
+  Save,
+  Sparkles,
+  Check,
+  Smartphone,
+  Building2,
+  ShieldCheck,
   RefreshCw,
   Upload,
   Image as ImageIcon,
@@ -28,13 +28,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { generateLocalPaymentInstruction, type PaymentMethod, type AccountType } from '@/lib/ai-payment';
-import { 
-  BkashLogo, 
-  NagadLogo, 
-  RocketLogo, 
-  UpayLogo, 
-  CellfinLogo, 
-  TapLogo 
+import {
+  BkashLogo,
+  NagadLogo,
+  RocketLogo,
+  UpayLogo,
+  CellfinLogo,
+  TapLogo
 } from '@/components/payment/PaymentLogos';
 import { usePaymentGatewayLogos, type PaymentGatewayLogos, SETTINGS_KEY_PAYMENT_LOGOS } from '@/hooks/usePaymentGatewayLogos';
 import { LogoCropModal } from '@/components/common/LogoCropModal';
@@ -338,7 +338,7 @@ export const PaymentGateways = () => {
 
       toast({
         title: language === 'bn' ? 'লোগো সফলভাবে সংরক্ষিত!' : 'Logo Saved!',
-        description: language === 'bn' 
+        description: language === 'bn'
           ? `${BRAND_THEMES[activeCropMethod]?.label || activeCropMethod}-এর লোগো নিখুঁতভাবে ক্রপ ও ডেটাবেজে সিঙ্ক হয়েছে।`
           : 'Payment gateway logo cropped and synced successfully.',
       });
@@ -464,7 +464,7 @@ export const PaymentGateways = () => {
 
       toast({
         title: language === 'bn' ? 'সফল!' : 'Saved!',
-        description: language === 'bn' 
+        description: language === 'bn'
           ? `${BRAND_THEMES[methodType]?.label || methodType} গেটওয়ে সফলভাবে সংরক্ষিত হয়েছে। সদস্য প্যানেলে এটি রিয়েল-টাইমে কার্যকর হয়েছে।`
           : 'Payment gateway configuration updated successfully.',
       });
@@ -538,12 +538,12 @@ export const PaymentGateways = () => {
           };
 
           const isSaving = savingMethod === methodKey;
-          const isUploading = uploadingLogoMethod === methodKey;
+          const isUploading = isSavingCropped && activeCropMethod === methodKey;
           const customLogo = current.logo_url || logos[methodKey];
 
           return (
-            <Card 
-              key={methodKey} 
+            <Card
+              key={methodKey}
               className={`rounded-3xl overflow-hidden border-2 ${theme.border} shadow-md bg-white dark:bg-slate-900 transition-all hover:shadow-lg`}
             >
               {/* Header */}
@@ -565,8 +565,8 @@ export const PaymentGateways = () => {
                       {language === 'bn' ? theme.label : theme.labelEn}
                     </h3>
                     <p className="text-[11px] text-white/90 font-medium mt-0.5">
-                      {current.is_active 
-                        ? (language === 'bn' ? '● লাইভ গেটওয়ে (ইউজারদের দেখাবে)' : '● LIVE Gateway (Visible)') 
+                      {current.is_active
+                        ? (language === 'bn' ? '● লাইভ গেটওয়ে (ইউজারদের দেখাবে)' : '● LIVE Gateway (Visible)')
                         : (language === 'bn' ? '○ নিষ্ক্রিয় (ইউজারদের লুকানো থাকবে)' : '○ Inactive (Hidden)')}
                     </p>
                   </div>
@@ -587,7 +587,7 @@ export const PaymentGateways = () => {
 
               {/* Body */}
               <CardContent className="p-5 sm:p-6 space-y-4">
-                
+
                 {/* Official Logo Upload & Interactive Cropper Section */}
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
                   <div className="flex items-center justify-between">
@@ -657,8 +657,8 @@ export const PaymentGateways = () => {
                         >
                           <Upload className="w-3.5 h-3.5 text-emerald-600" />
                           <span>
-                            {customLogo 
-                              ? (language === 'bn' ? 'লোগো পরিবর্তন করুন' : 'Change Logo') 
+                            {customLogo
+                              ? (language === 'bn' ? 'লোগো পরিবর্তন করুন' : 'Change Logo')
                               : (language === 'bn' ? 'লোগো নির্বাচন ও ক্রপ' : 'Upload & Crop Logo')}
                           </span>
                         </label>
@@ -695,7 +695,7 @@ export const PaymentGateways = () => {
                 {/* Account Number */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {methodKey === 'bank' 
+                    {methodKey === 'bank'
                       ? (language === 'bn' ? 'ব্যাংক হিসাব নম্বর' : 'Account Number')
                       : (language === 'bn' ? `${theme.label} মোবাইল নম্বর (টাকা পাঠানোর জন্য)` : 'Mobile Number')}
                   </Label>

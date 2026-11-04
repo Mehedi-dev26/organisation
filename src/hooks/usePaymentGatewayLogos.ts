@@ -51,7 +51,7 @@ export const usePaymentGatewayLogos = () => {
         // Keep local cache fresh
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
-        } catch (e) {}
+        } catch (e) { }
 
         return merged;
       } catch (err) {

@@ -11,14 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCw, 
-  Check, 
-  X, 
-  Crop, 
-  Circle, 
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Check,
+  X,
+  Crop,
+  Circle,
   Square,
   Sparkles,
   Loader2
@@ -236,11 +236,11 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
             <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-[11px] font-bold text-white flex items-center gap-1.5 border border-white/20">
               <Sparkles className="w-3.5 h-3.5 text-[#11DFC0]" />
               <span>
-                {cropShape === 'round' 
-                  ? (language === 'bn' ? 'গোলাকার ক্রপ (1:1)' : 'Circular Crop (1:1)') 
+                {cropShape === 'round'
+                  ? (language === 'bn' ? 'গোলাকার ক্রপ (1:1)' : 'Circular Crop (1:1)')
                   : (aspect === 1
-                      ? (language === 'bn' ? 'বর্গাকার ক্রপ (1:1)' : 'Square Crop (1:1)')
-                      : (language === 'bn' ? 'চওড়া ক্রপ (4:3)' : 'Landscape Crop (4:3)'))}
+                    ? (language === 'bn' ? 'বর্গাকার ক্রপ (1:1)' : 'Square Crop (1:1)')
+                    : (language === 'bn' ? 'চওড়া ক্রপ (4:3)' : 'Landscape Crop (4:3)'))}
               </span>
             </div>
           </div>
@@ -287,11 +287,10 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
                     setCropShape('round');
                     setAspect(1);
                   }}
-                  className={`p-1.5 rounded-lg text-xs transition-all ${
-                    cropShape === 'round'
+                  className={`p-1.5 rounded-lg text-xs transition-all ${cropShape === 'round'
                       ? 'bg-[#11DFC0] text-slate-950 font-bold shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                    }`}
                   title={language === 'bn' ? 'গোলাকার (1:1)' : 'Circle (1:1)'}
                 >
                   <Circle className="w-4 h-4" />
@@ -302,11 +301,10 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
                     setCropShape('rect');
                     setAspect(1);
                   }}
-                  className={`p-1.5 rounded-lg text-xs transition-all ${
-                    cropShape === 'rect' && aspect === 1
+                  className={`p-1.5 rounded-lg text-xs transition-all ${cropShape === 'rect' && aspect === 1
                       ? 'bg-[#11DFC0] text-slate-950 font-bold shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                    }`}
                   title={language === 'bn' ? 'বর্গাকার (1:1)' : 'Square (1:1)'}
                 >
                   <Square className="w-4 h-4" />
@@ -317,11 +315,10 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
                     setCropShape('rect');
                     setAspect(4 / 3);
                   }}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                    cropShape === 'rect' && aspect !== 1
+                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${cropShape === 'rect' && aspect !== 1
                       ? 'bg-[#11DFC0] text-slate-950 shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                    }`}
                   title={language === 'bn' ? 'চওড়া (4:3)' : 'Landscape (4:3)'}
                 >
                   4:3
