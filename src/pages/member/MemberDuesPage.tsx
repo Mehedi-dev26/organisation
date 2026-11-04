@@ -145,12 +145,7 @@ const MemberDuesPage = () => {
   };
 
   const openQuickPay = (due: DuesData) => {
-    setQuickPayDue(due);
-    setTrxId('');
-    if (paymentMethods.length > 0 && !selectedMethodId) {
-      setSelectedMethodId(paymentMethods[0].method_type);
-    }
-    setIsQuickPayOpen(true);
+    navigate(`/payment?dueId=${due.id}&amount=${due.amount}&purpose=${encodeURIComponent(`${due.month_year} মাসের সদস্য চাঁদা`)}`);
   };
 
   const handleSubmitQuickPay = async (e: React.FormEvent) => {

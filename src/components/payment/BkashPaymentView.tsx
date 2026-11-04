@@ -106,25 +106,53 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
     setIsVerifying(true);
 
     try {
-      // 1. If linked to a dueId, update member_dues
-      if (dueId) {
-        const { error } = await supabase
+      const cleanTrx = trxId.trim().toUpperCase();
+      const { data: memberProfile } = user?.id 
+        ? await supabase.from('members').select('id, full_name, member_id').eq('user_id', user.id).maybeSingle()
+        : { data: null };
+
+      // 1. Link or record into member_dues so it immediately appears in Admin Payment Verification
+      let targetDueId = dueId;
+      if (!targetDueId && memberProfile?.id) {
+        const { data: firstUnpaid } = await supabase
+          .from('member_dues')
+          .select('id')
+          .eq('member_id', memberProfile.id)
+          .eq('is_paid', false)
+          .neq('payment_status', 'submitted')
+          .limit(1)
+          .maybeSingle();
+
+        if (firstUnpaid) {
+          targetDueId = firstUnpaid.id;
+        }
+      }
+
+      if (targetDueId) {
+        await supabase
           .from('member_dues')
           .update({
-            transaction_id: trxId.trim().toUpperCase(),
+            transaction_id: cleanTrx,
             payment_method: 'bkash',
             payment_status: 'submitted',
             submitted_at: new Date().toISOString(),
           })
-          .eq('id', dueId);
-
-        if (error) console.warn('Due update error:', error);
+          .eq('id', targetDueId);
+      } else if (memberProfile?.id) {
+        const now = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const currentMonthYear = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+        await supabase.from('member_dues').insert({
+          member_id: memberProfile.id,
+          month_year: currentMonthYear,
+          amount: amount,
+          payment_method: 'bkash',
+          transaction_id: cleanTrx,
+          payment_status: 'submitted',
+          submitted_at: now.toISOString(),
+          is_paid: false,
+        });
       }
-
-      // 2. Insert into transactions table for accounting
-      const { data: memberProfile } = user?.id 
-        ? await supabase.from('members').select('id, full_name, member_id').eq('user_id', user.id).maybeSingle()
-        : { data: null };
 
       try {
         await supabase.from('transactions').insert({
