@@ -1,0 +1,417 @@
+import React, { useState, useEffect } from 'react';
+import { BkashLogo } from './PaymentLogos';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  X, 
+  Copy, 
+  Check, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle2, 
+  ShieldCheck, 
+  RotateCcw,
+  Loader2,
+  Smartphone
+} from 'lucide-react';
+
+interface BkashPaymentViewProps {
+  amount: number;
+  invoiceNo: string;
+  recipientNumber?: string;
+  dueId?: string | null;
+  purpose?: string;
+  onClose: () => void;
+  onSuccess: (trxId: string, details: any) => void;
+}
+
+export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
+  amount,
+  invoiceNo,
+  recipientNumber = '01616355160',
+  dueId,
+  purpose = 'সময়ের বাতিঘর চাঁদা ও অনুদান',
+  onClose,
+  onSuccess,
+}) => {
+  const { logoUrl } = useSiteLogo();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Phase: 'account' (Image 2) or 'verify' (Image 3) or 'success'
+  const [phase, setPhase] = useState<'account' | 'verify' | 'success'>('account');
+  const [senderAccount, setSenderAccount] = useState('');
+  const [trxId, setTrxId] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // 02:44 (164 seconds) countdown timer as shown in Reference Image 3
+  const [secondsLeft, setSecondsLeft] = useState(164);
+
+  useEffect(() => {
+    if (phase !== 'verify') return;
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  const formatTimer = (totalSecs: number) => {
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const handleCopyNumber = () => {
+    navigator.clipboard.writeText(recipientNumber);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+    toast({
+      title: 'নম্বর কপি হয়েছে!',
+      description: recipientNumber,
+    });
+  };
+
+  const handleProceedFromAccount = () => {
+    const clean = senderAccount.replace(/\D/g, '');
+    if (clean.length < 11) {
+      toast({
+        title: 'ভুল মোবাইল নম্বর',
+        description: 'অনুগ্রহ করে সঠিক ১১ ডিজিটের বিকাশ নম্বর দিন',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setPhase('verify');
+  };
+
+  const handleVerifyTrxId = async () => {
+    if (!trxId.trim() || trxId.trim().length < 4) {
+      toast({
+        title: 'ভুল TrxID',
+        description: 'অনুগ্রহ করে বিকাশ থেকে প্রাপ্ত সঠিক ট্রানজেকশন আইডি দিন',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      // 1. If linked to a dueId, update member_dues
+      if (dueId) {
+        const { error } = await supabase
+          .from('member_dues')
+          .update({
+            transaction_id: trxId.trim().toUpperCase(),
+            payment_method: 'bkash',
+            payment_status: 'submitted',
+            submitted_at: new Date().toISOString(),
+          })
+          .eq('id', dueId);
+
+        if (error) console.warn('Due update error:', error);
+      }
+
+      // 2. Insert into transactions table for accounting
+      const { data: memberProfile } = user?.id 
+        ? await supabase.from('members').select('id, full_name, member_id').eq('user_id', user.id).maybeSingle()
+        : { data: null };
+
+      try {
+        await supabase.from('transactions').insert({
+          type: 'member_fee',
+          amount: amount,
+          member_id: memberProfile?.id || null,
+          transaction_date: new Date().toISOString().split('T')[0],
+          payment_method: 'bkash',
+          payment_reference: trxId.trim().toUpperCase(),
+          description_bn: `বিকাশ অনলাইন পেমেন্ট (${invoiceNo}) - প্রেরক: ${senderAccount}`,
+          description_en: `bKash Online Payment (${invoiceNo}) - Sender: ${senderAccount}`,
+        });
+      } catch (txErr) {
+        console.warn('Transaction record warning:', txErr);
+      }
+
+      setPhase('success');
+      onSuccess(trxId.trim().toUpperCase(), {
+        method: 'bkash',
+        sender: senderAccount,
+        amount,
+        invoiceNo,
+      });
+
+      toast({
+        title: 'পেমেন্ট ভেরিফিকেশন জমা হয়েছে!',
+        description: `TrxID: ${trxId.trim().toUpperCase()}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'ত্রুটি',
+        description: err.message || 'পেমেন্ট জমা দেওয়া যায়নি',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-sm sm:max-w-md mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden font-sans relative animate-in fade-in zoom-in-95 duration-200">
+      
+      {/* Top Header with bKash Logo and Close Icon (Exact layout of Image 2 & 3) */}
+      <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <BkashLogo className="w-7 h-7" />
+          <span className="font-extrabold text-xl text-[#E2136E] tracking-tight">bKash</span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+          title="বন্ধ করুন"
+        >
+          <X className="w-6 h-6 stroke-[2.5]" />
+        </button>
+      </div>
+
+      {/* Merchant Info Bar (Exact layout of Image 2 & 3) */}
+      <div className="px-5 py-3 flex items-center justify-between bg-slate-50/70 border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <img
+            src={logoUrl || '/logo.png'}
+            alt="সময়ের বাতিঘর"
+            className="w-10 h-10 rounded-full border border-slate-200 object-contain bg-white p-0.5"
+          />
+          <div>
+            <h4 className="font-bold text-xs sm:text-sm text-slate-800 leading-tight">
+              সময়ের বাতিঘর (অফিসিয়াল)
+            </h4>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+              Inv No: {invoiceNo}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="font-bold text-base sm:text-lg text-slate-900">
+            ৳{amount.toFixed(2)}
+          </span>
+        </div>
+      </div>
+
+      {/* ================= PHASE 1: ACCOUNT NUMBER INPUT (Image 2) ================= */}
+      {phase === 'account' && (
+        <div>
+          {/* Signature Hot Pink Box (#E2136E) */}
+          <div className="bg-[#E2136E] px-6 py-8 text-white text-center space-y-4">
+            <h3 className="font-bold text-base sm:text-lg tracking-wide">
+              আপনার Bkash অ্যাকাউন্ট নম্বর দিন
+            </h3>
+
+            <div className="max-w-xs mx-auto">
+              <input
+                type="tel"
+                value={senderAccount}
+                onChange={(e) => setSenderAccount(e.target.value)}
+                placeholder="e.g 01XXXXXXXXX"
+                maxLength={14}
+                className="w-full px-4 py-3 rounded-xl bg-white text-slate-900 font-mono text-center text-lg font-bold tracking-wider outline-none placeholder:text-slate-400 shadow-inner"
+                autoFocus
+              />
+            </div>
+
+            <p className="text-[10px] sm:text-[11px] text-white/90 leading-tight max-w-xs mx-auto pt-1">
+              By clicking/tapping "Proceed" you are agreeing to our{' '}
+              <span className="underline cursor-pointer font-bold">Terms and Conditions</span>
+            </p>
+          </div>
+
+          {/* Action Buttons: CLOSE & PROCEED */}
+          <div className="p-4 grid grid-cols-2 gap-3 bg-white">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-3 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 font-extrabold text-sm uppercase transition-colors"
+            >
+              CLOSE
+            </button>
+            <button
+              type="button"
+              onClick={handleProceedFromAccount}
+              className="w-full py-3 rounded-xl bg-slate-300 hover:bg-[#E2136E] text-slate-700 hover:text-white font-extrabold text-sm uppercase transition-all shadow-sm"
+            >
+              PROCEED
+            </button>
+          </div>
+
+          {/* Footer note */}
+          <div className="pb-4 text-center">
+            <p className="text-[11px] text-slate-400 font-medium">
+              Secured by সময়ের বাতিঘর পেমেন্ট সিস্টেম
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ================= PHASE 2: SEND MONEY & TRXID VERIFICATION (Image 3) ================= */}
+      {phase === 'verify' && (
+        <div className="p-4 sm:p-5 space-y-3.5">
+          
+          {/* Recipient Number Box with 1-Click Copy */}
+          <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm text-center space-y-1">
+            <p className="text-xs font-semibold text-slate-500">
+              অনুগ্রহ করে নিচের নম্বরে সেন্ড মানি করুন
+            </p>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="font-mono text-xl sm:text-2xl font-black text-[#E2136E] tracking-wider">
+                {recipientNumber}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyNumber}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase transition-colors"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'কপি হয়েছে' : 'COPY'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Hot Pink Countdown Timer Box */}
+          <div className="bg-[#E2136E] rounded-2xl p-3.5 text-white text-center space-y-1 shadow-sm">
+            <p className="text-xs font-medium text-white/90">
+              পেমেন্ট সম্পন্ন করার জন্য সময় বাকি
+            </p>
+            <p className="font-mono text-3xl font-black tracking-widest">
+              {formatTimer(secondsLeft)}
+            </p>
+          </div>
+
+          {/* Visual Instruction Steps */}
+          <div className="space-y-2 text-xs text-slate-700 font-medium bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+            <p className="flex items-start gap-1.5">
+              <span className="text-[#E2136E] font-bold">১.</span>
+              <span>আপনার Bkash অ্যাপ অথবা ইউএসএসডি (*২৪৭#) ব্যবহার করুন।</span>
+            </p>
+            <p className="flex items-start gap-1.5">
+              <span className="text-[#E2136E] font-bold">২.</span>
+              <span><strong>Send Money</strong> করে উপরের নম্বরে ৳{amount.toFixed(2)} টাকা পাঠান।</span>
+            </p>
+            <p className="flex items-start gap-1.5">
+              <span className="text-[#E2136E] font-bold">৩.</span>
+              <span>টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে প্রদান করুন।</span>
+            </p>
+          </div>
+
+          {/* Live Checker Status */}
+          <div className="text-center pt-1">
+            <p className="text-xs font-bold text-[#E2136E] animate-pulse">
+              পেমেন্ট চেক করা হচ্ছে, অপেক্ষা করুন...
+            </p>
+          </div>
+
+          {/* Try Again Button */}
+          <button
+            type="button"
+            onClick={() => setSecondsLeft(164)}
+            className="w-full py-2.5 rounded-xl bg-[#E2136E] hover:bg-[#c90f61] text-white font-extrabold text-xs uppercase tracking-wide shadow-sm transition-colors"
+          >
+            পেমেন্ট চেক করুন (TRY AGAIN)
+          </button>
+
+          {/* TrxID Input Field */}
+          <div className="space-y-1.5 pt-1">
+            <input
+              type="text"
+              value={trxId}
+              onChange={(e) => setTrxId(e.target.value.toUpperCase())}
+              placeholder="ENTER TRANSACTION ID"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-center font-mono font-bold text-sm tracking-widest uppercase outline-none focus:border-[#E2136E]"
+            />
+          </div>
+
+          {/* Verify with Trx ID Button (Dark Slate Button matching Image 3) */}
+          <button
+            type="button"
+            onClick={handleVerifyTrxId}
+            disabled={isVerifying}
+            className="w-full py-3.5 rounded-xl bg-[#28323E] hover:bg-[#1E252E] text-white font-extrabold text-xs uppercase tracking-widest shadow-md transition-colors disabled:opacity-75 flex items-center justify-center gap-2"
+          >
+            {isVerifying ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>যাচাই করা হচ্ছে...</span>
+              </>
+            ) : (
+              <span>VERIFY WITH TRX ID</span>
+            )}
+          </button>
+
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              onClick={() => setPhase('account')}
+              className="text-xs text-slate-400 hover:text-slate-600 underline font-semibold"
+            >
+              ← অ্যাকাউন্ট পরিবর্তন করুন
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= PHASE 3: SUCCESS CONFIRMATION ================= */}
+      {phase === 'success' && (
+        <div className="p-8 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-md">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">পেমেন্ট রিকোয়েস্ট সফল!</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              আপনার TrxID (<span className="font-mono font-bold text-[#E2136E]">{trxId}</span>) সিস্টেমে সংরক্ষিত হয়েছে।
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-left space-y-2">
+            <div className="flex justify-between">
+              <span className="text-slate-500">পরিমাণ:</span>
+              <span className="font-bold text-slate-800">৳{amount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">ইনভয়েস:</span>
+              <span className="font-mono text-slate-800">{invoiceNo}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">মেথড:</span>
+              <span className="font-bold text-[#E2136E]">বিকাশ (bKash)</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">স্ট্যাটাস:</span>
+              <span className="font-bold text-amber-600">যাচাইয়ের জন্য অপেক্ষমাণ</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-3 rounded-xl bg-[#0B6B3A] text-white font-bold text-sm hover:bg-[#09542e] transition-colors"
+          >
+            সম্পন্ন করুন
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BkashPaymentView;
+

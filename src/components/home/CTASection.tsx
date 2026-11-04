@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { UserPlus, Heart, Phone, Sparkles } from 'lucide-react';
+import { UserPlus,
+  CreditCard, Heart, Phone, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSiteSettings } from '@/services/siteSettingsService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -32,11 +33,11 @@ const CTASection = () => {
         </h2>
 
         {/* Yellow Button matching reference .btn-hn-yellow */}
-        <div className="flex justify-center items-center">
+        <div className="flex flex-wrap justify-center items-center gap-4">
           <button
             type="button"
             onClick={() => setIsVolunteerModalOpen(true)}
-            className="inline-flex items-center gap-2.5 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-[#ffc107] hover:bg-[#e0a800] text-gray-950 font-extrabold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 border-0"
+            className="inline-flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-full bg-[#ffc107] hover:bg-[#e0a800] text-gray-950 font-extrabold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 border-0"
             style={{
               boxShadow: '0 8px 24px rgba(255, 193, 7, 0.45)',
             }}
@@ -44,6 +45,17 @@ const CTASection = () => {
             <UserPlus className="w-5 h-5 text-gray-900" />
             <span>{language === 'bn' ? 'স্বেচ্ছাসেবক হন' : 'Become a Volunteer'}</span>
           </button>
+
+          <Link
+            to="/payment"
+            className="inline-flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-full bg-white hover:bg-emerald-50 text-[#006a4e] font-extrabold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 border-0"
+            style={{
+              boxShadow: '0 8px 24px rgba(255, 255, 255, 0.25)',
+            }}
+          >
+            <CreditCard className="w-5 h-5 text-[#006a4e]" />
+            <span>{language === 'bn' ? 'অনলাইন পেমেন্ট ও অনুদান' : 'Online Payment'}</span>
+          </Link>
         </div>
       </div>
 

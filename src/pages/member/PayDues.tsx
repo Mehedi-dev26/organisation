@@ -521,6 +521,30 @@ const PayDues = () => {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
+              {/* Quick Shortcut to Dedicated Online Gateway */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 via-emerald-500/10 to-teal-500/10 border-2 border-blue-400/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 shadow-md">
+                    <Sparkles className="w-5 h-5 text-yellow-300" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">
+                      {language === 'bn' ? 'নতুন ডেডিকেটেড পেমেন্ট পেজে পরিশোধ করুন' : 'Pay via Dedicated Payment Gateway'}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {language === 'bn' ? 'বিকাশ, নগদ, রকেট, উপায়, সেলফিন বা ট্যাপ পে ইন্টারফেস' : 'Live bKash, Nagad, Rocket, Upay, Cellfin or Tap view'}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => navigate(`/payment?dueId=${selectedDue.id}&amount=${selectedDue.amount}&purpose=সদস্য চাঁদা (${selectedDue.month_year})`)}
+                  className="bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-xs h-10 rounded-xl px-4 shadow-sm w-full sm:w-auto"
+                >
+                  <CreditCard className="w-4 h-4 mr-1.5" />
+                  <span>{language === 'bn' ? 'পেমেন্ট পেজে যান →' : 'Open Payment Page →'}</span>
+                </Button>
+              </div>
+
               {/* Payment Mode Selection */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">

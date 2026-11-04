@@ -8,7 +8,8 @@ import {
   Mail, 
   MapPin, 
   Heart, 
-  UserPlus, 
+  UserPlus,
+  CreditCard, 
   LogIn, 
   Facebook, 
   Youtube,
@@ -162,6 +163,17 @@ const Navbar = () => {
 
             {/* Right Action Buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 flex-shrink-0">
+              {/* Online Payment (Desktop) */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="hidden xl:flex border-blue-500/40 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-semibold text-xs sm:text-sm h-8 sm:h-9 px-2.5 sm:px-3 gap-1.5"
+                onClick={() => navigate('/payment')}
+              >
+                <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                <span>{language === 'bn' ? 'অনলাইন পেমেন্ট' : 'Pay Online'}</span>
+              </Button>
+
               {/* Member Registration (Desktop) */}
               <Button 
                 variant="outline" 
@@ -237,7 +249,7 @@ const Navbar = () => {
                   className="w-full bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-semibold justify-center"
                   onClick={() => {
                     setIsOpen(false);
-                    navigate('/member-dashboard/pay-dues');
+                    navigate('/payment');
                   }}
                 >
                   <Heart className="w-4 h-4 mr-2 fill-white" />

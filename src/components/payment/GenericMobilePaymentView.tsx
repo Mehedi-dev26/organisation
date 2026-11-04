@@ -1,0 +1,322 @@
+import React, { useState, useEffect } from 'react';
+import { useSiteLogo } from '@/hooks/useSiteLogo';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  X, 
+  Copy, 
+  Check, 
+  CheckCircle2, 
+  Loader2, 
+  ShieldCheck,
+  Smartphone
+} from 'lucide-react';
+import { 
+  RocketLogo, 
+  UpayLogo, 
+  CellfinLogo, 
+  TapLogo 
+} from './PaymentLogos';
+
+interface GenericMobilePaymentViewProps {
+  methodId: 'rocket' | 'upay' | 'cellfin' | 'tap';
+  methodName: string;
+  amount: number;
+  invoiceNo: string;
+  recipientNumber?: string;
+  dueId?: string | null;
+  purpose?: string;
+  onClose: () => void;
+  onSuccess: (trxId: string, details: any) => void;
+}
+
+const METHOD_THEMES = {
+  rocket: {
+    name: 'Rocket',
+    nameBn: 'রকেট',
+    headerBg: 'bg-gradient-to-r from-purple-700 to-fuchsia-800',
+    accentColor: '#8C3494',
+    logo: <RocketLogo className="w-7 h-7" />,
+    instructions: 'রকেট অ্যাপ বা *৩২২# ডায়াল করে Send Money করুন।',
+  },
+  upay: {
+    name: 'Upay',
+    nameBn: 'উপায়',
+    headerBg: 'bg-gradient-to-r from-[#002D62] to-[#0A4B94]',
+    accentColor: '#002D62',
+    logo: <UpayLogo className="w-7 h-7" />,
+    instructions: 'Upay অ্যাপ অথবা *২৬৮# ডায়াল করে Send Money করুন।',
+  },
+  cellfin: {
+    name: 'Cellfin',
+    nameBn: 'সেলফিন',
+    headerBg: 'bg-gradient-to-r from-[#00843D] to-[#005A2B]',
+    accentColor: '#00843D',
+    logo: <CellfinLogo className="w-7 h-7" />,
+    instructions: 'ইসলামী ব্যাংকের Cellfin অ্যাপে প্রবেশ করে ফান্ড ট্রান্সফার করুন।',
+  },
+  tap: {
+    name: 'Tap',
+    nameBn: 'ট্যাপ পে',
+    headerBg: 'bg-gradient-to-r from-[#E31E24] to-[#B31419]',
+    accentColor: '#E31E24',
+    logo: <TapLogo className="w-7 h-7" />,
+    instructions: 'ট্যাপ অ্যাপ অথবা ট্রাস্ট ব্যাংক একাউন্ট থেকে পেমেন্ট করুন।',
+  },
+};
+
+export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> = ({
+  methodId,
+  methodName,
+  amount,
+  invoiceNo,
+  recipientNumber = '01616355160',
+  dueId,
+  purpose = 'সময়ের বাতিঘর চাঁদা ও অনুদান',
+  onClose,
+  onSuccess,
+}) => {
+  const { logoUrl } = useSiteLogo();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const theme = METHOD_THEMES[methodId] || METHOD_THEMES.rocket;
+
+  const [phase, setPhase] = useState<'account' | 'verify' | 'success'>('account');
+  const [senderAccount, setSenderAccount] = useState('');
+  const [trxId, setTrxId] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(180);
+
+  useEffect(() => {
+    if (phase !== 'verify') return;
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  const formatTimer = (totalSecs: number) => {
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(recipientNumber);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+    toast({ title: 'নম্বর কপি হয়েছে!', description: recipientNumber });
+  };
+
+  const handleProceed = () => {
+    const clean = senderAccount.replace(/\D/g, '');
+    if (clean.length < 10) {
+      toast({
+        title: 'ভুল একাউন্ট নম্বর',
+        description: 'সঠিক একাউন্ট বা মোবাইল নম্বর প্রদান করুন',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setPhase('verify');
+  };
+
+  const handleVerifyTrxId = async () => {
+    if (!trxId.trim() || trxId.trim().length < 4) {
+      toast({
+        title: 'ভুল TrxID',
+        description: 'সঠিক ট্রানজেকশন আইডি প্রদান করুন',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      if (dueId) {
+        await supabase
+          .from('member_dues')
+          .update({
+            transaction_id: trxId.trim().toUpperCase(),
+            payment_method: methodId,
+            payment_status: 'submitted',
+            submitted_at: new Date().toISOString(),
+          })
+          .eq('id', dueId);
+      }
+
+      const { data: memberProfile } = user?.id 
+        ? await supabase.from('members').select('id, full_name, member_id').eq('user_id', user.id).maybeSingle()
+        : { data: null };
+
+      try {
+        await supabase.from('transactions').insert({
+          type: 'member_fee',
+          amount: amount,
+          member_id: memberProfile?.id || null,
+          transaction_date: new Date().toISOString().split('T')[0],
+          payment_method: methodId,
+          payment_reference: trxId.trim().toUpperCase(),
+          description_bn: `${theme.nameBn} পেমেন্ট (${invoiceNo}) - প্রেরক: ${senderAccount}`,
+          description_en: `${theme.name} Payment (${invoiceNo}) - Sender: ${senderAccount}`,
+        });
+      } catch (txErr) {
+        console.warn('Transaction warning:', txErr);
+      }
+
+      setPhase('success');
+      onSuccess(trxId.trim().toUpperCase(), {
+        method: methodId,
+        sender: senderAccount,
+        amount,
+        invoiceNo,
+      });
+
+      toast({
+        title: 'পেমেন্ট জমা হয়েছে!',
+        description: `TrxID: ${trxId.trim().toUpperCase()}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'ত্রুটি',
+        description: err.message || 'পেমেন্ট সাবমিট করা যায়নি',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-sm sm:max-w-md mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden font-sans relative animate-in fade-in zoom-in-95 duration-200">
+      {/* Top Header */}
+      <div className={`px-5 py-4 text-white flex items-center justify-between ${theme.headerBg}`}>
+        <div className="flex items-center gap-2.5">
+          {theme.logo}
+          <div>
+            <h3 className="font-extrabold text-lg leading-tight">{theme.nameBn}</h3>
+            <p className="text-[10px] text-white/80">Secured Payment Gateway</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Merchant / Invoice Bar */}
+      <div className="px-5 py-3 flex items-center justify-between bg-slate-50 border-b border-slate-100 text-xs">
+        <div>
+          <p className="font-bold text-slate-800">সময়ের বাতিঘর (অফিসিয়াল)</p>
+          <p className="text-[10px] text-slate-400 font-mono mt-0.5">Inv: {invoiceNo}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-bold text-base text-slate-900">৳{amount.toFixed(2)}</p>
+        </div>
+      </div>
+
+      {/* Body */}
+      {phase === 'account' && (
+        <div className="p-6 space-y-4 text-center">
+          <h4 className="font-bold text-sm text-slate-800">
+            আপনার {theme.nameBn} একাউন্ট বা মোবাইল নম্বর দিন
+          </h4>
+          <input
+            type="tel"
+            value={senderAccount}
+            onChange={(e) => setSenderAccount(e.target.value)}
+            placeholder="01XXXXXXXXX"
+            className="w-full px-4 py-3 rounded-xl border border-slate-300 font-mono text-center text-lg font-bold outline-none focus:border-slate-800"
+            autoFocus
+          />
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs uppercase"
+            >
+              CLOSE
+            </button>
+            <button
+              type="button"
+              onClick={handleProceed}
+              className="py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs uppercase hover:bg-slate-800"
+            >
+              PROCEED
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'verify' && (
+        <div className="p-5 space-y-3.5">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1">
+            <p className="text-xs text-slate-500 font-medium">নিচের নম্বরে টাকা পাঠান (Send Money):</p>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="font-mono text-xl font-black text-slate-900">{recipientNumber}</span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 text-xs font-bold"
+              >
+                {copied ? 'কপি হয়েছে' : 'COPY'}
+              </button>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-900 text-white text-center">
+            <p className="text-[11px] text-slate-300">বাকি সময়</p>
+            <p className="font-mono text-2xl font-black text-amber-300">{formatTimer(secondsLeft)}</p>
+          </div>
+
+          <div className="space-y-1 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border">
+            <p>💡 {theme.instructions}</p>
+            <p>টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে দিন।</p>
+          </div>
+
+          <input
+            type="text"
+            value={trxId}
+            onChange={(e) => setTrxId(e.target.value.toUpperCase())}
+            placeholder="ENTER TRANSACTION ID"
+            className="w-full px-4 py-3 rounded-xl border border-slate-300 font-mono font-bold text-center uppercase outline-none"
+          />
+
+          <button
+            type="button"
+            onClick={handleVerifyTrxId}
+            disabled={isVerifying}
+            className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase"
+          >
+            {isVerifying ? 'যাচাই করা হচ্ছে...' : 'VERIFY WITH TRX ID'}
+          </button>
+        </div>
+      )}
+
+      {phase === 'success' && (
+        <div className="p-8 text-center space-y-4">
+          <CheckCircle2 className="w-14 h-14 text-emerald-600 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-900">পেমেন্ট সফলভাবে জমা হয়েছে!</h3>
+          <p className="text-xs text-slate-500">TrxID: {trxId}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-3 rounded-xl bg-slate-900 text-white font-bold text-sm"
+          >
+            সম্পন্ন করুন
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GenericMobilePaymentView;
+

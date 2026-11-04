@@ -24,6 +24,7 @@ const BloodDonors = lazy(() => import("./pages/BloodDonors"));
 const MemberRegistration = lazy(() => import("./pages/MemberRegistration"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const OnlinePaymentPage = lazy(() => import("./pages/OnlinePaymentPage"));
 
 // Lazy-loaded Member portal
 const MemberLayout = lazy(() => import("./components/member/MemberLayout"));
@@ -116,6 +117,8 @@ const App = () => {
                   <Route path="/blood-donors" element={<BloodDonors />} />
                   <Route path="/blood" element={<BloodDonors />} />
                   <Route path="/member-registration" element={<MemberRegistration />} />
+                  <Route path="/payment" element={<OnlinePaymentPage />} />
+                  <Route path="/online-payment" element={<OnlinePaymentPage />} />
                   {/* Member Portal Multi-Page Architecture */}
                   <Route path="/member" element={<MemberLayout />}>
                     <Route index element={<MemberDashboardHome />} />
