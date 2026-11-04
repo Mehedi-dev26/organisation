@@ -401,3 +401,4 @@ export const markMagicLinkUsed = async (
     console.warn('Failed to mark magic link as used:', err);
   }
 };
+

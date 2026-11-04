@@ -12,6 +12,7 @@ interface ReminderData {
   member_email: string;
   month_year: string;
   amount: number;
+  payment_link?: string;
 }
 
 interface RequestBody {
@@ -103,6 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <div class="amount">৳${reminder.amount}</div>
                 </div>
                 
+                ${reminder.payment_link ? `<div style="text-align: center; margin: 25px 0;"><a href="${reminder.payment_link}" style="background-color: #0B6B3A; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">অনলাইনে সরাসরি পরিশোধ করুন (ম্যাজিক লিংক)</a></div>` : ''}
                 <p>অনুগ্রহ করে যত দ্রুত সম্ভব আপনার চাঁদা পরিশোধ করুন। আপনার সহযোগিতার জন্য ধন্যবাদ।</p>
                 
                 <p><strong>পেমেন্ট মাধ্যম:</strong></p>
