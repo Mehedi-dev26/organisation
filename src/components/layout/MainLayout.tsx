@@ -1,8 +1,10 @@
-import { ReactNode } from 'react';
+import React, { ReactNode, Suspense, lazy } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
-import ChatBot from '@/components/chat/ChatBot';
+
+// Lazy-load the 3D music player to ensure ultra-fast initial page load
+const FloatingMusicPlayer = lazy(() => import('@/components/music/FloatingMusicPlayer'));
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -17,7 +19,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       </main>
       <Footer />
       <MobileBottomNav />
-      <ChatBot />
+      <Suspense fallback={null}>
+        <FloatingMusicPlayer />
+      </Suspense>
     </div>
   );
 };
