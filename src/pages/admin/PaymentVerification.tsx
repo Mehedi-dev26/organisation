@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,8 +26,15 @@ import {
   RefreshCw,
   Copy,
   ExternalLink,
-  Check
+  Check,
+  Printer,
+  RotateCcw,
+  Edit,
+  Trash2
 } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
+import TransactionVoucher from '@/components/admin/TransactionVoucher';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { safeFormatDate } from '@/lib/dateUtils';
@@ -95,6 +102,32 @@ const PaymentVerification = () => {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [recentFilter, setRecentFilter] = useState<'all' | 'approved' | 'rejected'>('all');
+
+  // Voucher print state
+  const [isVoucherOpen, setIsVoucherOpen] = useState(false);
+  const [voucherTransaction, setVoucherTransaction] = useState<any>(null);
+  const voucherRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    contentRef: voucherRef,
+    documentTitle: `Voucher-${voucherTransaction?.payment_reference || 'receipt'}`,
+  });
+
+  // Reversal / Revoke Dialog State
+  const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
+  const [revokePayment, setRevokePayment] = useState<PendingPayment | null>(null);
+  const [revokeReason, setRevokeReason] = useState('');
+
+  // Edit Payment Dialog State
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editPayment, setEditPayment] = useState<PendingPayment | null>(null);
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editMonth, setEditMonth] = useState<string>('');
+  const [editTrxId, setEditTrxId] = useState<string>('');
+  const [editMethod, setEditMethod] = useState<string>('bkash');
+
+  // Delete Payment Dialog State
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletePayment, setDeletePayment] = useState<PendingPayment | null>(null);
 
   // Real-time subscription on member dues
   useRealtimeSubscription({ table: 'member_dues', queryKey: ['pending-payments'] });
@@ -527,6 +560,352 @@ const PaymentVerification = () => {
     },
   });
 
+  // Open & Synthesize Voucher for Printing
+  const handleOpenVoucher = async (payment: PendingPayment) => {
+    let txnRecord: any = null;
+    try {
+      if (payment.transaction_id) {
+        const { data } = await supabase
+          .from('transactions')
+          .select('*')
+          .or(`payment_reference.eq.${payment.transaction_id},id.eq.${payment.transaction_id}`)
+          .maybeSingle();
+        if (data) txnRecord = data;
+      }
+
+      if (!txnRecord && payment.member_id && payment.month_year) {
+        const { data } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('member_id', payment.member_id)
+          .eq('month_year', payment.month_year)
+          .maybeSingle();
+        if (data) txnRecord = data;
+      }
+    } catch (e) {
+      console.warn('Voucher query warning:', e);
+    }
+
+    if (!txnRecord) {
+      txnRecord = {
+        id: payment.id,
+        type: 'member_fee',
+        amount: payment.amount,
+        payment_method: payment.payment_method || 'bkash',
+        payment_reference: payment.transaction_id || `TRX-${payment.id.slice(0, 8).toUpperCase()}`,
+        transaction_date: payment.verified_at ? payment.verified_at.split('T')[0] : new Date().toISOString().split('T')[0],
+        month_year: payment.month_year,
+        description_bn: `${payment.month_year} মাসের সদস্য চাঁদা (${payment.members?.full_name || 'সদস্য'})`,
+        description_en: `Monthly dues for ${payment.month_year}`,
+        members: { full_name: payment.members?.full_name || 'সদস্য' },
+      };
+    } else {
+      if (!txnRecord.members) {
+        txnRecord.members = { full_name: payment.members?.full_name || 'সদস্য' };
+      }
+    }
+
+    setVoucherTransaction(txnRecord);
+    setIsVoucherOpen(true);
+  };
+
+  // Revoke an accidental/incorrect approval (Rolls back financial management balance & reverts due)
+  const revokeApprovalMutation = useMutation({
+    mutationFn: async ({ payment, reason }: { payment: PendingPayment; reason?: string }) => {
+      // 1. Delete associated transaction from transactions table
+      try {
+        if (payment.transaction_id) {
+          await supabase
+            .from('transactions')
+            .delete()
+            .or(`payment_reference.eq.${payment.transaction_id},id.eq.${payment.transaction_id}`);
+        }
+        if (payment.member_id && payment.month_year) {
+          await supabase
+            .from('transactions')
+            .delete()
+            .eq('type', 'member_fee')
+            .eq('member_id', payment.member_id)
+            .eq('month_year', payment.month_year);
+        }
+      } catch (txnErr) {
+        console.warn('Rollback transaction non-fatal notice:', txnErr);
+      }
+
+      // 2. Revert member_dues to unpaid / rejected
+      if (payment.id && !payment.id.startsWith('magic-')) {
+        await supabase
+          .from('member_dues')
+          .update({
+            is_paid: false,
+            payment_status: 'rejected',
+            rejection_reason: reason || 'অ্যাডমিন কর্তৃক অনুমোদন বাতিল করা হয়েছে',
+            paid_date: null,
+            verified_by: user?.id || null,
+            verified_at: new Date().toISOString(),
+          })
+          .eq('id', payment.id);
+      } else if (payment.member_id && payment.month_year) {
+        await supabase
+          .from('member_dues')
+          .update({
+            is_paid: false,
+            payment_status: 'rejected',
+            rejection_reason: reason || 'অ্যাডমিন কর্তৃক অনুমোদন বাতিল করা হয়েছে',
+            paid_date: null,
+            verified_by: user?.id || null,
+            verified_at: new Date().toISOString(),
+          })
+          .eq('member_id', payment.member_id)
+          .eq('month_year', payment.month_year);
+      }
+
+      // 3. Revert magic link status in site_settings
+      if (payment.magicToken) {
+        await updateMagicPaymentStatus(payment.magicToken, 'rejected', reason || 'অনুমোদন প্রত্যাহার');
+      } else {
+        const store = await getStoredMagicLinks();
+        for (const [tok, item] of Object.entries(store)) {
+          if (item.dueId === payment.id || (payment.transaction_id && item.transactionId === payment.transaction_id)) {
+            await updateMagicPaymentStatus(tok, 'rejected', reason || 'অনুমোদন প্রত্যাহার');
+          }
+        }
+      }
+
+      // 4. Log activity
+      try {
+        await supabase.from('activity_logs').insert({
+          user_id: user?.id || '',
+          user_role: isAdmin ? 'admin' : 'cashier',
+          action_type: 'payment_revoked',
+          entity_type: 'member_dues',
+          entity_id: payment.id,
+          description_bn: `${payment.members?.full_name} এর ${payment.month_year} মাসের চাঁদার অনুমোদন বাতিল ও হিসাব সমন্বয়`,
+          description_en: `Revoked payment approval for ${payment.members?.full_name}`,
+          metadata: { transaction_id: payment.transaction_id, amount: payment.amount, reason },
+        });
+      } catch {}
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recent-verified-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['member-dues'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-badge-pending-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['notice-pending-payments'] });
+      setIsRevokeDialogOpen(false);
+      setRevokePayment(null);
+      setRevokeReason('');
+      toast({
+        title: language === 'bn' ? 'অনুমোদন বাতিল করা হয়েছে' : 'Approval Revoked',
+        description: language === 'bn' 
+          ? 'পেমেন্টের অনুমোদন সফলভাবে বাতিল এবং আর্থিক হিসাব সমন্বয় করা হয়েছে।' 
+          : 'Payment approval has been revoked and accounts adjusted.',
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: err.message || 'অনুমোদন বাতিল করতে সমস্যা হয়েছে',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Edit verified payment details & sync with finance records
+  const editPaymentMutation = useMutation({
+    mutationFn: async ({
+      payment,
+      newAmount,
+      newMonth,
+      newTrxId,
+      newMethod,
+    }: {
+      payment: PendingPayment;
+      newAmount: number;
+      newMonth: string;
+      newTrxId: string;
+      newMethod: string;
+    }) => {
+      // 1. Update in transactions table
+      try {
+        if (payment.transaction_id) {
+          await supabase
+            .from('transactions')
+            .update({
+              amount: newAmount,
+              month_year: newMonth,
+              payment_reference: newTrxId,
+              payment_method: newMethod,
+            })
+            .or(`payment_reference.eq.${payment.transaction_id},id.eq.${payment.transaction_id}`);
+        } else if (payment.member_id) {
+          await supabase
+            .from('transactions')
+            .update({
+              amount: newAmount,
+              month_year: newMonth,
+              payment_reference: newTrxId,
+              payment_method: newMethod,
+            })
+            .eq('type', 'member_fee')
+            .eq('member_id', payment.member_id)
+            .eq('month_year', payment.month_year);
+        }
+      } catch (tErr) {
+        console.warn('Update transaction notice:', tErr);
+      }
+
+      // 2. Update member_dues table
+      if (payment.id && !payment.id.startsWith('magic-')) {
+        await supabase
+          .from('member_dues')
+          .update({
+            amount: newAmount,
+            month_year: newMonth,
+            transaction_id: newTrxId,
+            payment_method: newMethod,
+          })
+          .eq('id', payment.id);
+      } else if (payment.member_id) {
+        await supabase
+          .from('member_dues')
+          .update({
+            amount: newAmount,
+            month_year: newMonth,
+            transaction_id: newTrxId,
+            payment_method: newMethod,
+          })
+          .eq('member_id', payment.member_id)
+          .eq('month_year', payment.month_year);
+      }
+
+      // 3. Update magic link record if applicable
+      try {
+        const store = await getStoredMagicLinks();
+        let changed = false;
+        for (const [tok, item] of Object.entries(store)) {
+          if (tok === payment.magicToken || item.dueId === payment.id || (payment.transaction_id && item.transactionId === payment.transaction_id)) {
+            item.amount = newAmount;
+            item.month = newMonth;
+            item.transactionId = newTrxId;
+            item.paymentMethod = newMethod;
+            changed = true;
+          }
+        }
+        if (changed) {
+          await supabase
+            .from('site_settings')
+            .upsert({ key: 'magic_payment_links', value: store as any }, { onConflict: 'key' });
+        }
+      } catch {}
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recent-verified-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['member-dues'] });
+      setIsEditDialogOpen(false);
+      setEditPayment(null);
+      toast({
+        title: language === 'bn' ? 'সফল!' : 'Success!',
+        description: language === 'bn' 
+          ? 'পেমেন্ট তথ্য সফলভাবে সম্পাদিত এবং হিসাব সমন্বয় করা হয়েছে।' 
+          : 'Payment details edited successfully.',
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: err.message || 'পেমেন্ট এডিট করতে সমস্যা হয়েছে',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete payment record & rollback finance balances
+  const deletePaymentMutation = useMutation({
+    mutationFn: async (payment: PendingPayment) => {
+      // 1. Delete associated transaction from transactions table
+      try {
+        if (payment.transaction_id) {
+          await supabase
+            .from('transactions')
+            .delete()
+            .or(`payment_reference.eq.${payment.transaction_id},id.eq.${payment.transaction_id}`);
+        }
+        if (payment.member_id && payment.month_year) {
+          await supabase
+            .from('transactions')
+            .delete()
+            .eq('type', 'member_fee')
+            .eq('member_id', payment.member_id)
+            .eq('month_year', payment.month_year);
+        }
+      } catch (tErr) {
+        console.warn('Delete transaction notice:', tErr);
+      }
+
+      // 2. Reset or delete member_dues
+      if (payment.id && !payment.id.startsWith('magic-')) {
+        await supabase
+          .from('member_dues')
+          .update({
+            is_paid: false,
+            payment_status: 'unpaid',
+            transaction_id: null,
+            paid_date: null,
+            verified_at: null,
+            verified_by: null,
+            submitted_at: null,
+          })
+          .eq('id', payment.id);
+      }
+
+      // 3. Remove or clean up magic link record in site_settings
+      try {
+        const store = await getStoredMagicLinks();
+        let changed = false;
+        for (const [tok, item] of Object.entries(store)) {
+          if (tok === payment.magicToken || item.dueId === payment.id || (payment.transaction_id && item.transactionId === payment.transaction_id)) {
+            delete store[tok];
+            changed = true;
+          }
+        }
+        if (changed) {
+          await supabase
+            .from('site_settings')
+            .upsert({ key: 'magic_payment_links', value: store as any }, { onConflict: 'key' });
+        }
+      } catch {}
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recent-verified-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['member-dues'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-badge-pending-payments'] });
+      setIsDeleteDialogOpen(false);
+      setDeletePayment(null);
+      toast({
+        title: language === 'bn' ? 'মুছে ফেলা হয়েছে' : 'Deleted',
+        description: language === 'bn' 
+          ? 'পেমেন্ট রেকর্ড মুছে ফেলা হয়েছে এবং আর্থিক হিসাব সমন্বয় করা হয়েছে।' 
+          : 'Payment record deleted and accounts adjusted.',
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: err.message || 'পেমেন্ট মুছতে সমস্যা হয়েছে',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Filter pending payments
   const filteredPayments = useMemo(() => {
     return pendingPayments.filter(payment => {
@@ -874,6 +1253,7 @@ const PaymentVerification = () => {
                     <TableHead>{language === 'bn' ? 'ট্রানজেকশন আইডি (TrxID)' : 'TrxID'}</TableHead>
                     <TableHead>{language === 'bn' ? 'স্ট্যাটাস' : 'Status'}</TableHead>
                     <TableHead>{language === 'bn' ? 'যাচাইয়ের তারিখ' : 'Verified Date'}</TableHead>
+                    <TableHead className="text-right">{language === 'bn' ? 'অ্যাকশন' : 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -912,6 +1292,73 @@ const PaymentVerification = () => {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {safeFormatDate(payment.verified_at || payment.submitted_at, 'dd/MM/yyyy HH:mm')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* 1. Money Receipt / Voucher Print */}
+                          {payment.payment_status === 'approved' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg text-xs font-bold gap-1 cursor-pointer"
+                              onClick={() => handleOpenVoucher(payment)}
+                              title={language === 'bn' ? 'রশিদ / ভাউচার দেখুন ও প্রিন্ট করুন' : 'View & Print Receipt'}
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">{language === 'bn' ? 'রশিদ' : 'Receipt'}</span>
+                            </Button>
+                          )}
+
+                          {/* 2. Revoke Approval / Cancel */}
+                          {payment.payment_status === 'approved' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-50 rounded-lg text-xs font-bold gap-1 cursor-pointer"
+                              onClick={() => {
+                                setRevokePayment(payment);
+                                setRevokeReason('');
+                                setIsRevokeDialogOpen(true);
+                              }}
+                              title={language === 'bn' ? 'অনুমোদন বাতিল ও আর্থিক হিসাব সমন্বয়' : 'Revoke Approval'}
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">{language === 'bn' ? 'বাতিল' : 'Revoke'}</span>
+                            </Button>
+                          )}
+
+                          {/* 3. Edit Details */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                            onClick={() => {
+                              setEditPayment(payment);
+                              setEditAmount(payment.amount);
+                              setEditMonth(payment.month_year);
+                              setEditTrxId(payment.transaction_id || '');
+                              setEditMethod(payment.payment_method || 'bkash');
+                              setIsEditDialogOpen(true);
+                            }}
+                            title={language === 'bn' ? 'সম্পাদনা করুন' : 'Edit'}
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+
+                          {/* 4. Delete Record */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
+                            onClick={() => {
+                              setDeletePayment(payment);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            title={language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1058,6 +1505,206 @@ const PaymentVerification = () => {
                 <XCircle className="w-4 h-4 mr-2" />
               )}
               {language === 'bn' ? 'প্রত্যাখ্যান করুন' : 'Reject'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Voucher Print Dialog */}
+      <Dialog open={isVoucherOpen} onOpenChange={setIsVoucherOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[24px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between font-heading font-bold text-lg">
+              <span>{language === 'bn' ? 'অফিসিয়াল পেমেন্ট রশিদ' : 'Official Payment Voucher'}</span>
+              <Button onClick={() => handlePrint()} size="sm" className="gap-2 rounded-xl bg-[#0B6B3A] text-white">
+                <Printer className="w-4 h-4" />
+                {language === 'bn' ? 'প্রিন্ট করুন' : 'Print'}
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {voucherTransaction && (
+            <div className="mt-4 p-2 bg-slate-50 rounded-xl">
+              <TransactionVoucher ref={voucherRef} transaction={voucherTransaction} language={language} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Revoke Approval Dialog */}
+      <Dialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600 font-heading font-bold">
+              <RotateCcw className="w-5 h-5" />
+              <span>{language === 'bn' ? 'অনুমোদন বাতিল ও হিসাব সমন্বয়' : 'Revoke Payment Approval'}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {language === 'bn' 
+                ? 'অনুমোদন বাতিল করলে এর সাথে যুক্ত আর্থিক আয় স্বয়ংক্রিয়ভাবে বিয়োগ করা হবে এবং সদস্যের অ্যাকাউন্টে বকেয়া পুনরায় সক্রিয় হবে।' 
+                : 'Revoking will deduct the amount from accounts and reactivate dues for member.'}
+            </DialogDescription>
+          </DialogHeader>
+          {revokePayment && (
+            <div className="space-y-3 py-2 text-xs">
+              <div className="p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl space-y-1.5">
+                <p className="font-bold text-slate-800">
+                  {revokePayment.members?.full_name} ({revokePayment.month_year})
+                </p>
+                <p className="text-slate-600">
+                  পরিমাণ: <span className="font-bold text-amber-800">৳{revokePayment.amount}</span> | TrxID: {revokePayment.transaction_id || 'N/A'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">{language === 'bn' ? 'বাতিলের কারণ / নোট (ঐচ্ছিক):' : 'Reason / Note:'}</Label>
+                <Input
+                  value={revokeReason}
+                  onChange={(e) => setRevokeReason(e.target.value)}
+                  placeholder={language === 'bn' ? 'যেমন: ভুলবশত অনুমোদন করা হয়েছিল' : 'e.g. Approved accidentally'}
+                  className="rounded-xl text-xs h-9"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button variant="outline" onClick={() => setIsRevokeDialogOpen(false)} className="rounded-xl h-9 text-xs">
+              {language === 'bn' ? 'ফিরে যান' : 'Back'}
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl h-9 shadow-md"
+              onClick={() => revokePayment && revokeApprovalMutation.mutate({ payment: revokePayment, reason: revokeReason })}
+              disabled={revokeApprovalMutation.isPending}
+            >
+              {revokeApprovalMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <RotateCcw className="w-4 h-4 mr-2" />
+              )}
+              {language === 'bn' ? 'অনুমোদন বাতিল নিশ্চিত করুন' : 'Confirm Revoke'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-600 font-heading font-bold">
+              <Edit className="w-5 h-5" />
+              <span>{language === 'bn' ? 'পেমেন্ট তথ্য সম্পাদনা' : 'Edit Payment Details'}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {language === 'bn' 
+                ? 'এখানে পরিবর্তন করলে ডাটাবেজ এবং আর্থিক হিসাব উভয় স্থানেই আপডেট হবে।' 
+                : 'Editing updates both dues record and finance accounts.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2 text-xs">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === 'bn' ? 'টাকার পরিমাণ (৳):' : 'Amount (৳):'}</Label>
+              <Input
+                type="number"
+                value={editAmount}
+                onChange={(e) => setEditAmount(parseFloat(e.target.value) || 0)}
+                className="rounded-xl text-xs h-9 font-bold"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === 'bn' ? 'মাস ও বছর (YYYY-MM):' : 'Month (YYYY-MM):'}</Label>
+              <Input
+                value={editMonth}
+                onChange={(e) => setEditMonth(e.target.value)}
+                placeholder="2026-11"
+                className="rounded-xl text-xs h-9 font-mono"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === 'bn' ? 'ট্রানজেকশন আইডি (TrxID):' : 'TrxID:'}</Label>
+              <Input
+                value={editTrxId}
+                onChange={(e) => setEditTrxId(e.target.value)}
+                placeholder="JS817392HS"
+                className="rounded-xl text-xs h-9 font-mono uppercase"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === 'bn' ? 'পেমেন্ট মাধ্যম:' : 'Payment Method:'}</Label>
+              <Select value={editMethod} onValueChange={setEditMethod}>
+                <SelectTrigger className="rounded-xl text-xs h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bkash">বিকাশ (bKash)</SelectItem>
+                  <SelectItem value="nagad">নগদ (Nagad)</SelectItem>
+                  <SelectItem value="rocket">রকেট (Rocket)</SelectItem>
+                  <SelectItem value="bank">ব্যাংক (Bank)</SelectItem>
+                  <SelectItem value="cash">নগদ গ্রহণ (Cash)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl h-9 text-xs">
+              {language === 'bn' ? 'বাতিল' : 'Cancel'}
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl h-9 shadow-md"
+              onClick={() => editPayment && editPaymentMutation.mutate({
+                payment: editPayment,
+                newAmount: editAmount,
+                newMonth: editMonth,
+                newTrxId: editTrxId,
+                newMethod: editMethod,
+              })}
+              disabled={editPaymentMutation.isPending}
+            >
+              {editPaymentMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Check className="w-4 h-4 mr-2" />
+              )}
+              {language === 'bn' ? 'সংরক্ষণ করুন' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Payment Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 font-heading font-bold">
+              <Trash2 className="w-5 h-5" />
+              <span>{language === 'bn' ? 'পেমেন্ট রেকর্ড মুছে ফেলা' : 'Delete Payment Record'}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {language === 'bn' 
+                ? 'আপনি কি নিশ্চিত যে এই রেকর্ডটি মুছে ফেলতে চান? এর ফলে এর সাথে যুক্ত আর্থিক আয়ও সমন্বয় করা হবে।' 
+                : 'Are you sure you want to delete this record? Associated finance balance will be adjusted.'}
+            </DialogDescription>
+          </DialogHeader>
+          {deletePayment && (
+            <div className="p-3 bg-red-50/70 border border-red-200/60 rounded-xl space-y-1 text-xs">
+              <p className="font-bold text-red-900">{deletePayment.members?.full_name} ({deletePayment.month_year})</p>
+              <p className="text-red-700">পরিমাণ: ৳{deletePayment.amount} | TrxID: {deletePayment.transaction_id || 'N/A'}</p>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="rounded-xl h-9 text-xs">
+              {language === 'bn' ? 'বাতিল' : 'Cancel'}
+            </Button>
+            <Button
+              variant="destructive"
+              className="font-bold text-xs rounded-xl h-9 shadow-md"
+              onClick={() => deletePayment && deletePaymentMutation.mutate(deletePayment)}
+              disabled={deletePaymentMutation.isPending}
+            >
+              {deletePaymentMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              {language === 'bn' ? 'মুছে ফেলুন' : 'Delete Record'}
             </Button>
           </DialogFooter>
         </DialogContent>

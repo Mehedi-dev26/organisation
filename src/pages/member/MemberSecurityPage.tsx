@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import {
 
 const MemberSecurityPage = () => {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [newPassword, setNewPassword] = useState('');
@@ -53,9 +55,51 @@ const MemberSecurityPage = () => {
 
       if (error) throw error;
 
+      // Synchronize new password to member synthetic identities (phone & email)
+      if (user) {
+        try {
+          const { data: memberRow } = await supabase
+            .from('members')
+            .select('id, full_name, phone, email')
+            .or(`user_id.eq.${user.id},email.eq.${user.email || ''}`)
+            .maybeSingle();
+
+          if (memberRow) {
+            const mDigits = memberRow.phone ? memberRow.phone.replace(/\D/g, '') : '';
+            const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
+            
+            // Sync phone email identity
+            if (mStd.length >= 10) {
+              await supabase.functions.invoke('create-member-user', {
+                body: {
+                  email: `${mStd}@batighor.org`,
+                  password: newPassword,
+                  memberId: memberRow.id,
+                  fullName: memberRow.full_name,
+                },
+              });
+            }
+
+            // Sync personal email identity if different
+            if (memberRow.email && memberRow.email.toLowerCase() !== user.email?.toLowerCase()) {
+              await supabase.functions.invoke('create-member-user', {
+                body: {
+                  email: memberRow.email.toLowerCase().trim(),
+                  password: newPassword,
+                  memberId: memberRow.id,
+                  fullName: memberRow.full_name,
+                },
+              });
+            }
+          }
+        } catch (syncErr) {
+          console.warn('Member secondary credential sync non-fatal:', syncErr);
+        }
+      }
+
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
-        description: language === 'bn' ? 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে' : 'Password changed successfully',
+        description: language === 'bn' ? 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে। এখন নতুন পাসওয়ার্ড দিয়ে ফোন বা আইডি দিয়ে লগইন করতে পারবেন।' : 'Password changed successfully',
       });
       setNewPassword('');
       setConfirmPassword('');

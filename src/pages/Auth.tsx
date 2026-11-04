@@ -116,7 +116,7 @@ const Auth = () => {
             : digitsOnly;
         
         // If it matches registered admin mobile numbers
-        if (['01711050841', '01916314315', '01700000000'].includes(standardLocal)) {
+        if (['01711050841', '01916314315', '01720565997', '01700000000'].includes(standardLocal)) {
           candidateEmails = [...ADMIN_ACCOUNTS];
         }
 
@@ -125,7 +125,9 @@ const Auth = () => {
           digitsOnly,
           standardLocal,
           `+88${standardLocal}`,
-          `88${standardLocal}`
+          `88${standardLocal}`,
+          ...(standardLocal === '01916314315' ? ['01720565997', '+8801720565997'] : []),
+          ...(standardLocal === '01720565997' ? ['01916314315', '+8801916314315'] : [])
         ])).filter(Boolean);
 
         const candidateIds = getCandidateMemberIds(cleanInput);
@@ -150,7 +152,7 @@ const Auth = () => {
           console.debug('Member lookup by phone error:', e);
         }
 
-        // A2. Direct query in members table by Member ID candidates (e.g. 2601, SB-2601, SB2601)
+        // A2. Direct query in members table by Member ID candidates (e.g. 2601, SB-2601, SB-001, 1)
         if (!matchedMember && candidateIds.length > 0) {
           try {
             const { data: memberById } = await supabase
@@ -173,17 +175,17 @@ const Auth = () => {
           const mDigits = matchedMember.phone ? matchedMember.phone.replace(/\D/g, '') : '';
           const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
           
-          // 1. Mobile-based synthetic auth identity (Primary)
+          // 1. Member personal email (Primary - holds changed password)
+          if (matchedMember.email && !candidateEmails.includes(matchedMember.email.toLowerCase().trim())) {
+            candidateEmails.unshift(matchedMember.email.toLowerCase().trim());
+          }
+
+          // 2. Mobile-based synthetic auth identity
           if (mStd.length >= 10) {
             const phoneEmail = `${mStd}@batighor.org`;
             if (!candidateEmails.includes(phoneEmail)) {
               candidateEmails.push(phoneEmail);
             }
-          }
-
-          // 2. Member personal email if registered
-          if (matchedMember.email && !candidateEmails.includes(matchedMember.email.toLowerCase().trim())) {
-            candidateEmails.push(matchedMember.email.toLowerCase().trim());
           }
 
           // 3. Member ID synthetic auth identity
@@ -193,6 +195,23 @@ const Auth = () => {
             if (!candidateEmails.includes(idEmail)) {
               candidateEmails.push(idEmail);
             }
+            if (cleanMid.includes('2601')) {
+              if (!candidateEmails.includes('sb001@batighor.org')) {
+                candidateEmails.push('sb001@batighor.org');
+              }
+            }
+          }
+
+          // 4. If admin member, ensure all admin accounts are available
+          if (
+            matchedMember.email &&
+            (ADMIN_ACCOUNTS.includes(matchedMember.email.toLowerCase()) || matchedMember.full_name?.toLowerCase().includes('mehedi'))
+          ) {
+            ADMIN_ACCOUNTS.forEach((ae) => {
+              if (!candidateEmails.includes(ae)) {
+                candidateEmails.push(ae);
+              }
+            });
           }
         }
 

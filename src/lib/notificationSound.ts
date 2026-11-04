@@ -1,6 +1,6 @@
 /**
  * Audio Chime & Interactive Click Sound Service for Somoyer Batighor (সময়ের বাতিঘর)
- * Synthesizes crisp crystal chimes ("টুং") and plays low-latency aesthetic mouse click sounds.
+ * Synthesizes crisp crystal chimes ("টুং") and plays instant, zero-latency aesthetic mouse click sounds.
  */
 
 class NotificationSoundService {
@@ -9,6 +9,8 @@ class NotificationSoundService {
   private clickAudioBuffer: AudioBuffer | null = null;
   private isBufferLoading: boolean = false;
   private lastClickTime: number = 0;
+  private audioPool: HTMLAudioElement[] = [];
+  private poolIndex: number = 0;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -18,10 +20,33 @@ class NotificationSoundService {
       } catch {
         this.soundEnabled = true;
       }
-      // Preload the mouse click sound buffer for instant latency-free clicks
+
+      // Pre-warm HTML5 Audio pool for guaranteed zero-delay instant fallback
+      try {
+        for (let i = 0; i < 4; i++) {
+          const a = new Audio('/sounds/mouse-click.mp3');
+          a.preload = 'auto';
+          a.volume = 0.45;
+          this.audioPool.push(a);
+        }
+      } catch {}
+
+      // Preload Web Audio buffer immediately
       if (this.soundEnabled) {
         this.loadClickBuffer().catch(() => {});
       }
+
+      // Unlock and resume AudioContext on the very first user interaction
+      const unlockAudio = () => {
+        const ctx = this.getAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+      };
+      window.addEventListener('pointerdown', unlockAudio, { passive: true, once: true });
+      window.addEventListener('keydown', unlockAudio, { passive: true, once: true });
     }
   }
 
@@ -74,19 +99,19 @@ class NotificationSoundService {
   }
 
   /**
-   * Plays low-latency aesthetic mouse click sound
-   * Debounced by 35ms to avoid accidental micro double-triggers
+   * Plays instant aesthetic mouse click sound
+   * Debounced by 20ms to prevent duplicate micro-triggers while keeping 0ms responsiveness
    */
   public playClick(volume: number = 0.45): void {
     if (!this.soundEnabled) return;
 
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    if (now - this.lastClickTime < 35) return;
+    if (now - this.lastClickTime < 20) return;
     this.lastClickTime = now;
 
     try {
       const ctx = this.getAudioContext();
-      if (ctx && this.clickAudioBuffer) {
+      if (ctx && this.clickAudioBuffer && ctx.state === 'running') {
         const source = ctx.createBufferSource();
         const gainNode = ctx.createGain();
         gainNode.gain.setValueAtTime(Math.min(1, Math.max(0, volume)), ctx.currentTime);
@@ -97,12 +122,24 @@ class NotificationSoundService {
         return;
       }
 
-      // If buffer is still loading or not decoded yet, start loading and fallback to HTML5 Audio
-      this.loadClickBuffer().catch(() => {});
-      const audio = new Audio('/sounds/mouse-click.mp3');
-      audio.volume = Math.min(1, Math.max(0, volume));
-      audio.play().catch(() => {});
-    } catch (err) {
+      // If buffer is loading or audioCtx is suspended, use pre-warmed audio pool immediately
+      if (this.audioPool.length > 0) {
+        const audio = this.audioPool[this.poolIndex];
+        this.poolIndex = (this.poolIndex + 1) % this.audioPool.length;
+        audio.currentTime = 0;
+        audio.volume = Math.min(1, Math.max(0, volume));
+        audio.play().catch(() => {});
+      } else {
+        const audio = new Audio('/sounds/mouse-click.mp3');
+        audio.volume = Math.min(1, Math.max(0, volume));
+        audio.play().catch(() => {});
+      }
+
+      // Preload buffer if not loaded
+      if (!this.clickAudioBuffer) {
+        this.loadClickBuffer().catch(() => {});
+      }
+    } catch {
       // Graceful fallback
     }
   }

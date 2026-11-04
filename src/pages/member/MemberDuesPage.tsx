@@ -113,22 +113,71 @@ const MemberDuesPage = () => {
   });
 
   const handleViewVoucher = async (due: DuesData) => {
-    if (!due.transaction_id) return;
     setIsLoadingTransaction(true);
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('id', due.transaction_id)
-        .maybeSingle();
+      let txnRecord: any = null;
 
-      if (error) throw error;
-      if (data) {
-        setPrintTransaction(data as TransactionData);
-        setIsPrintDialogOpen(true);
+      // 1. Try finding transaction record in transactions table
+      if (due.transaction_id) {
+        const { data } = await supabase
+          .from('transactions')
+          .select('*')
+          .or(`payment_reference.eq.${due.transaction_id},id.eq.${due.transaction_id}`)
+          .maybeSingle();
+        if (data) txnRecord = data;
       }
+
+      if (!txnRecord && due.member_id && due.month_year) {
+        const { data } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('member_id', due.member_id)
+          .eq('month_year', due.month_year)
+          .maybeSingle();
+        if (data) txnRecord = data;
+      }
+
+      // 2. Synthesize complete official voucher if not in transactions table
+      if (!txnRecord) {
+        txnRecord = {
+          id: due.id,
+          type: 'member_fee',
+          amount: due.amount,
+          payment_method: due.payment_method || 'bkash',
+          payment_reference: due.transaction_id || `TRX-${due.id.slice(0, 8).toUpperCase()}`,
+          transaction_date: due.paid_date || new Date().toISOString().split('T')[0],
+          month_year: due.month_year,
+          description_bn: `${due.month_year} মাসের সদস্য চাঁদা (${memberData?.full_name || 'সদস্য'})`,
+          description_en: `Monthly dues for ${due.month_year} (${memberData?.full_name || 'Member'})`,
+          members: {
+            full_name: memberData?.full_name || 'সদস্য',
+          },
+        };
+      } else {
+        if (!txnRecord.members) {
+          txnRecord.members = {
+            full_name: memberData?.full_name || 'সদস্য',
+          };
+        }
+      }
+
+      setPrintTransaction(txnRecord);
+      setIsPrintDialogOpen(true);
     } catch (err) {
       console.error('Error fetching voucher transaction:', err);
+      // Fallback display
+      setPrintTransaction({
+        id: due.id,
+        type: 'member_fee',
+        amount: due.amount,
+        payment_method: due.payment_method || 'bkash',
+        payment_reference: due.transaction_id || `TRX-${due.id.slice(0, 8).toUpperCase()}`,
+        transaction_date: due.paid_date || new Date().toISOString().split('T')[0],
+        month_year: due.month_year,
+        description_bn: `${due.month_year} মাসের সদস্য চাঁদা (${memberData?.full_name || 'সদস্য'})`,
+        members: { full_name: memberData?.full_name || 'সদস্য' },
+      });
+      setIsPrintDialogOpen(true);
     } finally {
       setIsLoadingTransaction(false);
     }
@@ -508,7 +557,7 @@ const MemberDuesPage = () => {
                           </TableCell>
 
                           <TableCell className="text-right">
-                            {due.is_paid && due.transaction_id ? (
+                            {due.is_paid ? (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -620,7 +669,7 @@ const MemberDuesPage = () => {
 
                       {/* Bottom Action Button */}
                       <div className="pt-1">
-                        {due.is_paid && due.transaction_id ? (
+                        {due.is_paid ? (
                           <Button
                             variant="outline"
                             size="sm"
@@ -816,7 +865,7 @@ const MemberDuesPage = () => {
           </DialogHeader>
           {printTransaction && (
             <div className="mt-4 p-2 bg-slate-50 rounded-xl">
-              <TransactionVoucher ref={voucherRef} transaction={printTransaction} />
+              <TransactionVoucher ref={voucherRef} transaction={printTransaction as any} language={language} />
             </div>
           )}
         </DialogContent>

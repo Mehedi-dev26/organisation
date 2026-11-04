@@ -204,9 +204,9 @@ const AdminLayout = () => {
     };
   }, [language, navigate, queryClient]);
 
-  // Global aesthetic mouse click sound listener for the Admin Panel
+  // Global aesthetic mouse click sound listener for the Admin Panel - 0ms instant pointerdown response
   useEffect(() => {
-    const handleAdminClick = (e: MouseEvent) => {
+    const handleAdminPointerDown = (e: MouseEvent | PointerEvent) => {
       if (!notificationSound.isEnabled()) return;
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -220,9 +220,9 @@ const AdminLayout = () => {
       }
     };
 
-    window.addEventListener('click', handleAdminClick, { capture: true, passive: true });
+    window.addEventListener('pointerdown', handleAdminPointerDown, { capture: true, passive: true });
     return () => {
-      window.removeEventListener('click', handleAdminClick, { capture: true });
+      window.removeEventListener('pointerdown', handleAdminPointerDown, { capture: true });
     };
   }, []);
 
