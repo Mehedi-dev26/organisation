@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, CreditCard, User, Key, LogOut, Sparkles } from 'lucide-react';
+import { LayoutDashboard, CreditCard, User, Key, LogOut, Sparkles, Bell, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MemberMobileNav = () => {
@@ -34,12 +34,20 @@ const MemberMobileNav = () => {
       labelEn: 'Dues',
     },
     {
-      id: 'id-card',
-      url: '/member/id-card',
+      id: 'notices',
+      url: '/member/notices',
       exact: false,
-      icon: Sparkles,
-      labelBn: 'আইডি কার্ড',
-      labelEn: 'ID Card',
+      icon: Bell,
+      labelBn: 'নোটিশ',
+      labelEn: 'Notices',
+    },
+    {
+      id: 'messages',
+      url: '/member/messages',
+      exact: false,
+      icon: MessageSquare,
+      labelBn: 'বার্তা',
+      labelEn: 'Messages',
     },
     {
       id: 'profile',
@@ -48,14 +56,6 @@ const MemberMobileNav = () => {
       icon: User,
       labelBn: 'প্রোফাইল',
       labelEn: 'Profile',
-    },
-    {
-      id: 'security',
-      url: '/member/security',
-      exact: false,
-      icon: Key,
-      labelBn: 'পাসওয়ার্ড',
-      labelEn: 'Password',
     },
   ];
 

@@ -15,7 +15,9 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
-  BadgeCheck
+  BadgeCheck,
+  Bell,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSiteLogo } from '@/hooks/useSiteLogo';
@@ -39,6 +41,20 @@ const MemberSidebar = () => {
       url: '/member',
       exact: true,
       icon: LayoutDashboard,
+      badge: null,
+    },
+    {
+      title: language === 'bn' ? 'নোটিশ ও ঘোষণা' : 'Notices & Alerts',
+      url: '/member/notices',
+      exact: false,
+      icon: Bell,
+      badge: null,
+    },
+    {
+      title: language === 'bn' ? 'বার্তা বিবরণী' : 'Message Overview',
+      url: '/member/messages',
+      exact: false,
+      icon: MessageSquare,
       badge: null,
     },
     {

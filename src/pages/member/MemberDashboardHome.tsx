@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMember } from '@/components/member/MemberContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,12 +30,22 @@ import {
   Sparkles,
   ArrowRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  BellRing,
+  MessageSquare,
+  Smartphone,
+  Megaphone
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { bn, enUS } from 'date-fns/locale';
 import { compressImage } from '@/lib/imageUtils';
 import { getDonationEligibility, formatBengaliDate } from '@/lib/bloodUtils';
+import {
+  isPushSupported,
+  getNotificationPermission,
+  requestPushPermission,
+  PushPermissionStatus
+} from '@/services/pushNotificationService';
 
 const MemberDashboardHome = () => {
   const { language } = useLanguage();
@@ -52,6 +62,48 @@ const MemberDashboardHome = () => {
   } = useMember();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [pushStatus, setPushStatus] = useState<PushPermissionStatus>(getNotificationPermission());
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
+
+  const handleEnablePush = async () => {
+    setIsEnablingPush(true);
+    try {
+      const granted = await requestPushPermission();
+      setPushStatus(getNotificationPermission());
+      if (granted) {
+        toast({
+          title: language === 'bn' ? 'নোটিফিকেশন সক্রিয় হয়েছে!' : 'Notifications Enabled!',
+          description: language === 'bn' 
+            ? 'এখন থেকে যেকোনো জরুরি নোটিশ ও রিমাইন্ডার সাথে সাথে আপনার ফোনে পাবেন।' 
+            : 'You will now receive alerts directly on this device.',
+        });
+      }
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
+
+  // Fetch official organization notices
+  const { data: orgNotices = [] } = useQuery<any[]>({
+    queryKey: ['organization_notices_home'],
+    queryFn: async () => {
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'organization_notices')
+          .maybeSingle();
+
+        if (data?.value && Array.isArray(data.value)) {
+          return data.value.filter((n: any) => n.is_active !== false);
+        }
+        return [];
+      } catch (err) {
+        return [];
+      }
+    },
+    staleTime: 60000,
+  });
 
   // Blood donation update modal state
   const [isBloodDialogOpen, setIsBloodDialogOpen] = useState(false);
@@ -299,6 +351,36 @@ const MemberDashboardHome = () => {
         </div>
       </div>
 
+      {/* Web Push Notification Activation Prompt */}
+      {isPushSupported() && pushStatus !== 'granted' && (
+        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 border-2 border-emerald-600/30 rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-[#0B6B3A] flex items-center justify-center shrink-0 shadow-2xs">
+              <BellRing className="w-5 h-5 animate-bounce" />
+            </div>
+            <div>
+              <p className="font-heading font-black text-sm sm:text-base text-foreground">
+                {language === 'bn' ? 'মোবাইলে সরাসরি জরুরি নোটিশ ও চাঁদার রিমাইন্ডার পান' : 'Enable Mobile Push Notifications'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                {language === 'bn' 
+                  ? 'পুশ নোটিফিকেশন চালু রাখলে অ্যাপ বন্ধ থাকলেও যেকোনো জরুরি নোটিশ ও চাঁদার রিমাইন্ডার সরাসরি আপনার ফোনে নোটিফিকেশন হিসেবে আসবে।' 
+                  : 'Receive instant push alerts on this device whenever a notice or dues reminder is sent.'}
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            onClick={handleEnablePush}
+            disabled={isEnablingPush}
+            className="bg-[#0B6B3A] hover:bg-[#09572E] text-white font-bold text-xs rounded-xl shadow-md h-10 px-5 gap-2 shrink-0 cursor-pointer w-full sm:w-auto"
+          >
+            <BellRing className="w-4 h-4" />
+            <span>{language === 'bn' ? 'নোটিফিকেশন সক্রিয় করুন' : 'Enable Notifications'}</span>
+          </Button>
+        </div>
+      )}
+
       {/* 2.5 Unpaid Due Action Banner */}
       {unpaidMonths.length > 0 && (
         <div className="bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-100/30 border-2 border-amber-300 rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_4px_20px_rgba(245,158,11,0.06)]">
@@ -374,6 +456,50 @@ const MemberDashboardHome = () => {
 
       {/* 4. Quick Action Navigation Cards (2-column on mobile, 4-column on desktop) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <Link
+          to="/member/notices"
+          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#E6F4EA] text-[#0B6B3A] flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3]" />
+            </div>
+            {orgNotices.length > 0 && (
+              <Badge className="bg-[#0B6B3A] text-white text-[10px] py-0 px-2 font-bold">
+                {orgNotices.length}
+              </Badge>
+            )}
+          </div>
+          <div className="mt-3 sm:mt-4">
+            <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+              {language === 'bn' ? 'নোটিশ ও ঘোষণা' : 'Notices & Alerts'}
+            </h4>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">
+              {language === 'bn' ? 'সকল জরুরি বুলেটিন ও সিদ্ধান্ত' : 'View official announcements'}
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          to="/member/messages"
+          className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3]" />
+            </div>
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+          </div>
+          <div className="mt-3 sm:mt-4">
+            <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+              {language === 'bn' ? 'বার্তা বিবরণী' : 'Message Overview'}
+            </h4>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">
+              {language === 'bn' ? 'মোবাইলে পাঠানো এসএমএস হিস্ট্রি' : 'All dispatched SMS logs'}
+            </p>
+          </div>
+        </Link>
+
         <Link
           to="/member/dues"
           className="group p-3.5 sm:p-5 rounded-[20px] sm:rounded-[22px] bg-white border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-[#0B6B3A]/30 transition-all flex flex-col justify-between"
@@ -462,23 +588,75 @@ const MemberDashboardHome = () => {
             <div className="w-9 h-9 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center">
               <Bell className="w-5 h-5" />
             </div>
-            <h3 className="text-base sm:text-lg font-black text-slate-900 font-heading">
-              {language === 'bn' ? 'সংবাদ ও জরুরি নোটিশ' : 'News & Announcements'}
-            </h3>
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 font-heading">
+                {language === 'bn' ? 'সংগঠনের সাম্প্রতিক নোটিশ ও ঘোষণা' : 'Notices & Announcements'}
+              </h3>
+              <p className="text-xs text-slate-400 font-medium">
+                {language === 'bn' ? 'কার্যনির্বাহী কমিটির সর্বশেষ বুলেটিন ও জরুরি বিজ্ঞপ্তি' : 'Latest administrative bulletin & notices'}
+              </p>
+            </div>
           </div>
+          <Link
+            to="/member/notices"
+            className="text-xs font-bold text-[#0B6B3A] hover:underline flex items-center gap-1 shrink-0"
+          >
+            <span>{language === 'bn' ? 'সকল নোটিশ' : 'View All'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
         <CardContent className="p-5">
-          {newsLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-[#0B6B3A]" />
-            </div>
-          ) : !newsData || newsData.length === 0 ? (
-            <p className="text-center text-slate-400 py-6 text-sm">
-              {language === 'bn' ? 'কোনো নতুন নোটিশ নেই' : 'No announcements available'}
-            </p>
-          ) : (
+          {orgNotices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {newsData.map((news: any) => (
+              {orgNotices.slice(0, 4).map((notice: any) => {
+                const isUrgent = notice.category === 'urgent';
+                return (
+                  <Link
+                    key={notice.id}
+                    to="/member/notices"
+                    className={`p-4 rounded-2xl border transition-all block group ${
+                      isUrgent
+                        ? 'border-red-200 bg-red-50/40 hover:bg-red-50/70 hover:shadow-sm'
+                        : 'border-slate-100 bg-[#F9FBFA] hover:bg-white hover:shadow-sm hover:border-emerald-600/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        isUrgent
+                          ? 'bg-red-600 text-white'
+                          : notice.category === 'dues'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {isUrgent
+                          ? (language === 'bn' ? 'জরুরি' : 'Urgent')
+                          : notice.category === 'dues'
+                          ? (language === 'bn' ? 'চাঁদা' : 'Dues')
+                          : (language === 'bn' ? 'নোটিশ' : 'Notice')}
+                      </span>
+                      {notice.created_at && (
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {format(new Date(notice.created_at), 'dd MMM yyyy', {
+                            locale: language === 'bn' ? bn : enUS,
+                          })}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className={`font-bold text-sm mb-1 line-clamp-1 group-hover:text-emerald-700 transition-colors ${
+                      isUrgent ? 'text-red-900' : 'text-slate-900'
+                    }`}>
+                      {language === 'bn' ? notice.title_bn : (notice.title_en || notice.title_bn)}
+                    </h4>
+                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                      {notice.content_bn}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : newsData && newsData.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {newsData.slice(0, 4).map((news: any) => (
                 <div key={news.id} className="p-4 rounded-2xl border border-slate-100 bg-[#F9FBFA] hover:bg-white hover:shadow-sm transition-all">
                   <h4 className="font-bold text-slate-900 text-sm mb-1 line-clamp-1">
                     {language === 'bn' ? news.title_bn : (news.title_en || news.title_bn)}
@@ -486,16 +664,13 @@ const MemberDashboardHome = () => {
                   <p className="text-xs text-slate-500 line-clamp-2">
                     {language === 'bn' ? news.content_bn : (news.content_en || news.content_bn)}
                   </p>
-                  {news.published_at && (
-                    <p className="text-[11px] font-medium text-slate-400 mt-2">
-                      {format(new Date(news.published_at), 'PPP', { 
-                        locale: language === 'bn' ? bn : enUS 
-                      })}
-                    </p>
-                  )}
                 </div>
               ))}
             </div>
+          ) : (
+            <p className="text-center text-slate-400 py-6 text-sm">
+              {language === 'bn' ? 'কোনো নতুন নোটিশ নেই' : 'No announcements available'}
+            </p>
           )}
         </CardContent>
       </Card>

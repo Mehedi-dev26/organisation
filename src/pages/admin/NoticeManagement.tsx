@@ -39,6 +39,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { sendBulkSms, calculateSmsParts } from '@/services/smsService';
+import { triggerNoticePush } from '@/services/pushNotificationService';
 import { format } from 'date-fns';
 
 export interface NoticeRecord {
@@ -213,6 +214,11 @@ export const NoticeManagement: React.FC = () => {
       // 3. Save to organization notices in site_settings
       const updatedList = [newNotice, ...notices];
       await saveNoticesList(updatedList);
+
+      // Trigger Web Push Notification if selected
+      if (sendPush) {
+        triggerNoticePush(newNotice.title_bn, newNotice.content_bn).catch((e) => console.warn('Push error:', e));
+      }
 
       // Reset form
       setTitleBn('');

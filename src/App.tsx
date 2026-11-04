@@ -34,6 +34,8 @@ const MemberProfilePage = lazy(() => import("./pages/member/MemberProfilePage"))
 const MemberIdCardPage = lazy(() => import("./pages/member/MemberIdCardPage"));
 const MemberSecurityPage = lazy(() => import("./pages/member/MemberSecurityPage"));
 const PayDues = lazy(() => import("./pages/member/PayDues"));
+const MemberNoticesPage = lazy(() => import("./pages/member/MemberNoticesPage"));
+const MemberMessagesPage = lazy(() => import("./pages/member/MemberMessagesPage"));
 
 // Lazy-loaded Admin portal
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
@@ -126,6 +128,9 @@ const App = () => {
                   {/* Member Portal Multi-Page Architecture */}
                   <Route path="/member" element={<MemberLayout />}>
                     <Route index element={<MemberDashboardHome />} />
+                    <Route path="notices" element={<MemberNoticesPage />} />
+                    <Route path="messages" element={<MemberMessagesPage />} />
+                    <Route path="message-overview" element={<MemberMessagesPage />} />
                     <Route path="dues" element={<MemberDuesPage />} />
                     <Route path="profile" element={<MemberProfilePage />} />
                     <Route path="id-card" element={<MemberIdCardPage />} />
@@ -135,6 +140,9 @@ const App = () => {
                   {/* Member Dashboard alias routes */}
                   <Route path="/member-dashboard" element={<MemberLayout />}>
                     <Route index element={<MemberDashboardHome />} />
+                    <Route path="notices" element={<MemberNoticesPage />} />
+                    <Route path="messages" element={<MemberMessagesPage />} />
+                    <Route path="message-overview" element={<MemberMessagesPage />} />
                     <Route path="dues" element={<MemberDuesPage />} />
                     <Route path="profile" element={<MemberProfilePage />} />
                     <Route path="id-card" element={<MemberIdCardPage />} />
