@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +59,7 @@ import { format } from 'date-fns';
 export const SmsGateway: React.FC = () => {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [showApiKey, setShowApiKey] = useState(false);
@@ -272,9 +274,22 @@ export const SmsGateway: React.FC = () => {
               <MessageSquare className="w-5 h-5" />
             </div>
             <span>{language === 'bn' ? 'এসএমএস গেটওয়ে ও অটোমেশন' : 'SMS Gateway & Automation'}</span>
-            <Badge className="bg-emerald-600 text-white border-0 text-[11px] font-bold ml-1">
-              Bulk SMS BD
-            </Badge>
+            <div className="inline-flex items-center gap-1.5 ml-1">
+              <Badge className="bg-emerald-600 text-white border-0 text-[11px] font-bold">
+                Bulk SMS BD
+              </Badge>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => navigate('/admin/sms-templates')}
+                className="h-7 px-2.5 rounded-lg border-emerald-300 bg-emerald-50/90 hover:bg-emerald-100 text-[#0B6B3A] text-xs font-bold gap-1 shadow-2xs transition-all hover:scale-105"
+                title="এসএমএস ফরম্যাট ও টেমপ্লেট পেজে যান"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{language === 'bn' ? 'এসএমএস ফরম্যাট / টেমপ্লেট' : 'SMS Formats'}</span>
+              </Button>
+            </div>
           </h2>
           <p className="text-muted-foreground text-sm mt-0.5">
             {language === 'bn' 
@@ -302,6 +317,17 @@ export const SmsGateway: React.FC = () => {
                 ? `ব্যালেন্স: ৳${gatewayBalance.toFixed(2)}` 
                 : (language === 'bn' ? 'ব্যালেন্স রিফ্রেশ' : 'Check Balance')}
             </span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin/sms-templates')}
+            className="border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs gap-1.5 shadow-2xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{language === 'bn' ? 'এসএমএস ফরম্যাট / টেমপ্লেট' : 'SMS Formats'}</span>
           </Button>
 
           <Button

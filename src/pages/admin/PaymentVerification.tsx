@@ -26,6 +26,7 @@ import {
 import { format } from 'date-fns';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { safeFormatDate } from '@/lib/dateUtils';
+import { sendTemplatedSms } from '@/services/smsService';
 
 interface PendingPayment {
   id: string;
@@ -202,6 +203,28 @@ const PaymentVerification = () => {
           // Don't throw - email failure shouldn't block the approval
         }
       }
+// Automated Payment Approved SMS dispatch
+      if (payment.members?.phone) {
+        try {
+          sendTemplatedSms(
+            'payment_approved',
+            payment.members.phone,
+            payment.members.full_name,
+            {
+              name: payment.members.full_name,
+              member_id: payment.members.member_id || '',
+              amount: payment.amount,
+              month: payment.month_year,
+              trx_id: payment.transaction_id || '',
+              org_name: 'সময়ের বাতিঘর',
+            },
+            'payment_approved',
+            payment.member_id
+          ).catch((e) => console.warn('Payment approval SMS background error:', e));
+        } catch (smsErr) {
+          console.warn('Payment approval SMS trigger error:', smsErr);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
@@ -270,6 +293,29 @@ const PaymentVerification = () => {
         } catch (emailError) {
           console.error('Failed to send email notification:', emailError);
           // Don't throw - email failure shouldn't block the rejection
+        }
+      }
+// Automated Payment Rejection SMS dispatch
+      if (payment.members?.phone) {
+        try {
+          sendTemplatedSms(
+            'payment_rejected',
+            payment.members.phone,
+            payment.members.full_name,
+            {
+              name: payment.members.full_name,
+              member_id: payment.members.member_id || '',
+              amount: payment.amount,
+              month: payment.month_year,
+              reject_reason: reason || 'ভুল বা অসম্পূর্ণ পেমেন্ট তথ্য',
+              payment_link: 'batighor.org/payment',
+              org_name: 'সময়ের বাতিঘর',
+            },
+            'payment_rejected',
+            payment.member_id
+          ).catch((e) => console.warn('Payment rejection SMS background error:', e));
+        } catch (smsErr) {
+          console.warn('Payment rejection SMS trigger error:', smsErr);
         }
       }
     },

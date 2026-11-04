@@ -100,6 +100,11 @@ const AdminSidebar = () => {
       icon: MessageSquare 
     },
     { 
+      title: language === 'bn' ? 'এসএমএস ফরম্যাট' : 'SMS Formats', 
+      url: '/admin/sms-templates', 
+      icon: Sparkles 
+    },
+    { 
       title: language === 'bn' ? 'নোটিশ ব্যবস্থাপনা' : 'Notices', 
       url: '/admin/notices', 
       icon: Megaphone 

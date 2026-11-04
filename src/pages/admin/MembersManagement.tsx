@@ -60,6 +60,7 @@ import { useReactToPrint } from 'react-to-print';
 import { bangladeshGeoData, professionsList, getUnionsForUpazila } from '@/data/bangladeshGeoData';
 import { useSiteLogo } from '@/hooks/useSiteLogo';
 import { computeNextMemberId, generateNextMemberId } from '@/lib/memberIdUtils';
+import { sendTemplatedSms } from '@/services/smsService';
 
 export interface Member {
   id: string;
@@ -546,6 +547,30 @@ const MembersManagement: React.FC = () => {
           });
         } catch (accountErr) {
           console.warn('Auto create member user account error:', accountErr);
+        }
+      }
+
+      // 5. Automated Welcome SMS dispatch via configured SMS template
+      if (memberData.phone) {
+        try {
+          const defaultPassword = 'member@123';
+          sendTemplatedSms(
+            'member_welcome',
+            memberData.phone,
+            memberData.full_name,
+            {
+              name: memberData.full_name,
+              member_id: memberData.member_id || '',
+              password: defaultPassword,
+              phone: memberData.phone,
+              login_link: 'batighor.org/login',
+              org_name: 'সময়ের বাতিঘর',
+            },
+            'welcome',
+            memberData.id
+          ).catch((e) => console.warn('Welcome SMS background error:', e));
+        } catch (smsErr) {
+          console.warn('Welcome SMS trigger error:', smsErr);
         }
       }
 

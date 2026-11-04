@@ -52,6 +52,7 @@ const PaymentVerification = lazy(() => import("./pages/admin/PaymentVerification
 const PaymentGateways = lazy(() => import("./pages/admin/PaymentGateways"));
 const BloodDonorsManagement = lazy(() => import("./pages/admin/BloodDonorsManagement"));
 const SmsGateway = lazy(() => import("./pages/admin/SmsGateway"));
+const SmsTemplates = lazy(() => import("./pages/admin/SmsTemplates"));
 const NoticeManagement = lazy(() => import("./pages/admin/NoticeManagement"));
 
 // Lazy-loaded Cashier portal
@@ -156,6 +157,7 @@ const App = () => {
                     <Route path="payment-verification" element={<PaymentVerification />} />
                     <Route path="payment-gateways" element={<PaymentGateways />} />
                     <Route path="sms-gateway" element={<SmsGateway />} />
+                    <Route path="sms-templates" element={<SmsTemplates />} />
                     <Route path="notices" element={<NoticeManagement />} />
                     <Route path="yearly-accounts" element={<YearlyAccounts />} />
                     <Route path="cashiers" element={<CashierManagement />} />
