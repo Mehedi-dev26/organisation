@@ -24,7 +24,9 @@ import {
   Settings,
   Home,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Megaphone
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -91,6 +93,16 @@ const AdminSidebar = () => {
       title: language === 'bn' ? 'পেমেন্ট গেটওয়ে' : 'Payment Gateways', 
       url: '/admin/payment-gateways', 
       icon: CreditCard 
+    },
+    { 
+      title: language === 'bn' ? 'এসএমএস গেটওয়ে' : 'SMS Gateway', 
+      url: '/admin/sms-gateway', 
+      icon: MessageSquare 
+    },
+    { 
+      title: language === 'bn' ? 'নোটিশ ব্যবস্থাপনা' : 'Notices', 
+      url: '/admin/notices', 
+      icon: Megaphone 
     },
     { 
       title: language === 'bn' ? 'বিগত বছরের হিসাব' : 'Yearly Accounts', 

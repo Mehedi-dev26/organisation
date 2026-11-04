@@ -51,6 +51,8 @@ const CashierManagement = lazy(() => import("./pages/admin/CashierManagement"));
 const PaymentVerification = lazy(() => import("./pages/admin/PaymentVerification"));
 const PaymentGateways = lazy(() => import("./pages/admin/PaymentGateways"));
 const BloodDonorsManagement = lazy(() => import("./pages/admin/BloodDonorsManagement"));
+const SmsGateway = lazy(() => import("./pages/admin/SmsGateway"));
+const NoticeManagement = lazy(() => import("./pages/admin/NoticeManagement"));
 
 // Lazy-loaded Cashier portal
 const CashierLayout = lazy(() => import("./components/cashier/CashierLayout"));
@@ -153,6 +155,8 @@ const App = () => {
                     <Route path="dues" element={<DuesManagement />} />
                     <Route path="payment-verification" element={<PaymentVerification />} />
                     <Route path="payment-gateways" element={<PaymentGateways />} />
+                    <Route path="sms-gateway" element={<SmsGateway />} />
+                    <Route path="notices" element={<NoticeManagement />} />
                     <Route path="yearly-accounts" element={<YearlyAccounts />} />
                     <Route path="cashiers" element={<CashierManagement />} />
                     <Route path="settings" element={<AdminSettings />} />

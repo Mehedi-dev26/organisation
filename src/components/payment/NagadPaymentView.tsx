@@ -51,6 +51,7 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
   const navigate = useNavigate();
 
   const [lang, setLang] = useState<'bn' | 'en'>('bn');
+  const accountInputRef = React.useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<'account' | 'verify' | 'success'>('account');
   const [senderAccount, setSenderAccount] = useState('');
   const [trxId, setTrxId] = useState('');
@@ -234,8 +235,26 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
         </div>
       </div>
 
+      {/* Centered Large Nagad Gateway Logo */}
+      <div className="pt-2 pb-1 text-center flex items-center justify-center">
+        {customLogoUrl ? (
+          <img
+            src={customLogoUrl}
+            alt="Nagad"
+            className="h-12 sm:h-14 max-w-[220px] object-contain drop-shadow-md"
+          />
+        ) : (
+          <div className="flex items-center gap-2.5 bg-black/20 px-4 py-1.5 rounded-2xl border border-white/10 backdrop-blur-sm">
+            <NagadLogo className="w-9 h-9 drop-shadow-sm" />
+            <span className="font-heading font-black text-2xl sm:text-3xl tracking-tight text-white drop-shadow-sm">
+              নগদ
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* Cart / Merchant Header Icon (Exact layout of Image 4) */}
-      <div className="pt-3 pb-2 text-center space-y-1">
+      <div className="pt-2 pb-2 text-center space-y-1">
         <div className="w-16 h-16 rounded-2xl bg-white/10 mx-auto flex items-center justify-center border border-white/20 shadow-inner">
           <img
             src={logoUrl || '/logo.png'}
@@ -276,16 +295,83 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
             </h4>
 
             {/* Segmented / Formatted Account Input Box */}
-            <div className="mt-3 max-w-xs mx-auto">
+            <div 
+              className="relative mt-4 flex items-center justify-center cursor-text" 
+              onClick={() => accountInputRef.current?.focus()}
+            >
               <input
+                ref={accountInputRef}
                 type="tel"
                 value={senderAccount}
-                onChange={(e) => setSenderAccount(e.target.value)}
-                placeholder="01XXXXXXXXX"
-                maxLength={14}
-                className="w-full px-4 py-3 rounded-xl bg-white text-slate-900 font-mono text-center text-lg font-black tracking-widest outline-none placeholder:text-slate-400 shadow-lg"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 11);
+                  setSenderAccount(val);
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
                 autoFocus
+                maxLength={11}
               />
+              
+              {/* 11 Segmented Boxes: [ ][ ][ ] - [ ][ ][ ][ ] - [ ][ ][ ][ ] matching Image 4 */}
+              <div className="flex items-center gap-1 sm:gap-1.5 select-none pointer-events-none">
+                {/* 1st Group: 3 boxes */}
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  {[0, 1, 2].map((idx) => {
+                    const char = senderAccount[idx] || '';
+                    const isCurrent = senderAccount.length === idx;
+                    return (
+                      <div
+                        key={idx}
+                        className={`w-6 h-8 sm:w-7 sm:h-9 bg-white rounded flex items-center justify-center font-mono font-black text-slate-900 text-sm sm:text-base shadow-sm border ${
+                          isCurrent ? 'ring-2 ring-yellow-400 border-yellow-400' : 'border-white'
+                        }`}
+                      >
+                        {char || (isCurrent ? <span className="inline-block w-0.5 h-3.5 bg-slate-900 animate-pulse" /> : '')}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <span className="text-white font-black text-base px-0.5">-</span>
+
+                {/* 2nd Group: 4 boxes */}
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  {[3, 4, 5, 6].map((idx) => {
+                    const char = senderAccount[idx] || '';
+                    const isCurrent = senderAccount.length === idx;
+                    return (
+                      <div
+                        key={idx}
+                        className={`w-6 h-8 sm:w-7 sm:h-9 bg-white rounded flex items-center justify-center font-mono font-black text-slate-900 text-sm sm:text-base shadow-sm border ${
+                          isCurrent ? 'ring-2 ring-yellow-400 border-yellow-400' : 'border-white'
+                        }`}
+                      >
+                        {char || (isCurrent ? <span className="inline-block w-0.5 h-3.5 bg-slate-900 animate-pulse" /> : '')}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <span className="text-white font-black text-base px-0.5">-</span>
+
+                {/* 3rd Group: 4 boxes */}
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  {[7, 8, 9, 10].map((idx) => {
+                    const char = senderAccount[idx] || '';
+                    const isCurrent = senderAccount.length === idx;
+                    return (
+                      <div
+                        key={idx}
+                        className={`w-6 h-8 sm:w-7 sm:h-9 bg-white rounded flex items-center justify-center font-mono font-black text-slate-900 text-sm sm:text-base shadow-sm border ${
+                          isCurrent ? 'ring-2 ring-yellow-400 border-yellow-400' : 'border-white'
+                        }`}
+                      >
+                        {char || (isCurrent ? <span className="inline-block w-0.5 h-3.5 bg-slate-900 animate-pulse" /> : '')}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             <p className="text-[10px] sm:text-[11px] text-white/80 leading-relaxed max-w-xs mx-auto pt-3">

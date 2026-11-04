@@ -236,28 +236,37 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
 
   return (
     <div className="w-full max-w-lg mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-200/90 overflow-hidden font-sans relative animate-in fade-in zoom-in-95 duration-200">
-      {/* Top Header */}
-      <div className={`px-5 py-4 text-white flex items-center justify-between ${theme.headerBg}`}>
-        <div className="flex items-center gap-2.5">
-          {customLogoUrl ? (
-            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-sm">
-              <img src={customLogoUrl} alt={theme.name} className="w-full h-full object-contain" />
-            </div>
-          ) : (
-            theme.logo
-          )}
-          <div>
-            <h3 className="font-extrabold text-lg leading-tight">{theme.nameBn}</h3>
-            <p className="text-[10px] text-white/80">Secured Payment Gateway</p>
-          </div>
-        </div>
+      {/* Top Header with Centered Large Gateway Logo and Top-Right Close Button */}
+      <div className={`relative px-5 pt-4 pb-4 text-white flex flex-col items-center justify-center text-center ${theme.headerBg}`}>
         <button
           type="button"
           onClick={onClose}
-          className="p-1 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+          className="absolute top-3.5 right-4 p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/20 transition-colors cursor-pointer z-10"
+          title="বন্ধ করুন"
         >
-          <X className="w-6 h-6" />
+          <X className="w-6 h-6 stroke-[2.5]" />
         </button>
+
+        {/* Centered Large Brand Logo */}
+        <div className="flex flex-col items-center justify-center gap-2">
+          {customLogoUrl ? (
+            <div className="h-14 sm:h-16 max-w-[210px] bg-white rounded-2xl p-2 flex items-center justify-center shadow-md">
+              <img
+                src={customLogoUrl}
+                alt={theme.name}
+                className="h-full w-auto max-w-[180px] object-contain"
+              />
+            </div>
+          ) : (
+            <div className="scale-125 my-1 drop-shadow-sm">
+              {theme.logo}
+            </div>
+          )}
+          <div>
+            <h3 className="font-extrabold text-xl sm:text-2xl leading-tight tracking-tight">{theme.nameBn}</h3>
+            <p className="text-[11px] text-white/90 font-medium">Secured Payment Gateway</p>
+          </div>
+        </div>
       </div>
 
       {/* Merchant / Invoice Bar */}

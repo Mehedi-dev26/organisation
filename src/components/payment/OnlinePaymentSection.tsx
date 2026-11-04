@@ -181,28 +181,23 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
     <div className={`w-full max-w-lg mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-[#DCE4DC] overflow-hidden font-sans transition-all ${className}`}>
       
       {/* Top Mobile-styled Navigation Bar */}
-      <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/90">
+      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
         <button
           type="button"
           onClick={() => navigate('/member/dues')}
-          className="w-9 h-9 rounded-full bg-white shadow-xs border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-          title="চাঁদা তালিকায় ফিরে যান"
+          className="p-1.5 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+          title="হোমে ফিরে যান"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <Home className="w-5 h-5 stroke-[2.2]" />
         </button>
-
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-[11px] font-bold">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Secure Gateway • সময়ের বাতিঘর</span>
-        </div>
 
         <button
           type="button"
           onClick={handleExit}
-          className="w-9 h-9 rounded-full bg-white shadow-xs border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
           title="বন্ধ করুন"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5 stroke-[2.2]" />
         </button>
       </div>
 

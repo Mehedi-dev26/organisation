@@ -206,26 +206,32 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
   return (
     <div className="w-full max-w-lg mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-200/90 overflow-hidden font-sans relative animate-in fade-in zoom-in-95 duration-200">
       
-      {/* Top Header with bKash Logo and Close Icon */}
-      <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          {customLogoUrl ? (
-            <img src={customLogoUrl} alt="bKash" className="h-8 max-w-[130px] object-contain" />
-          ) : (
-            <>
-              <BkashLogo className="w-7 h-7" />
-              <span className="font-extrabold text-xl text-[#E2136E] tracking-tight">bKash</span>
-            </>
-          )}
-        </div>
+      {/* Top Header with Centered Large bKash Logo and Top-Right Close Button */}
+      <div className="relative px-5 pt-4 pb-3.5 border-b border-slate-100 flex flex-col items-center justify-center bg-white">
         <button
           type="button"
           onClick={onClose}
-          className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors cursor-pointer"
+          className="absolute top-3.5 right-4 text-red-500 hover:text-red-700 p-1.5 rounded-full hover:bg-red-50 transition-colors cursor-pointer z-10"
           title="বন্ধ করুন"
         >
           <X className="w-6 h-6 stroke-[2.5]" />
         </button>
+
+        {/* Centered Large Official bKash Logo */}
+        <div className="flex items-center justify-center min-h-[52px]">
+          {customLogoUrl ? (
+            <img 
+              src={customLogoUrl} 
+              alt="bKash" 
+              className="h-12 sm:h-14 max-w-[220px] object-contain drop-shadow-xs" 
+            />
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <BkashLogo className="w-10 h-10 drop-shadow-xs" />
+              <span className="font-extrabold text-2xl sm:text-3xl text-[#E2136E] tracking-tight">bKash</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Merchant Info Bar (Exact layout of Image 2 & 3) */}
@@ -338,6 +344,57 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
             <p className="font-mono text-3xl font-black tracking-widest">
               {formatTimer(secondsLeft)}
             </p>
+          </div>
+
+          {/* bKash Send Money Graphic Illustration (Exact from Image 3) */}
+          <div className="rounded-2xl border border-pink-200/90 bg-white overflow-hidden shadow-xs">
+            {/* Top mini-bar of bKash app */}
+            <div className="bg-gradient-to-r from-[#D81B60] via-[#E2136E] to-[#C2185B] px-3.5 py-2 flex items-center justify-between text-white text-[10px]">
+              <div className="flex items-center gap-1.5 font-bold">
+                <span className="px-1.5 py-0.5 rounded bg-white/20 font-black text-[9px]">dP</span>
+                <span className="bg-white/25 px-2 py-0.5 rounded-full font-mono font-bold text-[9px]">৳ 231.33</span>
+              </div>
+              <div className="flex items-center gap-2 opacity-90 text-[10px]">
+                <span className="w-4 h-4 rounded-full border border-white/60 flex items-center justify-center text-[9px]">🔍</span>
+                <span className="w-4 h-4 border border-white/60 rounded flex items-center justify-center text-[9px]">⊡</span>
+              </div>
+            </div>
+
+            {/* 4 App Grid Icons */}
+            <div className="p-3 grid grid-cols-4 gap-2 text-center bg-pink-50/40">
+              {/* Send Money - Highlighted with arrow indicator */}
+              <div className="relative flex flex-col items-center">
+                <div className="w-10 h-10 rounded-full bg-pink-100 border-2 border-[#E2136E] flex items-center justify-center text-[#E2136E] shadow-xs">
+                  <Smartphone className="w-4 h-4 text-[#E2136E]" />
+                </div>
+                <span className="text-[9px] font-extrabold text-[#E2136E] mt-1 leading-tight">Send Money</span>
+                {/* Red Pointer Arrow from Image 3 */}
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center text-red-600 font-black text-xs animate-bounce">
+                  ↗
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center opacity-60">
+                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <span className="text-[9px] text-slate-600 mt-1 leading-tight">Mobile Recharge</span>
+              </div>
+
+              <div className="flex flex-col items-center opacity-60">
+                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
+                  <Receipt className="w-4 h-4" />
+                </div>
+                <span className="text-[9px] text-slate-600 mt-1 leading-tight">Cash Out</span>
+              </div>
+
+              <div className="flex flex-col items-center opacity-60">
+                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <span className="text-[9px] text-slate-600 mt-1 leading-tight">Payment</span>
+              </div>
+            </div>
           </div>
 
           {/* Real-Time Database Instructions or Default Steps */}

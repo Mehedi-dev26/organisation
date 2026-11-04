@@ -22,8 +22,11 @@ import {
   Clock, 
   Loader2,
   Send,
-  Filter
+  Filter,
+  BellRing,
+  Plus
 } from 'lucide-react';
+import { DuesReminderSetupDialog } from '@/components/admin/DuesReminderSetupDialog';
 import { format, subMonths } from 'date-fns';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
@@ -67,6 +70,7 @@ const DuesManagement = () => {
   const [filterStatus, setFilterStatus] = useState<string>('unpaid');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [isAutoReminderSetupOpen, setIsAutoReminderSetupOpen] = useState(false);
   const [isSendingReminders, setIsSendingReminders] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
@@ -326,9 +330,23 @@ const DuesManagement = () => {
             {language === 'bn' ? 'সদস্যদের মাসিক চাঁদা ট্র্যাক করুন এবং রিমাইন্ডার পাঠান' : 'Track member dues and send reminders'}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsGenerateDialogOpen(true)}>
-            {language === 'bn' ? 'চাঁদা তৈরি করুন' : 'Generate Dues'}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsAutoReminderSetupOpen(true)}
+            className="rounded-xl border-emerald-600/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-bold text-xs gap-1.5 h-10 shadow-xs cursor-pointer"
+          >
+            <BellRing className="w-4 h-4 text-emerald-600" />
+            <span>{language === 'bn' ? 'স্বয়ংক্রিয় রিমাইন্ডার সেটআপ' : 'Auto Reminder Setup'}</span>
+          </Button>
+
+          <Button 
+            onClick={() => setIsGenerateDialogOpen(true)}
+            className="bg-[#0B6B3A] hover:bg-[#09542e] text-white font-bold text-xs rounded-xl shadow-md gap-1.5 h-10 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{language === 'bn' ? 'চাঁদা তৈরি করুন' : 'Generate Dues'}</span>
           </Button>
         </div>
       </div>
@@ -624,6 +642,12 @@ const DuesManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Automated SMS & Push Reminder Setup Dialog */}
+      <DuesReminderSetupDialog
+        open={isAutoReminderSetupOpen}
+        onOpenChange={setIsAutoReminderSetupOpen}
+        unpaidSummary={memberDuesSummary}
+      />
     </div>
   );
 };
