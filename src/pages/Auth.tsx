@@ -128,76 +128,94 @@ const Auth = () => {
           `88${standardLocal}`
         ])).filter(Boolean);
 
-        // A. Direct query in members table
-        try {
-          const { data: memberData } = await supabase
-            .from('members')
-            .select('email, phone')
-            .in('phone', candidatePhones)
-            .limit(1)
-            .maybeSingle();
+        const candidateIds = getCandidateMemberIds(cleanInput);
 
-          if (memberData?.email && !candidateEmails.includes(memberData.email.toLowerCase())) {
-            candidateEmails.unshift(memberData.email.toLowerCase());
-          } else {
-            const candidateIds = getCandidateMemberIds(cleanInput);
+        let matchedMember: any = null;
+
+        // A1. Direct query in members table by phone
+        try {
+          if (candidatePhones.length > 0) {
+            const { data: memberByPhone } = await supabase
+              .from('members')
+              .select('id, member_id, full_name, phone, email, user_id, status')
+              .in('phone', candidatePhones)
+              .limit(1)
+              .maybeSingle();
+
+            if (memberByPhone) {
+              matchedMember = memberByPhone;
+            }
+          }
+        } catch (e) {
+          console.debug('Member lookup by phone error:', e);
+        }
+
+        // A2. Direct query in members table by Member ID candidates (e.g. 2601, SB-2601, SB2601)
+        if (!matchedMember && candidateIds.length > 0) {
+          try {
             const { data: memberById } = await supabase
               .from('members')
-              .select('email, phone')
+              .select('id, member_id, full_name, phone, email, user_id, status')
               .in('member_id', candidateIds)
               .limit(1)
               .maybeSingle();
 
-            if (memberById?.email && !candidateEmails.includes(memberById.email.toLowerCase())) {
-              candidateEmails.unshift(memberById.email.toLowerCase());
-            } else if (memberById?.phone) {
-              const mDigits = memberById.phone.replace(/\D/g, '');
-              const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
-              if (mStd.length >= 10) {
-                const synth = `${mStd}@batighor.org`;
-                if (!candidateEmails.includes(synth)) {
-                  candidateEmails.unshift(synth);
-                }
-              }
+            if (memberById) {
+              matchedMember = memberById;
             }
+          } catch (e) {
+            console.debug('Member lookup by ID error:', e);
           }
-        } catch (e) {
-          console.debug('Member lookup error:', e);
         }
 
-        // A2. Direct query in cashiers / team table
-        try {
-          const { data: cashierData } = await supabase
-            .from('cashiers')
-            .select('email, phone')
-            .in('phone', candidatePhones)
-            .limit(1)
-            .maybeSingle();
+        // A3. Extract all unified candidate emails from matched member record
+        if (matchedMember) {
+          const mDigits = matchedMember.phone ? matchedMember.phone.replace(/\D/g, '') : '';
+          const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
+          
+          // 1. Mobile-based synthetic auth identity (Primary)
+          if (mStd.length >= 10) {
+            const phoneEmail = `${mStd}@batighor.org`;
+            if (!candidateEmails.includes(phoneEmail)) {
+              candidateEmails.push(phoneEmail);
+            }
+          }
 
-          if (cashierData?.email && !candidateEmails.includes(cashierData.email.toLowerCase())) {
-            candidateEmails.unshift(cashierData.email.toLowerCase());
+          // 2. Member personal email if registered
+          if (matchedMember.email && !candidateEmails.includes(matchedMember.email.toLowerCase().trim())) {
+            candidateEmails.push(matchedMember.email.toLowerCase().trim());
+          }
+
+          // 3. Member ID synthetic auth identity
+          if (matchedMember.member_id) {
+            const cleanMid = matchedMember.member_id.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const idEmail = `${cleanMid}@batighor.org`;
+            if (!candidateEmails.includes(idEmail)) {
+              candidateEmails.push(idEmail);
+            }
+          }
+        }
+
+        // A4. Direct query in cashiers / team table
+        try {
+          if (candidatePhones.length > 0) {
+            const { data: cashierData } = await supabase
+              .from('cashiers')
+              .select('email, phone')
+              .in('phone', candidatePhones)
+              .limit(1)
+              .maybeSingle();
+
+            if (cashierData?.email && !candidateEmails.includes(cashierData.email.toLowerCase().trim())) {
+              candidateEmails.push(cashierData.email.toLowerCase().trim());
+            }
           }
         } catch (e) {
           console.debug('Cashier lookup error:', e);
         }
 
-        // B. RPC lookup fallback
-        if (candidateEmails.length === 0) {
-          try {
-            const { data: rpcEmail } = await (supabase.rpc as any)(
-              'find_email_by_phone_or_member_id',
-              { p_identifier: cleanInput }
-            );
-            if (rpcEmail && typeof rpcEmail === 'string' && !candidateEmails.includes(rpcEmail.toLowerCase())) {
-              candidateEmails.unshift(rpcEmail.toLowerCase());
-            }
-          } catch {
-            // RPC fallback not available
-          }
-        }
-
-        // C. Fallback synthetic phone email
-        if (digitsOnly.length >= 10) {
+        // B. Fallback synthetic phone email if 10+ digits entered
+        if (standardLocal.length >= 10) {
           const synth = `${standardLocal}@batighor.org`;
           if (!candidateEmails.includes(synth)) {
             candidateEmails.push(synth);
@@ -231,6 +249,38 @@ const Auth = () => {
         }
         if (loginSuccessful) {
           break;
+        }
+      }
+
+      // C. Self-healing auto-provision fallback:
+      // If sign in failed but member is approved in database, ensure auth user is created with default password
+      if (!loginSuccessful && matchedMember && matchedMember.status === 'approved') {
+        const mDigits = matchedMember.phone ? matchedMember.phone.replace(/\D/g, '') : '';
+        const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
+        const autoTargetEmail = mStd.length >= 10 ? `${mStd}@batighor.org` : (matchedMember.email || null);
+
+        if (autoTargetEmail && (cleanPassword === 'member@123' || !matchedMember.user_id)) {
+          try {
+            const { data: provisionData } = await supabase.functions.invoke('create-member-user', {
+              body: {
+                email: autoTargetEmail,
+                password: cleanPassword,
+                memberId: matchedMember.id,
+                fullName: matchedMember.full_name,
+              },
+            });
+
+            if (provisionData?.success) {
+              // Immediately retry sign in with newly provisioned credentials
+              const retryRes = await signIn(autoTargetEmail, cleanPassword);
+              if (retryRes && !retryRes.error) {
+                lastAuthResult = retryRes;
+                loginSuccessful = true;
+              }
+            }
+          } catch (provisionErr) {
+            console.warn('Auto-provision during member login attempt failed:', provisionErr);
+          }
         }
       }
 
@@ -455,7 +505,7 @@ const Auth = () => {
                         <Input
                           id="login-identifier"
                           type="text"
-                          placeholder={language === 'bn' ? '০১৭১২xxxxxx / SB-001 / ইমেইল' : '01712xxxxxx / SB-001 / Email'}
+                          placeholder={language === 'bn' ? '০১৭১২xxxxxx / SB-2601 / 2601' : '01712xxxxxx / SB-2601 / 2601'}
                           value={identifier}
                           onChange={(e) => setIdentifier(e.target.value)}
                           className="pl-10 h-11 text-sm rounded-xl border-slate-300 dark:border-slate-700 focus:border-emerald-600 focus:ring-emerald-600 bg-white dark:bg-slate-900"
@@ -470,10 +520,10 @@ const Auth = () => {
                           )}
                         </div>
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
                         {language === 'bn' 
-                          ? 'নিবন্ধিত ১১ ডিজিটের মোবাইল নম্বর অথবা ইমেইল অ্যাড্রেস লিখুন' 
-                          : 'Enter your 11-digit mobile number or registered email'}
+                          ? 'নিবন্ধিত মোবাইল নম্বর (যেমন: 017...) অথবা সদস্য আইডি (যেমন: 2601 / SB-2601) লিখুন' 
+                          : 'Enter your registered mobile number or Member ID (e.g. 2601 / SB-2601)'}
                       </p>
                     </div>
 
@@ -483,6 +533,9 @@ const Auth = () => {
                         <Label htmlFor="login-password" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                           {language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}
                         </Label>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {language === 'bn' ? 'ডিফল্ট: member@123' : 'Default: member@123'}
+                        </span>
                       </div>
                       <div className="relative">
                         <Input

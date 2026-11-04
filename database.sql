@@ -352,6 +352,8 @@ BEGIN
   FROM public.members
   WHERE (
     member_id = p_identifier
+    OR member_id = ('SB-' || p_identifier)
+    OR replace(replace(member_id, '-', ''), '/', '') = replace(replace(p_identifier, '-', ''), '/', '')
     OR regexp_replace(phone, '\D', '', 'g') = v_clean_phone
     OR phone = p_identifier
   )

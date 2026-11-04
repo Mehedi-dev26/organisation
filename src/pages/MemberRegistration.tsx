@@ -291,7 +291,7 @@ const MemberRegistration: React.FC = () => {
   };
 
   const generateMemberId = async () => {
-    return await generateNextMemberId({ prefix: 'SB-', padLength: 3 });
+    return await generateNextMemberId({ prefix: 'SB-', padLength: 2 });
   };
 
   // Step 1 Validation & Next transition

@@ -255,12 +255,12 @@ const MembersManagement: React.FC = () => {
     });
   }, [members, selectedStatus, selectedMemberType, selectedBloodGroup, searchQuery]);
 
-  // One-time auto-migration for legacy member ID format to sequential SB-001
+  // One-time auto-migration for legacy member ID format to sequential SB-2601
   const migrationAttempted = useRef(false);
   useEffect(() => {
     if (!members || members.length === 0 || migrationAttempted.current || !isAdmin) return;
     const legacyMember = members.find(
-      (m) => m.member_id === 'SB-2026-2719' || m.member_id === 'SB-0001'
+      (m) => m.member_id === 'SB-001' || m.member_id === 'SB-2026-2719' || m.member_id === 'SB-0001' || m.member_id === '001'
     );
     if (legacyMember) {
       migrationAttempted.current = true;
@@ -269,18 +269,18 @@ const MembersManagement: React.FC = () => {
           const oldId = legacyMember.member_id;
           const { error: memberErr } = await supabase
             .from('members')
-            .update({ member_id: 'SB-001' })
+            .update({ member_id: 'SB-2601' })
             .eq('id', legacyMember.id);
 
           if (!memberErr) {
             // Also synchronize blood donors table
             await supabase
               .from('blood_donors')
-              .update({ member_id: 'SB-001' })
+              .update({ member_id: 'SB-2601' })
               .eq('member_id', oldId);
 
             refetch();
-            console.log(`Successfully migrated legacy member ${oldId} to SB-001`);
+            console.log(`Successfully migrated legacy member ${oldId} to SB-2601`);
           }
         } catch (e) {
           console.warn('Auto-migration error:', e);
@@ -290,10 +290,10 @@ const MembersManagement: React.FC = () => {
     }
   }, [members, isAdmin, refetch]);
 
-  // Generate Next Member ID (Sequential: SB-001, SB-002, ...)
+  // Generate Next Member ID with Year Serial (Sequential: SB-2601, SB-2602, ...)
   const generateMemberId = () => {
     const ids = members?.map((m) => m.member_id) || [];
-    return computeNextMemberId(ids, { prefix: 'SB-', padLength: 3 });
+    return computeNextMemberId(ids, { prefix: 'SB-', padLength: 2 });
   };
 
   // Mutations
@@ -474,10 +474,19 @@ const MembersManagement: React.FC = () => {
 
       if (!memberData) throw new Error('Member data not found');
 
-      // 2. Update member status to approved
+      // Ensure valid sequential member_id with year exists (e.g. SB-2601)
+      let finalMemberId = memberData.member_id;
+      if (!finalMemberId || finalMemberId === 'SB-001' || finalMemberId === 'SB-2026-2719' || finalMemberId === '001') {
+        finalMemberId = (finalMemberId === 'SB-001' || finalMemberId === '001') ? 'SB-2601' : generateMemberId();
+      }
+
+      // 2. Update member status to approved and member_id
       const { error: memberError } = await supabase
         .from('members')
-        .update({ status: 'approved' })
+        .update({ 
+          status: 'approved',
+          member_id: finalMemberId
+        })
         .eq('id', id);
       if (memberError) throw memberError;
 
@@ -485,7 +494,10 @@ const MembersManagement: React.FC = () => {
       if (memberData.blood_group) {
         try {
           const conditions: string[] = [];
-          if (memberData.member_id) conditions.push(`member_id.eq.${memberData.member_id}`);
+          if (finalMemberId) conditions.push(`member_id.eq.${finalMemberId}`);
+          if (memberData.member_id && memberData.member_id !== finalMemberId) {
+            conditions.push(`member_id.eq.${memberData.member_id}`);
+          }
           if (memberData.phone) conditions.push(`phone.eq.${memberData.phone}`);
 
           let existingDonor = null;
@@ -506,7 +518,7 @@ const MembersManagement: React.FC = () => {
                 full_name: memberData.full_name,
                 phone: memberData.phone || '',
                 blood_group: memberData.blood_group,
-                member_id: memberData.member_id,
+                member_id: finalMemberId,
                 is_member: true,
               })
               .eq('id', existingDonor.id);
@@ -521,7 +533,7 @@ const MembersManagement: React.FC = () => {
               upazila: memberData.upazila || 'নওগাঁ সদর',
               is_public_details: true,
               is_member: true,
-              member_id: memberData.member_id,
+              member_id: finalMemberId,
               status: 'approved',
               notes: 'সদস্য আবেদন অনুমোদনের সাথে সাথে স্বয়ংক্রিয়ভাবে সক্রিয়',
             });
@@ -531,11 +543,12 @@ const MembersManagement: React.FC = () => {
         }
       }
 
-      // 4. Automatically create login account if not yet linked
+      // 4. Automatically create login account linked to both Phone & Member ID
       const phoneDigits = memberData.phone ? memberData.phone.replace(/\D/g, '') : '';
-      const loginEmail = memberData.email || (phoneDigits.length >= 10 ? `${phoneDigits}@batighor.org` : null);
+      const standardPhoneEmail = phoneDigits.length >= 10 ? `${phoneDigits}@batighor.org` : null;
+      const loginEmail = standardPhoneEmail || memberData.email;
 
-      if (loginEmail && !memberData.user_id) {
+      if (loginEmail) {
         try {
           await supabase.functions.invoke('create-member-user', {
             body: {
@@ -560,10 +573,10 @@ const MembersManagement: React.FC = () => {
             memberData.full_name,
             {
               name: memberData.full_name,
-              member_id: memberData.member_id || '',
+              member_id: finalMemberId || '',
               password: defaultPassword,
               phone: memberData.phone,
-              login_link: 'batighor.org/login',
+              login_link: 'somoyerbatighor.org/login',
               org_name: 'সময়ের বাতিঘর',
             },
             'welcome',

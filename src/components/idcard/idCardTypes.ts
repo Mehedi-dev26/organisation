@@ -59,11 +59,17 @@ export const toBengaliDigits = (val: string | number | null | undefined): string
 };
 
 /**
- * Extracts a 2-digit serial number from member_id (e.g., "SB-001" -> "01", "12" -> "12")
+ * Extracts a 2-digit serial number from member_id (e.g., "SB-2601" -> "01", "SB-001" -> "01", "12" -> "12")
  */
 export const extractMemberSerial = (memberId: string | null | undefined): string => {
   if (!memberId) return '01';
-  const digitsMatch = memberId.match(/\d+/g);
+  const clean = memberId.trim().toUpperCase();
+  // e.g. SB-2601 or 2601 -> extracts serial part '01'
+  const yearSerialMatch = clean.match(/^(?:SB-?)?\d{2}(\d{2,})$/i);
+  if (yearSerialMatch) {
+    return yearSerialMatch[1];
+  }
+  const digitsMatch = clean.match(/\d+/g);
   if (digitsMatch && digitsMatch.length > 0) {
     const rawNumber = parseInt(digitsMatch[digitsMatch.length - 1], 10);
     return rawNumber < 10 ? `0${rawNumber}` : String(rawNumber);
