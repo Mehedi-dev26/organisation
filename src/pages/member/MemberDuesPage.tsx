@@ -377,27 +377,12 @@ const MemberDuesPage = () => {
                   : `Pending months: ${unpaidMonths.map(m => m.month_year).join(', ')}. Please clear your due to support organization activities.`}
               </p>
 
-              {/* Supported Payment Options Mini Pills */}
-              <div className="pt-2 flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-slate-500">পেমেন্ট মাধ্যম:</span>
-                {paymentMethods.map((pm) => (
-                  <button
-                    key={pm.id}
-                    type="button"
-                    onClick={() => handleCopy(pm.account_number, pm.id)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200/90 hover:border-emerald-500 text-slate-700 text-xs font-bold shadow-2xs hover:shadow-xs transition-all cursor-pointer group"
-                    title="নম্বর কপি করতে ক্লিক করুন"
-                  >
-                    <span className="capitalize text-slate-900">{pm.method_type}:</span>
-                    <span className="font-mono text-emerald-700">{pm.account_number}</span>
-                    {copiedId === pm.id ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-3 h-3 text-slate-400 group-hover:text-emerald-600" />
-                    )}
-                  </button>
-                ))}
-              </div>
+              {/* Clear Dues Prompt */}
+              <p className="text-xs text-slate-500 pt-1">
+                {language === 'bn' 
+                  ? 'নিচের বাটনে ক্লিক করে ডেডিকেটেড পেমেন্ট পেজে সরাসরি বিকাশ, নগদ বা রকেটের মাধ্যমে আপনার বকেয়া চাঁদা পরিশোধ করতে পারবেন।'
+                  : 'Click below to pay your dues directly via bKash, Nagad or Rocket.'}
+              </p>
             </div>
 
             {/* Right Buttons: Instant Pay Actions */}
@@ -405,19 +390,11 @@ const MemberDuesPage = () => {
               <Button
                 type="button"
                 onClick={() => openQuickPay(unpaidMonths[0])}
-                className="w-full sm:w-auto rounded-xl px-5 py-3 font-black text-xs sm:text-sm bg-[#0B6B3A] hover:bg-[#09572E] text-white shadow-md flex items-center justify-center gap-2"
+                className="w-full sm:w-auto rounded-xl px-6 py-3.5 font-black text-sm bg-[#0B6B3A] hover:bg-[#09572E] text-white shadow-md flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-[0.99]"
               >
                 <CreditCard className="w-4 h-4" />
-                <span>{language === 'bn' ? 'এখানেই পরিশোধ করুন' : 'Pay Directly Here'}</span>
+                <span>{language === 'bn' ? 'এখনই পরিশোধ করুন' : 'Pay Now'}</span>
               </Button>
-
-              <Link
-                to="/member/pay-dues"
-                className="w-full sm:w-auto rounded-xl px-5 py-3 font-bold text-xs sm:text-sm bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 shadow-2xs flex items-center justify-center gap-2 transition-all"
-              >
-                <span>{language === 'bn' ? 'গেটওয়ে পেজ' : 'Gateway Page'}</span>
-                <ArrowRight className="w-4 h-4 text-emerald-700" />
-              </Link>
             </div>
           </div>
         </div>
@@ -464,112 +441,225 @@ const MemberDuesPage = () => {
               <Loader2 className="h-8 w-8 animate-spin text-[#0B6B3A]" />
             </div>
           ) : duesData.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/70 border-slate-100">
-                    <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'মাস ও বছর' : 'Month & Year'}</TableHead>
-                    <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'চাঁদার পরিমাণ' : 'Amount'}</TableHead>
-                    <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'পরিশোধ স্ট্যাটাস' : 'Status'}</TableHead>
-                    <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'ট্রানজেকশন / তারিখ' : 'TrxID / Date'}</TableHead>
-                    <TableHead className="text-right font-bold text-slate-600 text-xs">{language === 'bn' ? 'অ্যাকশন' : 'Action'}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {duesData.map((due) => {
-                    const isSubmitted = !due.is_paid && due.payment_status === 'submitted';
-                    const isRejected = !due.is_paid && due.payment_status === 'rejected';
-                    const isUnpaid = !due.is_paid && !isSubmitted;
+            <>
+              {/* Desktop Table View (Hidden on Mobile) */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/70 border-slate-100">
+                      <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'মাস ও বছর' : 'Month & Year'}</TableHead>
+                      <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'চাঁদার পরিমাণ' : 'Amount'}</TableHead>
+                      <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'পরিশোধ স্ট্যাটাস' : 'Status'}</TableHead>
+                      <TableHead className="font-bold text-slate-600 text-xs">{language === 'bn' ? 'ট্রানজেকশন / তারিখ' : 'TrxID / Date'}</TableHead>
+                      <TableHead className="text-right font-bold text-slate-600 text-xs">{language === 'bn' ? 'অ্যাকশন' : 'Action'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {duesData.map((due) => {
+                      const isSubmitted = !due.is_paid && due.payment_status === 'submitted';
+                      const isRejected = !due.is_paid && due.payment_status === 'rejected';
+                      const isUnpaid = !due.is_paid && !isSubmitted;
 
-                    return (
-                      <TableRow key={due.id} className="hover:bg-slate-50/60 border-slate-100">
-                        <TableCell className="font-bold text-slate-900 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-emerald-600" />
-                            <span>{due.month_year}</span>
+                      return (
+                        <TableRow key={due.id} className="hover:bg-slate-50/60 border-slate-100">
+                          <TableCell className="font-bold text-slate-900 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-emerald-600" />
+                              <span>{due.month_year}</span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="font-black text-slate-800 text-sm">
+                            ৳{due.amount}
+                          </TableCell>
+
+                          <TableCell>
+                            {due.is_paid ? (
+                              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] font-bold">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                {language === 'bn' ? 'পরিশোধিত' : 'Paid'}
+                              </Badge>
+                            ) : isSubmitted ? (
+                              <Badge className="bg-amber-50 text-amber-700 border-amber-300 text-[11px] font-bold animate-pulse">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {language === 'bn' ? 'যাচাই অপেক্ষমাণ' : 'Pending Review'}
+                              </Badge>
+                            ) : isRejected ? (
+                              <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-[11px] font-bold">
+                                {language === 'bn' ? 'বাতিল' : 'Rejected'}
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-rose-50 text-rose-700 border-rose-200 text-[11px] font-bold">
+                                {language === 'bn' ? 'বকেয়া' : 'Unpaid'}
+                              </Badge>
+                            )}
+                          </TableCell>
+
+                          <TableCell className="text-xs text-slate-600">
+                            {due.paid_date ? (
+                              <span className="font-medium">{due.paid_date}</span>
+                            ) : due.transaction_id ? (
+                              <span className="font-mono text-emerald-700 font-bold bg-slate-100 px-2 py-0.5 rounded">
+                                Trx: {due.transaction_id}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">-</span>
+                            )}
+                          </TableCell>
+
+                          <TableCell className="text-right">
+                            {due.is_paid && due.transaction_id ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="rounded-lg text-[#0B6B3A] hover:bg-[#E6F4EA] gap-1.5 text-xs font-bold"
+                                onClick={() => handleViewVoucher(due)}
+                                disabled={isLoadingTransaction}
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                                <span>{language === 'bn' ? 'রসিদ দেখুন' : 'Receipt'}</span>
+                              </Button>
+                            ) : isUnpaid ? (
+                              <Button
+                                size="sm"
+                                className="rounded-lg bg-[#0B6B3A] hover:bg-[#09572E] text-white gap-1 text-xs font-bold shadow-xs"
+                                onClick={() => openQuickPay(due)}
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>{language === 'bn' ? 'পরিশোধ করুন' : 'Pay Now'}</span>
+                              </Button>
+                            ) : isSubmitted ? (
+                              <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-2 py-1 rounded-md">
+                                অপেক্ষমাণ
+                              </span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-lg text-rose-600 border-rose-200 hover:bg-rose-50 text-xs font-bold"
+                                onClick={() => openQuickPay(due)}
+                              >
+                                {language === 'bn' ? 'পুনরায় চেষ্টা' : 'Retry'}
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile-Optimized Card Stack (Zero Horizontal Scroll!) */}
+              <div className="block md:hidden divide-y divide-slate-100 p-2.5 sm:p-3 space-y-2.5">
+                {duesData.map((due) => {
+                  const isSubmitted = !due.is_paid && due.payment_status === 'submitted';
+                  const isRejected = !due.is_paid && due.payment_status === 'rejected';
+                  const isUnpaid = !due.is_paid && !isSubmitted;
+
+                  return (
+                    <div
+                      key={due.id}
+                      className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs space-y-2.5"
+                    >
+                      {/* Top: Month & Amount */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                            <Calendar className="w-4 h-4" />
                           </div>
-                        </TableCell>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm leading-tight">
+                              {due.month_year}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-medium">মাসিক চাঁদা</p>
+                          </div>
+                        </div>
 
-                        <TableCell className="font-black text-slate-800 text-sm">
+                        <span className="text-base font-black text-slate-900 font-mono">
                           ৳{due.amount}
-                        </TableCell>
+                        </span>
+                      </div>
 
-                        <TableCell>
+                      {/* Middle: Status & Trx/Date */}
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                        <div>
                           {due.is_paid ? (
-                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] font-bold">
+                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
                               <CheckCircle2 className="w-3 h-3 mr-1" />
                               {language === 'bn' ? 'পরিশোধিত' : 'Paid'}
                             </Badge>
                           ) : isSubmitted ? (
-                            <Badge className="bg-amber-50 text-amber-700 border-amber-300 text-[11px] font-bold animate-pulse">
+                            <Badge className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] font-bold animate-pulse">
                               <Clock className="w-3 h-3 mr-1" />
-                              {language === 'bn' ? 'যাচাই অপেক্ষমাণ' : 'Pending Review'}
+                              {language === 'bn' ? 'যাচাই অপেক্ষমাণ' : 'Pending'}
                             </Badge>
                           ) : isRejected ? (
-                            <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-[11px] font-bold">
+                            <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-[10px] font-bold">
                               {language === 'bn' ? 'বাতিল' : 'Rejected'}
                             </Badge>
                           ) : (
-                            <Badge className="bg-rose-50 text-rose-700 border-rose-200 text-[11px] font-bold">
+                            <Badge className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-bold">
                               {language === 'bn' ? 'বকেয়া' : 'Unpaid'}
                             </Badge>
                           )}
-                        </TableCell>
+                        </div>
 
-                        <TableCell className="text-xs text-slate-600">
+                        <div className="text-right">
                           {due.paid_date ? (
-                            <span className="font-medium">{due.paid_date}</span>
+                            <span className="text-[11px] text-slate-500 font-medium">{due.paid_date}</span>
                           ) : due.transaction_id ? (
-                            <span className="font-mono text-emerald-700 font-bold bg-slate-100 px-2 py-0.5 rounded">
+                            <span className="font-mono text-[11px] text-emerald-700 font-bold bg-slate-100 px-1.5 py-0.5 rounded">
                               Trx: {due.transaction_id}
                             </span>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-[11px] text-slate-400">-</span>
                           )}
-                        </TableCell>
+                        </div>
+                      </div>
 
-                        <TableCell className="text-right">
-                          {due.is_paid && due.transaction_id ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="rounded-lg text-[#0B6B3A] hover:bg-[#E6F4EA] gap-1.5 text-xs font-bold"
-                              onClick={() => handleViewVoucher(due)}
-                              disabled={isLoadingTransaction}
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                              <span>{language === 'bn' ? 'রসিদ দেখুন' : 'Receipt'}</span>
-                            </Button>
-                          ) : isUnpaid ? (
-                            <Button
-                              size="sm"
-                              className="rounded-lg bg-[#0B6B3A] hover:bg-[#09572E] text-white gap-1 text-xs font-bold shadow-xs"
-                              onClick={() => openQuickPay(due)}
-                            >
-                              <CreditCard className="w-3.5 h-3.5" />
-                              <span>{language === 'bn' ? 'পরিশোধ করুন' : 'Pay Now'}</span>
-                            </Button>
-                          ) : isSubmitted ? (
-                            <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-2 py-1 rounded-md">
-                              অপেক্ষমাণ
-                            </span>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="rounded-lg text-rose-600 border-rose-200 hover:bg-rose-50 text-xs font-bold"
-                              onClick={() => openQuickPay(due)}
-                            >
-                              {language === 'bn' ? 'পুনরায় চেষ্টা' : 'Retry'}
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                      {/* Bottom Action Button */}
+                      <div className="pt-1">
+                        {due.is_paid && due.transaction_id ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full rounded-xl text-[#0B6B3A] border-emerald-300 hover:bg-[#E6F4EA] gap-1.5 text-xs font-bold h-9"
+                            onClick={() => handleViewVoucher(due)}
+                            disabled={isLoadingTransaction}
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? 'রসিদ প্রিন্ট ও ডাউনলোড' : 'View Receipt'}</span>
+                          </Button>
+                        ) : isUnpaid ? (
+                          <Button
+                            size="sm"
+                            className="w-full rounded-xl bg-[#0B6B3A] hover:bg-[#09572E] text-white gap-1.5 text-xs font-bold shadow-xs h-9 cursor-pointer"
+                            onClick={() => openQuickPay(due)}
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? 'এখনই পরিশোধ করুন' : 'Pay Now'}</span>
+                          </Button>
+                        ) : isSubmitted ? (
+                          <div className="w-full py-1.5 rounded-xl bg-amber-50 text-amber-800 text-center text-xs font-bold border border-amber-200">
+                            পেমেন্ট যাচাইয়ের অপেক্ষায় রয়েছে
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full rounded-xl text-rose-600 border-rose-200 hover:bg-rose-50 text-xs font-bold h-9"
+                            onClick={() => openQuickPay(due)}
+                          >
+                            {language === 'bn' ? 'পুনরায় চেষ্টা করুন' : 'Retry'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <div className="text-center py-12 text-slate-400">
               <CreditCard className="w-12 h-12 mx-auto stroke-1 text-slate-300 mb-2" />

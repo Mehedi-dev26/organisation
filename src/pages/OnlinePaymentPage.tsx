@@ -123,22 +123,22 @@ export const OnlinePaymentPage = () => {
 
   if (isDueLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#EDF2ED] text-slate-800">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0B6B3A]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900/95 dark:bg-slate-950 flex flex-col justify-center items-center py-6 sm:py-10 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#EDF2ED] via-[#F4F6F4] to-[#E8EFE8] flex flex-col justify-start sm:justify-center items-center py-2 sm:py-8 px-2 sm:px-4">
       {/* Background soft ambient glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Centered Mobile-Responsive Container (Exact Deshi Pay / Secure Gateway format) */}
-      <div className="w-full max-w-md relative z-10">
+      {/* Centered Mobile-Responsive Container */}
+      <div className="w-full max-w-lg relative z-10">
         
         {/* Conditional Gateway Views */}
         {!activeMethod && (

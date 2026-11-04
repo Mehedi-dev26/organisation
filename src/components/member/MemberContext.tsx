@@ -186,7 +186,8 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     .filter((d) => d.is_paid)
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
-  const unpaidMonths = duesData.filter((d) => !d.is_paid);
+  // Unpaid months exclude already submitted/reviewing payments so the warning notice hides immediately
+  const unpaidMonths = duesData.filter((d) => !d.is_paid && d.payment_status !== 'submitted');
   const unpaidDues = unpaidMonths.reduce((sum, d) => sum + Number(d.amount), 0);
   const totalDues = paidDues + unpaidDues;
 

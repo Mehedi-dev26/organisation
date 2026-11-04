@@ -178,20 +178,20 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
   };
 
   return (
-    <div className={`w-full max-w-sm sm:max-w-md mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden font-sans transition-all ${className}`}>
+    <div className={`w-full max-w-lg mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-[#DCE4DC] overflow-hidden font-sans transition-all ${className}`}>
       
       {/* Top Mobile-styled Navigation Bar */}
-      <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/50">
+      <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/90">
         <button
           type="button"
           onClick={() => navigate('/member/dues')}
-          className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200/80 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+          className="w-9 h-9 rounded-full bg-white shadow-xs border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           title="চাঁদা তালিকায় ফিরে যান"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold">
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-[11px] font-bold">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
           <span>Secure Gateway • সময়ের বাতিঘর</span>
         </div>
@@ -199,7 +199,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
         <button
           type="button"
           onClick={handleExit}
-          className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200/80 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+          className="w-9 h-9 rounded-full bg-white shadow-xs border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           title="বন্ধ করুন"
         >
           <X className="w-4 h-4" />
@@ -207,7 +207,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
       </div>
 
       {/* Merchant / Organization Branding Header */}
-      <div className="pt-6 pb-3 px-6 text-center space-y-2.5">
+      <div className="pt-5 pb-3 px-4 sm:px-6 text-center space-y-2">
         <div className="relative inline-block">
           <div className="w-16 h-16 rounded-full mx-auto p-1 bg-gradient-to-tr from-emerald-500 via-teal-500 to-[#0B6B3A] shadow-md shadow-emerald-500/20">
             <img
@@ -220,10 +220,10 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
         </div>
 
         <div>
-          <h2 className="text-lg font-heading font-extrabold text-slate-900 dark:text-slate-100">
+          <h2 className="text-lg sm:text-xl font-heading font-extrabold text-slate-900">
             সময়ের বাতিঘর
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          <p className="text-xs text-slate-500 font-medium">
             একটি সামাজিক স্বেচ্ছাসেবী সংগঠন (চাঁদা পেমেন্ট পোর্টাল)
           </p>
         </div>
@@ -233,7 +233,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           <button
             type="button"
             onClick={() => navigate('/contact')}
-            className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors shadow-xs cursor-pointer"
+            className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors shadow-2xs cursor-pointer"
             title="সহায়তা / হেল্পলাইন"
           >
             <Headphones className="w-4 h-4" />
@@ -242,7 +242,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition-colors shadow-xs cursor-pointer"
+            className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition-colors shadow-2xs cursor-pointer"
             title="রিফ্রেশ"
           >
             <RotateCcw className="w-4 h-4" />
@@ -251,7 +251,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           <button
             type="button"
             onClick={() => navigate('/about')}
-            className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
+            className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer"
             title="সংগঠনের তথ্য"
           >
             <Info className="w-4 h-4" />
@@ -260,9 +260,9 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
       </div>
 
       {/* Main Payment Selection Box */}
-      <div className="px-5 pb-6 space-y-3.5">
+      <div className="px-3 sm:px-5 pb-6 space-y-3.5">
         
-        {/* Dark Pill Header Banner (Exact layout of Image 1) */}
+        {/* Header Banner */}
         <div className="w-full py-3 px-4 rounded-xl bg-[#1E293B] text-white text-center shadow-md">
           <p className="text-sm font-bold tracking-wide">
             পেমেন্ট পদ্ধতি নির্বাচন করুন
@@ -270,14 +270,14 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
         </div>
 
         {/* Subtitle Pill Banner */}
-        <div className="w-full py-2 px-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center flex items-center justify-center gap-2 text-slate-700 dark:text-slate-300">
+        <div className="w-full py-2 px-4 rounded-xl bg-slate-50 border border-slate-200 text-center flex items-center justify-center gap-2 text-slate-700">
           <Smartphone className="w-4 h-4 text-blue-600" />
           <span className="text-xs font-bold tracking-wide">Mobile Banking</span>
         </div>
 
-        {/* Live Active Gateways Grid (Only active ones rendered) */}
+        {/* Live Active Gateways Grid (Optimized for Mobile with no wasted margin) */}
         {activeGateways.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 pt-0.5">
             {activeGateways.map((method) => {
               const isSelected = selectedMethod === method.id;
               const customLogoUrl = customLogos[method.id];
@@ -287,15 +287,15 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
                   key={method.id}
                   type="button"
                   onClick={() => setSelectedMethod(method.id)}
-                  className={`relative p-3 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center text-center cursor-pointer group ${
+                  className={`relative p-3.5 sm:p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center text-center cursor-pointer group ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/30 ring-2 ring-blue-500/30 shadow-md'
-                      : 'border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800/60 hover:border-slate-300 hover:shadow-xs'
+                      ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/30 shadow-md'
+                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
                   }`}
                 >
                   {/* Red LIVE Badge on Top-Right */}
                   <div className="absolute top-2 right-2 flex items-center gap-1">
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-red-600 text-white shadow-xs">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-red-600 text-white shadow-2xs">
                       LIVE
                     </span>
                   </div>
@@ -307,21 +307,23 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
                     </div>
                   )}
 
-                  {/* Brand Logo (Official Uploaded Logo OR Vector Fallback) */}
-                  <div className="w-12 h-12 flex items-center justify-center my-0.5 group-hover:scale-105 transition-transform">
+                  {/* Brand Logo (Larger on Mobile) */}
+                  <div className="w-14 h-14 flex items-center justify-center my-0.5 group-hover:scale-105 transition-transform">
                     {customLogoUrl ? (
                       <img
                         src={customLogoUrl}
                         alt={method.name}
-                        className="w-10 h-10 object-contain drop-shadow-xs"
+                        className="w-12 h-12 object-contain drop-shadow-2xs"
                       />
                     ) : (
-                      method.logo
+                      <div className="scale-110 flex items-center justify-center">
+                        {method.logo}
+                      </div>
                     )}
                   </div>
 
                   {/* Brand Label */}
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">
+                  <span className="text-xs sm:text-sm font-bold text-slate-800 mt-1">
                     {method.name}
                   </span>
                 </button>
@@ -329,24 +331,24 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
             })}
           </div>
         ) : (
-          <div className="p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 text-center space-y-2">
+          <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
             <AlertCircle className="w-8 h-8 text-amber-600 mx-auto" />
-            <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+            <p className="text-xs font-bold text-amber-900">
               বর্তমানে কোনো অনলাইন পেমেন্ট গেটওয়ে সক্রিয় নেই।
             </p>
-            <p className="text-[11px] text-amber-700 dark:text-amber-300">
+            <p className="text-[11px] text-amber-700">
               অনুগ্রহ করে অ্যাডমিন প্যানেল থেকে গেটওয়ে সক্রিয় করুন অথবা অ্যাডমিনের সাথে যোগাযোগ করুন।
             </p>
           </div>
         )}
 
         {/* Automatic Prefilled Dues Summary */}
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-white dark:from-slate-800/80 dark:to-slate-800/40 border border-emerald-200/80 dark:border-slate-700 flex items-center justify-between shadow-xs">
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-white border border-emerald-200/80 flex items-center justify-between shadow-2xs">
           <div className="min-w-0 pr-2">
-            <span className="text-[10px] font-extrabold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider block">
+            <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block">
               {language === 'bn' ? 'চাঁদার বিবরণ' : 'Dues Purpose'}
             </span>
-            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+            <p className="text-xs sm:text-sm font-bold text-slate-800 truncate mt-0.5">
               {purpose}
             </p>
           </div>
@@ -354,7 +356,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               {language === 'bn' ? 'প্রদেয় পরিমাণ' : 'Amount Due'}
             </span>
-            <span className="text-lg font-black text-emerald-600 font-mono">
+            <span className="text-lg sm:text-xl font-black text-emerald-600 font-mono">
               ৳{amount.toFixed(2)}
             </span>
           </div>
@@ -365,7 +367,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           type="button"
           onClick={handlePayNow}
           disabled={activeGateways.length === 0}
-          className="w-full mt-1 py-3.5 px-6 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none text-white font-extrabold text-base shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          className="w-full mt-1.5 py-4 px-6 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none text-white font-extrabold text-base sm:text-lg shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <span>Pay ৳{amount.toFixed(2)}</span>
         </button>

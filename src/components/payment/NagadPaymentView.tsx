@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { NagadLogo } from './PaymentLogos';
 import { useSiteLogo } from '@/hooks/useSiteLogo';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { validateTransactionId } from '@/lib/trxValidation';
 import { 
   X, 
   Copy, 
@@ -11,10 +13,13 @@ import {
   Clock, 
   CheckCircle2, 
   ShieldCheck, 
-  RotateCcw,
-  Loader2,
+  RotateCcw, 
+  Loader2, 
   ShoppingCart,
-  Smartphone
+  Smartphone,
+  Home,
+  Receipt,
+  Sparkles
 } from 'lucide-react';
 
 interface NagadPaymentViewProps {
@@ -43,6 +48,7 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
   const { logoUrl } = useSiteLogo();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [lang, setLang] = useState<'bn' | 'en'>('bn');
   const [phase, setPhase] = useState<'account' | 'verify' | 'success'>('account');
@@ -98,10 +104,11 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
   };
 
   const handleVerifyTrxId = async () => {
-    if (!trxId.trim() || trxId.trim().length < 4) {
+    const validation = validateTransactionId('nagad', trxId);
+    if (!validation.isValid) {
       toast({
-        title: 'ভুল TrxID',
-        description: 'অনুগ্রহ করে নগদ থেকে প্রাপ্ত সঠিক ট্রানজেকশন আইডি দিন',
+        title: 'ভুল ট্রানজেকশন আইডি',
+        description: validation.message || 'অনুগ্রহ করে নগদ থেকে প্রাপ্ত সঠিক ট্রানজেকশন আইডি দিন',
         variant: 'destructive',
       });
       return;
@@ -196,7 +203,7 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-sm sm:max-w-md mx-auto bg-gradient-to-b from-[#B8191F] via-[#9E141A] to-[#6E0B10] rounded-3xl shadow-2xl text-white overflow-hidden font-sans relative border-4 border-[#3a0609] animate-in fade-in zoom-in-95 duration-200">
+    <div className="w-full max-w-lg mx-auto bg-gradient-to-b from-[#B8191F] via-[#9E141A] to-[#6E0B10] rounded-2xl sm:rounded-3xl shadow-xl text-white overflow-hidden font-sans relative border-2 border-red-900/60 animate-in fade-in zoom-in-95 duration-200">
       
       {/* Top Language Toggle Pill (Exact layout of Reference Image 4) */}
       <div className="pt-4 px-5 flex items-center justify-between">
@@ -399,42 +406,79 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
         </div>
       )}
 
-      {/* ================= PHASE 3: SUCCESS CONFIRMATION ================= */}
+      {/* ================= PHASE 3: ADVANCED SUCCESS & THANK YOU SCREEN ================= */}
       {phase === 'success' && (
-        <div className="p-8 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-white/20 text-yellow-300 mx-auto flex items-center justify-center shadow-lg border border-white/30">
-            <CheckCircle2 className="w-10 h-10" />
+        <div className="p-6 sm:p-8 text-center space-y-5 bg-gradient-to-b from-black/40 via-black/25 to-black/40">
+          <div className="relative inline-block">
+            <div className="w-20 h-20 rounded-full bg-white/20 text-yellow-300 mx-auto flex items-center justify-center shadow-lg border border-white/30 ring-8 ring-white/10">
+              <CheckCircle2 className="w-12 h-12 text-yellow-300" />
+            </div>
+            <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-slate-900 shadow-md">
+              <Sparkles className="w-3.5 h-3.5" />
+            </span>
           </div>
 
-          <div>
-            <h3 className="text-xl font-bold text-white">নগদ পেমেন্ট সফলভাবে গৃহীত!</h3>
-            <p className="text-xs text-white/80 mt-1">
-              TrxID: <span className="font-mono font-bold text-yellow-300">{trxId}</span>
+          <div className="space-y-2">
+            <span className="inline-block px-3 py-1 rounded-full bg-yellow-400 text-slate-900 text-xs font-black tracking-wide">
+              পেমেন্ট রিকোয়েস্ট সফল
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
+              আপনাকে আন্তরিক ধন্যবাদ!
+            </h3>
+            <p className="text-xs sm:text-sm text-white/80 max-w-sm mx-auto leading-relaxed">
+              আপনার নগদ পেমেন্ট রিকোয়েস্ট সফলভাবে জমা হয়েছে। আমাদের অ্যাডমিন/ক্যাশিয়ার রিভিউ করার পর আপনার চাঁদা ভেরিফাই সম্পন্ন হবে এবং নিশ্চিতকরণ মেসেজ চলে যাবে।
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-black/30 border border-white/20 text-xs text-left space-y-2">
-            <div className="flex justify-between">
-              <span className="text-white/70">পরিমাণ:</span>
-              <span className="font-bold text-yellow-300">BDT {amount.toFixed(2)}</span>
+          {/* Payment Receipt Summary Card */}
+          <div className="p-4 rounded-2xl bg-black/40 border border-white/20 text-xs text-left space-y-2.5 shadow-md">
+            <div className="flex justify-between items-center border-b border-white/15 pb-2">
+              <span className="text-white/70 font-medium">চাঁদার পরিমাণ:</span>
+              <span className="text-lg font-black text-yellow-300 font-mono">BDT {amount.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-white/70">ইনভয়েস:</span>
-              <span className="font-mono text-white">{invoiceNo}</span>
+            <div className="flex justify-between items-center">
+              <span className="text-white/70">ট্রানজেকশন আইডি (TrxID):</span>
+              <span className="font-mono font-bold text-yellow-300 bg-white/15 px-2 py-0.5 rounded border border-white/20">
+                {trxId}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-white/70">স্ট্যাটাস:</span>
-              <span className="font-bold text-yellow-300">যাচাইয়ের জন্য অপেক্ষমাণ</span>
+            <div className="flex justify-between items-center">
+              <span className="text-white/70">ইনভয়েস নম্বর:</span>
+              <span className="font-mono text-white/90">{invoiceNo}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-white/70">পেমেন্ট মেথড:</span>
+              <span className="font-bold text-yellow-300">নগদ (Nagad)</span>
+            </div>
+            <div className="flex justify-between items-center pt-1 border-t border-white/15">
+              <span className="text-white/70">বর্তমান স্ট্যাটাস:</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-yellow-400/20 text-yellow-300 border border-yellow-400/40">
+                <Clock className="w-3 h-3 text-yellow-300 animate-spin" />
+                <span>যাচাই ও রিভিউ অপেক্ষমাণ</span>
+              </span>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-3 rounded-xl bg-white text-[#9E141A] font-extrabold text-sm hover:bg-slate-100 transition-colors shadow-md"
-          >
-            বন্ধ করুন
-          </button>
+          {/* Action Buttons */}
+          <div className="space-y-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => navigate('/member')}
+              className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-[#9E141A] font-black text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.99] cursor-pointer"
+            >
+              <Home className="w-4 h-4 text-[#9E141A]" />
+              <span>ড্যাশবোর্ডে ফিরে যান</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/member/dues')}
+              className="w-full py-3 px-4 rounded-xl bg-black/30 hover:bg-black/50 border border-white/30 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <Receipt className="w-3.5 h-3.5 text-yellow-300" />
+              <span>চাঁদা বিবরণ ও রসিদ তালিকা দেখুন</span>
+            </button>
+          </div>
         </div>
       )}
 

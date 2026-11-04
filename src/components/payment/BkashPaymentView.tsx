@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BkashLogo } from './PaymentLogos';
 import { useSiteLogo } from '@/hooks/useSiteLogo';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { validateTransactionId } from '@/lib/trxValidation';
 import { 
   X, 
   Copy, 
@@ -14,7 +16,10 @@ import {
   ShieldCheck, 
   RotateCcw,
   Loader2,
-  Smartphone
+  Smartphone,
+  Home,
+  Receipt,
+  Sparkles
 } from 'lucide-react';
 
 interface BkashPaymentViewProps {
@@ -43,6 +48,7 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
   const { logoUrl } = useSiteLogo();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Phase: 'account' (Image 2) or 'verify' (Image 3) or 'success'
   const [phase, setPhase] = useState<'account' | 'verify' | 'success'>('account');
@@ -98,10 +104,11 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
   };
 
   const handleVerifyTrxId = async () => {
-    if (!trxId.trim() || trxId.trim().length < 4) {
+    const validation = validateTransactionId('bkash', trxId);
+    if (!validation.isValid) {
       toast({
-        title: 'ভুল TrxID',
-        description: 'অনুগ্রহ করে বিকাশ থেকে প্রাপ্ত সঠিক ট্রানজেকশন আইডি দিন',
+        title: 'ভুল ট্রানজেকশন আইডি',
+        description: validation.message || 'অনুগ্রহ করে সঠিক বিকাশ ট্রানজেকশন আইডি দিন',
         variant: 'destructive',
       });
       return;
@@ -197,7 +204,7 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-sm sm:max-w-md mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden font-sans relative animate-in fade-in zoom-in-95 duration-200">
+    <div className="w-full max-w-lg mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-200/90 overflow-hidden font-sans relative animate-in fade-in zoom-in-95 duration-200">
       
       {/* Top Header with bKash Logo and Close Icon */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-slate-100">
@@ -416,46 +423,79 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
         </div>
       )}
 
-      {/* ================= PHASE 3: SUCCESS CONFIRMATION ================= */}
+      {/* ================= PHASE 3: ADVANCED SUCCESS & THANK YOU SCREEN ================= */}
       {phase === 'success' && (
-        <div className="p-8 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-md">
-            <CheckCircle2 className="w-10 h-10" />
+        <div className="p-6 sm:p-8 text-center space-y-5 bg-gradient-to-b from-emerald-50/50 via-white to-white">
+          <div className="relative inline-block">
+            <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-lg ring-8 ring-emerald-50">
+              <CheckCircle2 className="w-12 h-12 text-emerald-600" />
+            </div>
+            <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-slate-900 shadow-md">
+              <Sparkles className="w-3.5 h-3.5" />
+            </span>
           </div>
 
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">পেমেন্ট রিকোয়েস্ট সফল!</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              আপনার TrxID (<span className="font-mono font-bold text-[#E2136E]">{trxId}</span>) সিস্টেমে সংরক্ষিত হয়েছে।
+          <div className="space-y-2">
+            <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black tracking-wide">
+              পেমেন্ট রিকোয়েস্ট সফল
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 font-heading">
+              আপনাকে আন্তরিক ধন্যবাদ!
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+              আপনার চাঁদা পরিশোধের তথ্যটি সফলভাবে সিস্টেমে জমা হয়েছে। আমাদের অ্যাডমিন/ক্যাশিয়ার রিভিউ করার পর আপনার চাঁদা ভেরিফাই সম্পন্ন হবে এবং আপনাকে মেসেজ পাঠিয়ে জানিয়ে দেওয়া হবে।
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-left space-y-2">
-            <div className="flex justify-between">
-              <span className="text-slate-500">পরিমাণ:</span>
-              <span className="font-bold text-slate-800">৳{amount.toFixed(2)}</span>
+          {/* Payment Receipt Summary Card */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-left space-y-2.5 shadow-2xs">
+            <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+              <span className="text-slate-500 font-medium">চাঁদার পরিমাণ:</span>
+              <span className="text-lg font-black text-emerald-700 font-mono">৳{amount.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">ইনভয়েস:</span>
-              <span className="font-mono text-slate-800">{invoiceNo}</span>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">ট্রানজেকশন আইডি (TrxID):</span>
+              <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                {trxId}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">মেথড:</span>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">ইনভয়েস নম্বর:</span>
+              <span className="font-mono text-slate-700">{invoiceNo}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">পেমেন্ট মেথড:</span>
               <span className="font-bold text-[#E2136E]">বিকাশ (bKash)</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">স্ট্যাটাস:</span>
-              <span className="font-bold text-amber-600">যাচাইয়ের জন্য অপেক্ষমাণ</span>
+            <div className="flex justify-between items-center pt-1 border-t border-slate-200/60">
+              <span className="text-slate-500">বর্তমান স্ট্যাটাস:</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-800">
+                <Clock className="w-3 h-3 text-amber-600 animate-spin" />
+                <span>যাচাই ও রিভিউ অপেক্ষমাণ</span>
+              </span>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-3 rounded-xl bg-[#0B6B3A] text-white font-bold text-sm hover:bg-[#09542e] transition-colors"
-          >
-            সম্পন্ন করুন
-          </button>
+          {/* Action Buttons */}
+          <div className="space-y-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => navigate('/member')}
+              className="w-full py-3.5 px-4 rounded-xl bg-[#0B6B3A] hover:bg-[#09542e] text-white font-black text-sm shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.99] cursor-pointer"
+            >
+              <Home className="w-4 h-4" />
+              <span>ড্যাশবোর্ডে ফিরে যান</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/member/dues')}
+              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <Receipt className="w-3.5 h-3.5 text-emerald-700" />
+              <span>চাঁদা বিবরণ ও রসিদ তালিকা দেখুন</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

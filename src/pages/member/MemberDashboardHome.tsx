@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMember } from '@/components/member/MemberContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,6 +51,7 @@ const MemberDashboardHome = () => {
     unpaidMonths
   } = useMember();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Blood donation update modal state
   const [isBloodDialogOpen, setIsBloodDialogOpen] = useState(false);
@@ -130,6 +132,8 @@ const MemberDashboardHome = () => {
       }
 
       await refetchBloodDonor();
+      queryClient.invalidateQueries({ queryKey: ['member-blood-donor-info'] });
+      queryClient.invalidateQueries({ queryKey: ['member-profile'] });
       setIsBloodDialogOpen(false);
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
@@ -326,62 +330,47 @@ const MemberDashboardHome = () => {
         </div>
       )}
 
-      {/* 3. Blood Donation Status Highlight Card */}
-      <Card className="rounded-[24px] border border-rose-100 shadow-[0_4px_25px_rgba(225,29,72,0.04)] overflow-hidden bg-white relative">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-rose-100/30 via-rose-50/10 to-transparent pointer-events-none rounded-bl-full" />
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-              <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <Droplet className="w-6 h-6 stroke-[2.4] fill-rose-500/20 text-rose-600" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <h3 className="font-heading font-black text-base sm:text-lg text-slate-800">
-                    {language === 'bn' ? 'রক্তদানের তথ্য ও প্রস্তুতি' : 'Blood Donation Status'}
-                  </h3>
-                  <Badge className="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-extrabold text-xs">
-                    {donorBloodGroup}
-                  </Badge>
-                  <Badge 
-                    className={`text-xs font-bold ${
-                      donorEligibility.isReady 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}
-                  >
-                    {donorEligibility.isReady ? (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        {language === 'bn' ? 'রক্তদানের জন্য প্রস্তুত' : 'Ready to Donate'}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-amber-600" />
-                        {language === 'bn' ? donorEligibility.labelBn : donorEligibility.labelEn}
-                      </span>
-                    )}
-                  </Badge>
+      {/* 3. Blood Donation Notice - Auto-Hides immediately once last donation date is updated */}
+      {!bloodDonorInfo?.last_donated && (
+        <Card className="rounded-[24px] border-2 border-rose-200 shadow-[0_4px_25px_rgba(225,29,72,0.06)] overflow-hidden bg-gradient-to-r from-rose-50/70 via-white to-pink-50/40 relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-rose-200/40 via-rose-50/20 to-transparent pointer-events-none rounded-bl-full" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-rose-100/80 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Droplet className="w-6 h-6 stroke-[2.4] fill-rose-500/20 text-rose-600" />
                 </div>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                  {language === 'bn' ? 'সর্বশেষ রক্তদান: ' : 'Last Donated: '}
-                  <span className="font-bold text-slate-800">
-                    {bloodDonorInfo?.last_donated ? formatBengaliDate(bloodDonorInfo.last_donated) : (language === 'bn' ? 'এখনও তথ্য যুক্ত করা হয়নি' : 'Not recorded yet')}
-                  </span>
-                </p>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black tracking-wide">
+                      {language === 'bn' ? 'জরুরি নোটিশ' : 'Notice'}
+                    </span>
+                    <h3 className="font-heading font-black text-base sm:text-lg text-slate-800">
+                      {language === 'bn' ? 'সর্বশেষ রক্তদানের তথ্য আপডেট করুন' : 'Update Blood Donation Info'}
+                    </h3>
+                    <Badge className="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-extrabold text-xs">
+                      {donorBloodGroup}
+                    </Badge>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                    {language === 'bn' 
+                      ? 'আপনি সর্বশেষ কবে রক্তদান করেছেন তা এখনও আপডেট করেননি। জরুরি প্রয়োজনে রোগীর জীবন বাঁচাতে আপনার রক্তদানের সঠিক তারিখ যুক্ত করুন।' 
+                      : 'Please record your last donation date to help emergency patients in need.'}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <Button
-              onClick={handleOpenBloodDialog}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#0B6B3A] hover:bg-[#08522c] text-white text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-            >
-              <Heart className="w-4 h-4 fill-white/30" />
-              <span>{language === 'bn' ? 'সর্বশেষ রক্তদান আপডেট' : 'Update Donation'}</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <Button
+                onClick={handleOpenBloodDialog}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <Heart className="w-4 h-4 fill-white/30" />
+                <span>{language === 'bn' ? 'এখনই আপডেট করুন' : 'Update Now'}</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 4. Quick Action Navigation Cards (2-column on mobile, 4-column on desktop) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
