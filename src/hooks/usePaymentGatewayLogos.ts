@@ -13,6 +13,7 @@ export interface PaymentGatewayLogos {
 }
 
 export const SETTINGS_KEY_PAYMENT_LOGOS = 'payment_gateway_logos';
+const LOCAL_STORAGE_KEY = 'batighor_payment_logos';
 
 export const usePaymentGatewayLogos = () => {
   const queryClient = useQueryClient();
@@ -20,6 +21,18 @@ export const usePaymentGatewayLogos = () => {
   const { data: logos = {}, isLoading, refetch } = useQuery<PaymentGatewayLogos>({
     queryKey: [SETTINGS_KEY_PAYMENT_LOGOS],
     queryFn: async () => {
+      // 1. Read from localStorage cache first for zero-delay UI render
+      let cachedLogos: PaymentGatewayLogos = {};
+      try {
+        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (stored) {
+          cachedLogos = JSON.parse(stored);
+        }
+      } catch (e) {
+        // ignore cache parse errors
+      }
+
+      // 2. Fetch authoritative database state from site_settings
       try {
         const { data, error } = await supabase
           .from('site_settings')
@@ -28,14 +41,22 @@ export const usePaymentGatewayLogos = () => {
           .maybeSingle();
 
         if (error) {
-          console.warn('Error fetching payment gateway logos:', error);
-          return {};
+          console.warn('Error fetching payment gateway logos from site_settings:', error);
+          return cachedLogos;
         }
 
-        return (data?.value as PaymentGatewayLogos) || {};
+        const remoteValue = (data?.value as PaymentGatewayLogos) || {};
+        const merged = { ...cachedLogos, ...remoteValue };
+
+        // Keep local cache fresh
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+        } catch (e) {}
+
+        return merged;
       } catch (err) {
         console.warn('Error loading payment logos:', err);
-        return {};
+        return cachedLogos;
       }
     },
     staleTime: 1000 * 60 * 2, // 2 mins cache
@@ -43,31 +64,30 @@ export const usePaymentGatewayLogos = () => {
 
   const saveLogosMutation = useMutation({
     mutationFn: async (updatedLogos: PaymentGatewayLogos) => {
-      const { data: existing } = await supabase
-        .from('site_settings')
-        .select('id')
-        .eq('key', SETTINGS_KEY_PAYMENT_LOGOS)
-        .maybeSingle();
+      // 1. Immediately cache in localStorage for instant responsiveness
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedLogos));
+      } catch (e) {
+        console.warn('Failed to cache logos in localStorage:', e);
+      }
 
-      if (existing) {
-        const { error } = await supabase
-          .from('site_settings')
-          .update({
-            value: updatedLogos as any,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('key', SETTINGS_KEY_PAYMENT_LOGOS);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('site_settings')
-          .insert({
+      // 2. Atomic upsert to public.site_settings (no non-existent description column!)
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert(
+          {
             key: SETTINGS_KEY_PAYMENT_LOGOS,
             value: updatedLogos as any,
-            description: 'Custom logos for payment gateways (bKash, Nagad, Rocket, Upay, Cellfin, Tap, Bank)',
-          });
-        if (error) throw error;
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'key' }
+        );
+
+      if (error) {
+        console.error('Database upsert failed for payment_gateway_logos:', error);
+        throw error;
       }
+
       return updatedLogos;
     },
     onSuccess: (data) => {
@@ -75,6 +95,7 @@ export const usePaymentGatewayLogos = () => {
       queryClient.invalidateQueries({ queryKey: [SETTINGS_KEY_PAYMENT_LOGOS] });
       queryClient.invalidateQueries({ queryKey: ['public-payment-methods'] });
       queryClient.invalidateQueries({ queryKey: ['admin-payment-methods'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-methods'] });
     },
   });
 
@@ -86,4 +107,3 @@ export const usePaymentGatewayLogos = () => {
     isSaving: saveLogosMutation.isPending,
   };
 };
-

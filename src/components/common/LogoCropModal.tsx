@@ -30,6 +30,10 @@ interface LogoCropModalProps {
   imageSrc: string | null;
   onCropSave: (croppedBlob: Blob, previewUrl: string) => Promise<void> | void;
   isSaving?: boolean;
+  title?: string;
+  subtitle?: string;
+  defaultCropShape?: 'round' | 'rect';
+  defaultAspect?: number;
 }
 
 // Canvas helper to produce pixel-perfect cropped PNG blob preserving alpha transparency
@@ -42,7 +46,9 @@ const createCroppedImageBlob = async (
     const img = new Image();
     img.addEventListener('load', () => resolve(img));
     img.addEventListener('error', (err) => reject(err));
-    img.setAttribute('crossOrigin', 'anonymous');
+    if (imageSrc.startsWith('http')) {
+      img.setAttribute('crossOrigin', 'anonymous');
+    }
     img.src = imageSrc;
   });
 
@@ -82,10 +88,16 @@ const createCroppedImageBlob = async (
     throw new Error('Cropped canvas context not available');
   }
 
-  // Set export size - max 512x512 for ultra-crisp web and print display
-  const targetSize = Math.min(512, Math.max(256, pixelCrop.width));
-  croppedCanvas.width = targetSize;
-  croppedCanvas.height = targetSize;
+  // Set export size - max 512px maintaining exact aspect ratio
+  const maxDim = 512;
+  const rawW = Math.max(1, pixelCrop.width);
+  const rawH = Math.max(1, pixelCrop.height);
+  const scale = Math.min(1, maxDim / Math.max(rawW, rawH));
+  const targetWidth = Math.max(96, Math.round(rawW * scale));
+  const targetHeight = Math.max(96, Math.round(rawH * scale));
+
+  croppedCanvas.width = targetWidth;
+  croppedCanvas.height = targetHeight;
 
   croppedCtx.drawImage(
     canvas,
@@ -95,8 +107,8 @@ const createCroppedImageBlob = async (
     pixelCrop.height,
     0,
     0,
-    targetSize,
-    targetSize
+    targetWidth,
+    targetHeight
   );
 
   return new Promise((resolve, reject) => {
@@ -129,14 +141,30 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
   imageSrc,
   onCropSave,
   isSaving = false,
+  title,
+  subtitle,
+  defaultCropShape = 'round',
+  defaultAspect = 1,
 }) => {
   const { language } = useLanguage();
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [cropShape, setCropShape] = useState<'round' | 'rect'>('round');
+  const [cropShape, setCropShape] = useState<'round' | 'rect'>(defaultCropShape);
+  const [aspect, setAspect] = useState<number>(defaultAspect);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Sync defaultCropShape and defaultAspect when modal opens with new props
+  React.useEffect(() => {
+    if (isOpen) {
+      setCropShape(defaultCropShape);
+      setAspect(defaultAspect);
+      setZoom(1);
+      setRotation(0);
+      setCrop({ x: 0, y: 0 });
+    }
+  }, [isOpen, defaultCropShape, defaultAspect]);
 
   const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -173,15 +201,15 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
               </div>
               <div>
                 <DialogTitle className="font-heading text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>{language === 'bn' ? 'লোগো ক্রপ ও অ্যাডজাস্টমেন্ট' : 'Crop & Adjust Logo'}</span>
+                  <span>{title || (language === 'bn' ? 'লোগো ক্রপ ও অ্যাডজাস্টমেন্ট' : 'Crop & Adjust Logo')}</span>
                   <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-[#11DFC0]/20 text-teal-900 border border-[#11DFC0]/40">
                     {language === 'bn' ? 'অটো সাইজিং' : 'Auto Sizing'}
                   </span>
                 </DialogTitle>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {language === 'bn'
+                  {subtitle || (language === 'bn'
                     ? 'লোগোর মূল অংশটি সেন্টারে এনে ক্রপ করুন। এটি ওয়েবসাইটের হেডার, ফুটার ও ভাউচারে অটোমেটিক পারফেক্ট দেখাবে।'
-                    : 'Position the logo inside the crop area. It will automatically adjust everywhere across the site.'}
+                    : 'Position the logo inside the crop area. It will automatically adjust everywhere across the site.')}
                 </p>
               </div>
             </div>
@@ -196,7 +224,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
               crop={crop}
               zoom={zoom}
               rotation={rotation}
-              aspect={1}
+              aspect={aspect}
               cropShape={cropShape}
               showGrid={true}
               onCropChange={setCrop}
@@ -204,21 +232,23 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
               onCropComplete={onCropComplete}
             />
 
-            {/* Floating Shape Indicator Badge */}
+            {/* Floating Shape & Aspect Indicator Badge */}
             <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-[11px] font-bold text-white flex items-center gap-1.5 border border-white/20">
               <Sparkles className="w-3.5 h-3.5 text-[#11DFC0]" />
               <span>
                 {cropShape === 'round' 
                   ? (language === 'bn' ? 'গোলাকার ক্রপ (1:1)' : 'Circular Crop (1:1)') 
-                  : (language === 'bn' ? 'বর্গাকার ক্রপ (1:1)' : 'Square Crop (1:1)')}
+                  : (aspect === 1
+                      ? (language === 'bn' ? 'বর্গাকার ক্রপ (1:1)' : 'Square Crop (1:1)')
+                      : (language === 'bn' ? 'চওড়া ক্রপ (4:3)' : 'Landscape Crop (4:3)'))}
               </span>
             </div>
           </div>
 
-          {/* Controls Bar: Zoom, Rotate, Shape Toggle */}
+          {/* Controls Bar: Zoom, Rotate, Shape & Aspect Toggle */}
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             {/* Zoom Slider */}
-            <div className="sm:col-span-7 flex items-center gap-3">
+            <div className="sm:col-span-6 flex items-center gap-3">
               <ZoomOut className="w-4 h-4 text-slate-500 shrink-0" />
               <div className="flex-1">
                 <Slider
@@ -236,8 +266,8 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
               </span>
             </div>
 
-            {/* Rotate & Shape Buttons */}
-            <div className="sm:col-span-5 flex items-center justify-end gap-2">
+            {/* Rotate & Shape/Aspect Buttons */}
+            <div className="sm:col-span-6 flex items-center justify-end gap-2 flex-wrap">
               <Button
                 type="button"
                 variant="outline"
@@ -253,27 +283,48 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
               <div className="inline-flex p-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs">
                 <button
                   type="button"
-                  onClick={() => setCropShape('round')}
+                  onClick={() => {
+                    setCropShape('round');
+                    setAspect(1);
+                  }}
                   className={`p-1.5 rounded-lg text-xs transition-all ${
                     cropShape === 'round'
                       ? 'bg-[#11DFC0] text-slate-950 font-bold shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
                   }`}
-                  title={language === 'bn' ? 'গোলাকার' : 'Circle'}
+                  title={language === 'bn' ? 'গোলাকার (1:1)' : 'Circle (1:1)'}
                 >
                   <Circle className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCropShape('rect')}
+                  onClick={() => {
+                    setCropShape('rect');
+                    setAspect(1);
+                  }}
                   className={`p-1.5 rounded-lg text-xs transition-all ${
-                    cropShape === 'rect'
+                    cropShape === 'rect' && aspect === 1
                       ? 'bg-[#11DFC0] text-slate-950 font-bold shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
                   }`}
-                  title={language === 'bn' ? 'বর্গাকার' : 'Square'}
+                  title={language === 'bn' ? 'বর্গাকার (1:1)' : 'Square (1:1)'}
                 >
                   <Square className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCropShape('rect');
+                    setAspect(4 / 3);
+                  }}
+                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                    cropShape === 'rect' && aspect !== 1
+                      ? 'bg-[#11DFC0] text-slate-950 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  title={language === 'bn' ? 'চওড়া (4:3)' : 'Landscape (4:3)'}
+                >
+                  4:3
                 </button>
               </div>
             </div>

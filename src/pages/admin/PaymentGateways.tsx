@@ -18,7 +18,8 @@ import {
   Trash2,
   Info,
   ExternalLink,
-  Loader2
+  Loader2,
+  Crop
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +36,8 @@ import {
   CellfinLogo, 
   TapLogo 
 } from '@/components/payment/PaymentLogos';
-import { usePaymentGatewayLogos, type PaymentGatewayLogos } from '@/hooks/usePaymentGatewayLogos';
+import { usePaymentGatewayLogos, type PaymentGatewayLogos, SETTINGS_KEY_PAYMENT_LOGOS } from '@/hooks/usePaymentGatewayLogos';
+import { LogoCropModal } from '@/components/common/LogoCropModal';
 
 interface PaymentMethodRecord {
   id: string;
@@ -127,7 +129,12 @@ export const PaymentGateways = () => {
   const { logos, saveLogos, refetch: refetchLogos } = usePaymentGatewayLogos();
 
   const [savingMethod, setSavingMethod] = useState<string | null>(null);
-  const [uploadingLogoMethod, setUploadingLogoMethod] = useState<string | null>(null);
+
+  // Logo Crop & Adjust Modal States
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [activeCropMethod, setActiveCropMethod] = useState<string | null>(null);
+  const [isSavingCropped, setIsSavingCropped] = useState(false);
 
   // Form states per method
   const [formState, setFormState] = useState<Record<string, {
@@ -205,63 +212,149 @@ export const PaymentGateways = () => {
     }));
   };
 
-  // Upload custom logo to Supabase storage 'gallery-images'
-  const handleLogoUpload = async (methodType: string, file: File) => {
+  // Handler: When user selects an image file from disk for a specific gateway
+  const handleFileSelectForCrop = (methodType: string, file: File) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       toast({
         title: language === 'bn' ? 'ভুল ফাইল ফরম্যাট' : 'Invalid File',
-        description: language === 'bn' ? 'শুধুমাত্র ছবি ফাইল (PNG, JPG, SVG, WebP) আপলোড করুন' : 'Please upload an image file',
+        description: language === 'bn' ? 'শুধুমাত্র ছবি ফাইল (PNG, JPG, SVG, WebP) নির্বাচন করুন' : 'Please select an image file',
         variant: 'destructive',
       });
       return;
     }
 
-    setUploadingLogoMethod(methodType);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setActiveCropMethod(methodType);
+      setCropModalOpen(true);
+    };
+    reader.onerror = () => {
+      toast({
+        title: language === 'bn' ? 'ফাইল পড়তে ব্যর্থ' : 'Error Reading File',
+        description: language === 'bn' ? 'ছবিটি লোড করা সম্ভব হয়নি' : 'Could not read the selected image',
+        variant: 'destructive',
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handler: Re-crop or adjust existing custom logo
+  const handleAdjustCurrentLogo = (methodType: string) => {
+    const currentLogo = formState[methodType]?.logo_url || logos[methodType];
+    if (!currentLogo) return;
+    setImageToCrop(currentLogo);
+    setActiveCropMethod(methodType);
+    setCropModalOpen(true);
+  };
+
+  // Handler: Save cropped logo blob to database with 3-tier ultra-reliable fallback
+  const handleCroppedGatewayLogoSave = async (croppedBlob: Blob, _previewUrl: string) => {
+    if (!activeCropMethod) return;
+
+    setIsSavingCropped(true);
     try {
-      const ext = file.name.split('.').pop() || 'png';
-      const fileName = `payment-gateways/${methodType}-${Date.now()}.${ext}`;
+      let finalLogoUrl = '';
 
-      const { data, error } = await supabase.storage
-        .from('gallery-images')
-        .upload(fileName, file, {
-          contentType: file.type,
-          upsert: true,
+      // Tier 1: Upload cropped PNG to Supabase Storage 'gallery-images'
+      try {
+        const fileName = `gateways/${activeCropMethod}-${Date.now()}.png`;
+        const { data, error } = await supabase.storage
+          .from('gallery-images')
+          .upload(fileName, croppedBlob, {
+            contentType: 'image/png',
+            upsert: true,
+          });
+
+        if (!error && data?.path) {
+          const { data: urlData } = supabase.storage
+            .from('gallery-images')
+            .getPublicUrl(data.path);
+          if (urlData?.publicUrl) {
+            finalLogoUrl = urlData.publicUrl;
+          }
+        }
+      } catch (err1) {
+        console.warn('Storage upload to gallery-images failed, trying fallback...', err1);
+      }
+
+      // Tier 2: Upload to Supabase Storage 'member-photos' if Tier 1 failed
+      if (!finalLogoUrl) {
+        try {
+          const fileName = `gateways/${activeCropMethod}-${Date.now()}.png`;
+          const { data, error } = await supabase.storage
+            .from('member-photos')
+            .upload(fileName, croppedBlob, {
+              contentType: 'image/png',
+              upsert: true,
+            });
+
+          if (!error && data?.path) {
+            const { data: urlData } = supabase.storage
+              .from('member-photos')
+              .getPublicUrl(data.path);
+            if (urlData?.publicUrl) {
+              finalLogoUrl = urlData.publicUrl;
+            }
+          }
+        } catch (err2) {
+          console.warn('Storage upload to member-photos failed, using Base64 Data URL fallback...', err2);
+        }
+      }
+
+      // Tier 3: Zero-Failure Fallback - Convert cropped blob to Base64 Data URL
+      // A 256x256-384x384 PNG is ~20KB-40KB, which stores directly in Postgres JSONB site_settings without any external storage dependency!
+      if (!finalLogoUrl) {
+        finalLogoUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('Failed to convert blob to data URL'));
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(croppedBlob);
         });
+      }
 
-      if (error) throw error;
+      // 1. Update local form state immediately
+      updateField(activeCropMethod, 'logo_url', finalLogoUrl);
 
-      const { data: urlData } = supabase.storage
-        .from('gallery-images')
-        .getPublicUrl(data.path);
-
-      const publicUrl = urlData.publicUrl;
-
-      // Update local form state
-      updateField(methodType, 'logo_url', publicUrl);
-
-      // Save to site_settings immediately
+      // 2. Persist to site_settings via usePaymentGatewayLogos
       const updatedLogos: PaymentGatewayLogos = {
         ...logos,
-        [methodType]: publicUrl,
+        [activeCropMethod]: finalLogoUrl,
       };
       await saveLogos(updatedLogos);
 
+      // 3. Invalidate queries so member panel, payment page, and admin panel sync instantly
+      queryClient.invalidateQueries({ queryKey: [SETTINGS_KEY_PAYMENT_LOGOS] });
+      queryClient.invalidateQueries({ queryKey: ['public-payment-methods'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-methods'] });
+
       toast({
-        title: language === 'bn' ? 'লোগো আপলোড সফল!' : 'Logo Uploaded!',
+        title: language === 'bn' ? 'লোগো সফলভাবে সংরক্ষিত!' : 'Logo Saved!',
         description: language === 'bn' 
-          ? `${BRAND_THEMES[methodType]?.label || methodType}-এর অফিসিয়াল লোগো আপলোড করা হয়েছে এবং গেটওয়েতে লাইভ সংযুক্ত হয়েছে।`
-          : 'Logo uploaded and synced to payment portal.',
+          ? `${BRAND_THEMES[activeCropMethod]?.label || activeCropMethod}-এর লোগো নিখুঁতভাবে ক্রপ ও ডেটাবেজে সিঙ্ক হয়েছে।`
+          : 'Payment gateway logo cropped and synced successfully.',
       });
+
+      setCropModalOpen(false);
+      setActiveCropMethod(null);
+      setImageToCrop(null);
     } catch (err: any) {
+      console.error('Failed to save gateway logo:', err);
       toast({
-        title: language === 'bn' ? 'আপলোড ব্যর্থ' : 'Upload Failed',
-        description: err.message || 'Error uploading logo image',
+        title: language === 'bn' ? 'সংরক্ষণ ব্যর্থ' : 'Save Failed',
+        description: err.message || 'Error saving cropped logo',
         variant: 'destructive',
       });
     } finally {
-      setUploadingLogoMethod(null);
+      setIsSavingCropped(false);
     }
   };
 
@@ -495,7 +588,7 @@ export const PaymentGateways = () => {
               {/* Body */}
               <CardContent className="p-5 sm:p-6 space-y-4">
                 
-                {/* Official Logo Upload Section */}
+                {/* Official Logo Upload & Interactive Cropper Section */}
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -516,8 +609,8 @@ export const PaymentGateways = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {/* Logo Preview box */}
-                    <div className="w-14 h-14 rounded-xl border border-slate-200 bg-white p-1.5 flex items-center justify-center shrink-0 shadow-xs">
+                    {/* Logo Preview box with hover adjust button */}
+                    <div className="w-16 h-16 rounded-2xl border-2 border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 flex items-center justify-center shrink-0 shadow-xs relative group overflow-hidden">
                       {customLogo ? (
                         <img
                           src={customLogo}
@@ -529,9 +622,20 @@ export const PaymentGateways = () => {
                           {theme.defaultLogoComponent}
                         </div>
                       )}
+                      {customLogo && (
+                        <button
+                          type="button"
+                          onClick={() => handleAdjustCurrentLogo(methodKey)}
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
+                          title="লোগো ক্রপ ও অ্যাডজাস্ট করুন"
+                        >
+                          <Crop className="w-4 h-4" />
+                          <span className="text-[9px] font-bold mt-0.5">{language === 'bn' ? 'ক্রপ' : 'Crop'}</span>
+                        </button>
+                      )}
                     </div>
 
-                    <div className="flex-1 space-y-1.5 min-w-0">
+                    <div className="flex-1 space-y-2 min-w-0">
                       {/* Hidden File Input */}
                       <input
                         type="file"
@@ -540,35 +644,50 @@ export const PaymentGateways = () => {
                         className="hidden"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleLogoUpload(methodKey, file);
+                          if (file) handleFileSelectForCrop(methodKey, file);
+                          e.target.value = '';
                         }}
                       />
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Choose & Crop Button */}
                         <label
                           htmlFor={`logo-upload-${methodKey}`}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 hover:border-slate-400 cursor-pointer shadow-xs transition-all ${
-                            isUploading ? 'opacity-50 pointer-events-none' : ''
-                          }`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 hover:bg-emerald-50 hover:border-emerald-500 hover:text-emerald-700 cursor-pointer shadow-xs transition-all active:scale-95"
                         >
-                          {isUploading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                          ) : (
-                            <Upload className="w-3.5 h-3.5 text-emerald-600" />
-                          )}
+                          <Upload className="w-3.5 h-3.5 text-emerald-600" />
                           <span>
-                            {isUploading 
-                              ? (language === 'bn' ? 'আপলোড হচ্ছে...' : 'Uploading...') 
-                              : (language === 'bn' ? 'লোগো ফাইল নির্বাচন করুন' : 'Upload Logo')}
+                            {customLogo 
+                              ? (language === 'bn' ? 'লোগো পরিবর্তন করুন' : 'Change Logo') 
+                              : (language === 'bn' ? 'লোগো নির্বাচন ও ক্রপ' : 'Upload & Crop Logo')}
                           </span>
                         </label>
+
+                        {/* Adjust / Re-crop Button if custom logo is already set */}
+                        {customLogo && (
+                          <button
+                            type="button"
+                            onClick={() => handleAdjustCurrentLogo(methodKey)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-teal-50 dark:bg-teal-950/50 border border-teal-300 dark:border-teal-800 text-teal-800 dark:text-teal-300 hover:bg-teal-100 cursor-pointer shadow-xs transition-all active:scale-95"
+                          >
+                            <Crop className="w-3.5 h-3.5 text-teal-600" />
+                            <span>{language === 'bn' ? 'ক্রপ ও অ্যাডজাস্ট' : 'Crop & Adjust'}</span>
+                          </button>
+                        )}
                       </div>
 
-                      <p className="text-[10px] text-slate-400">
-                        {customLogo 
-                          ? (language === 'bn' ? '✓ কাস্টম লোগো লাইভ রয়েছে' : '✓ Custom logo is live') 
-                          : (language === 'bn' ? 'ডিফল্ট ভেক্টর লোগো সক্রিয়' : 'Default vector logo active')}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        {customLogo ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            {language === 'bn' ? 'কাস্টম লোগো লাইভ রয়েছে' : 'Custom logo live'}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                            {language === 'bn' ? 'অফিসিয়াল ডিফল্ট ভেক্টর সক্রিয়' : 'Default vector active'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -681,6 +800,31 @@ export const PaymentGateways = () => {
           );
         })}
       </div>
+
+      {/* Interactive Gateway Logo Cropper & Adjustment Modal */}
+      <LogoCropModal
+        isOpen={cropModalOpen}
+        onClose={() => {
+          setCropModalOpen(false);
+          setActiveCropMethod(null);
+          setImageToCrop(null);
+        }}
+        imageSrc={imageToCrop}
+        onCropSave={handleCroppedGatewayLogoSave}
+        isSaving={isSavingCropped}
+        title={
+          activeCropMethod && BRAND_THEMES[activeCropMethod]
+            ? `${language === 'bn' ? BRAND_THEMES[activeCropMethod].label : BRAND_THEMES[activeCropMethod].labelEn} - ${language === 'bn' ? 'লোগো ক্রপ ও অ্যাডজাস্ট' : 'Crop & Adjust Logo'}`
+            : undefined
+        }
+        subtitle={
+          language === 'bn'
+            ? 'লোগোর মূল আইকন ও লেখা সেন্টারে রেখে জুম ও ক্রপ করুন। এটি পেমেন্ট পেজে ও অ্যাপে একদম নিখুঁত দেখাবে।'
+            : 'Center and zoom the gateway emblem. It will fit proportionally on mobile and desktop.'
+        }
+        defaultCropShape="rect"
+        defaultAspect={1}
+      />
     </div>
   );
 };

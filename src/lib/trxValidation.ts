@@ -71,3 +71,4 @@ export const validateTransactionId = (method: string, trxId: string): TrxValidat
 
   return { isValid: true };
 };
+
