@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, isUserAdmin } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { getPendingMagicPayments } from '@/lib/magicLinkUtils';
+import { notificationSound, playNotificationChime } from '@/lib/notificationSound';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
@@ -12,6 +15,8 @@ import { AdminPageErrorBoundary } from './AdminPageErrorBoundary';
 import {
   Loader2,
   Bell,
+  Volume2,
+  VolumeX,
   ChevronDown,
   User as UserIcon,
   LogOut,
@@ -51,6 +56,8 @@ const AdminLayout = () => {
 
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(() => notificationSound.isEnabled());
+  const queryClient = useQueryClient();
 
   const isAuthLoading = loading || rolesLoading;
   const isCachedAdmin = () => {
@@ -94,11 +101,124 @@ const AdminLayout = () => {
         .select('*', { count: 'exact', head: true })
         .eq('payment_status', 'submitted')
         .eq('is_paid', false);
-      if (error) return 0;
-      return count || 0;
+      const dbCount = error ? 0 : (count || 0);
+
+      try {
+        const magicList = await getPendingMagicPayments();
+        return dbCount + (magicList?.length || 0);
+      } catch {
+        return dbCount;
+      }
     },
-    refetchInterval: 15000,
+    refetchInterval: 10000,
   });
+
+  // Real-time Supabase listener for instant chime ("টুং" শব্দ) and live updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-realtime-activity-alerts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'member_dues' },
+        (payload) => {
+          const newRecord = payload.new;
+          if (newRecord?.payment_status === 'submitted' && !newRecord?.is_paid) {
+            playNotificationChime();
+            toast.info(
+              language === 'bn'
+                ? '🔔 নতুন চাঁদা পেমেন্ট জমা হয়েছে (যাচাই করুন)!'
+                : '🔔 New dues payment submitted for verification!',
+              {
+                description: `${(newRecord.payment_method || 'পেমেন্ট').toUpperCase()} - ৳${newRecord.amount} (TrxID: ${newRecord.transaction_id || 'N/A'})`,
+                action: {
+                  label: language === 'bn' ? 'যাচাই করুন' : 'Verify',
+                  onClick: () => navigate('/admin/payment-verification'),
+                },
+                duration: 9000,
+              }
+            );
+          }
+          queryClient.invalidateQueries({ queryKey: ['admin-badge-pending-payments'] });
+          queryClient.invalidateQueries({ queryKey: ['notice-pending-payments'] });
+          queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
+          queryClient.invalidateQueries({ queryKey: ['recent-verified-payments'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'members' },
+        (payload) => {
+          const newMember = payload.new;
+          if (newMember?.status === 'pending') {
+            playNotificationChime();
+            toast.success(
+              language === 'bn'
+                ? '👤 নতুন সদস্য রেজিস্ট্রেশন আবেদন জমা হয়েছে!'
+                : '👤 New membership application received!',
+              {
+                description: `${newMember.full_name || 'নতুন সদস্য'} (${newMember.phone || ''})`,
+                action: {
+                  label: language === 'bn' ? 'আবেদন দেখুন' : 'Review',
+                  onClick: () => navigate('/admin/members'),
+                },
+                duration: 9000,
+              }
+            );
+          }
+          queryClient.invalidateQueries({ queryKey: ['admin-badge-pending-members'] });
+          queryClient.invalidateQueries({ queryKey: ['notice-pending-members'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload) => {
+          const newRow = payload.new;
+          if (newRow?.key === 'magic_payment_links') {
+            playNotificationChime();
+            toast.info(
+              language === 'bn'
+                ? '✨ ম্যাজিক লিংকের মাধ্যমে নতুন পেমেন্ট জমা হয়েছে!'
+                : '✨ New Magic Link payment submitted!',
+              {
+                description: language === 'bn' ? 'পেমেন্ট যাচাইকরণ পাতায় অপেক্ষা করছে' : 'Awaiting review in Payment Verification',
+                action: {
+                  label: language === 'bn' ? 'যাচাই করুন' : 'Verify',
+                  onClick: () => navigate('/admin/payment-verification'),
+                },
+                duration: 9000,
+              }
+            );
+            queryClient.invalidateQueries({ queryKey: ['admin-badge-pending-payments'] });
+            queryClient.invalidateQueries({ queryKey: ['notice-pending-payments'] });
+            queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
+            queryClient.invalidateQueries({ queryKey: ['recent-verified-payments'] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [language, navigate, queryClient]);
+
+  const toggleSound = () => {
+    const nextState = !isSoundEnabled;
+    notificationSound.setEnabled(nextState);
+    setIsSoundEnabled(nextState);
+    if (nextState) {
+      notificationSound.playChime();
+      toast.success(
+        language === 'bn' ? '🔔 লাইভ সাউন্ড নোটিফিকেশন চালু হয়েছে (টুং)' : 'Live sound alerts enabled'
+      );
+    } else {
+      toast.info(
+        language === 'bn' ? '🔕 সাউন্ড নোটিফিকেশন মিউট করা হয়েছে' : 'Sound alerts muted'
+      );
+    }
+  };
 
   const totalNoticeCount = (pendingMembersCount || 0) + (pendingPaymentsCount || 0);
 
@@ -144,15 +264,15 @@ const AdminLayout = () => {
     return language === 'bn' ? 'অ্যাডমিন প্যানেল' : 'Admin Panel';
   };
 
-  const displayName = 
-    user?.user_metadata?.full_name || 
+  const displayName =
+    user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
-    user?.email?.split('@')[0] || 
+    user?.email?.split('@')[0] ||
     'Md Mehedi Hasan';
 
-  const userPhone = 
-    user?.phone || 
-    user?.user_metadata?.phone || 
+  const userPhone =
+    user?.phone ||
+    user?.user_metadata?.phone ||
     '০১৯১৬৩১৪৩১৫';
 
   const userEmail = user?.email || 'mehedihasanwork25@mail.com';
@@ -179,8 +299,27 @@ const AdminLayout = () => {
 
             {/* Right: Notifications & User Profile */}
             <div className="flex items-center gap-2.5 sm:gap-4">
+              {/* Audio Chime Notification Toggle with Live Test */}
+              <button
+                type="button"
+                onClick={toggleSound}
+                className="p-2.5 rounded-full hover:bg-emerald-50 text-slate-600 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                aria-label="Toggle Sound Notification"
+                title={
+                  isSoundEnabled
+                    ? (language === 'bn' ? 'সাউন্ড অন আছে (ক্লিক করে টেস্ট বা মিউট করুন)' : 'Sound ON (Click to test or mute)')
+                    : (language === 'bn' ? 'সাউন্ড মিউট আছে (ক্লিক করে অন করুন)' : 'Sound MUTED (Click to enable)')
+                }
+              >
+                {isSoundEnabled ? (
+                  <Volume2 className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                ) : (
+                  <VolumeX className="w-5 h-5 text-slate-400 group-hover:text-red-500 transition-colors" />
+                )}
+              </button>
+
               {/* Real-time Notification Bell with Dynamic Counter */}
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsNoticeOpen(true)}
                 className="relative p-2.5 rounded-full hover:bg-emerald-50 text-slate-600 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
@@ -200,7 +339,7 @@ const AdminLayout = () => {
               {/* User Avatar & Name with Comprehensive Dropdown Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button 
+                  <button
                     type="button"
                     className="flex items-center gap-2.5 pl-3 border-l border-slate-200 hover:opacity-90 transition-all cursor-pointer text-left focus:outline-none group rounded-lg py-1 px-1.5 hover:bg-slate-50"
                   >
@@ -222,7 +361,7 @@ const AdminLayout = () => {
                     <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 hidden sm:block transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </button>
                 </DropdownMenuTrigger>
-                
+
                 <DropdownMenuContent align="end" className="w-64 rounded-2xl shadow-xl border border-slate-200/80 p-1.5 z-50 bg-white animate-in fade-in-50 zoom-in-95">
                   {/* Profile Header Summary */}
                   <div className="px-3 py-3 rounded-xl bg-gradient-to-br from-emerald-50 via-teal-50/50 to-white border border-emerald-100/80 mb-1.5">
@@ -250,7 +389,7 @@ const AdminLayout = () => {
                   </DropdownMenuLabel>
 
                   {/* Option 1: Profile View Modal */}
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => setIsProfileDialogOpen(true)}
                     className="cursor-pointer font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/80 rounded-xl py-2 px-3 flex items-center gap-2.5 text-xs transition-colors"
                   >
@@ -264,7 +403,7 @@ const AdminLayout = () => {
                   </DropdownMenuItem>
 
                   {/* Option 2: Settings & Profile Edit */}
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/admin/settings')}
                     className="cursor-pointer font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/80 rounded-xl py-2 px-3 flex items-center gap-2.5 text-xs transition-colors"
                   >
@@ -278,7 +417,7 @@ const AdminLayout = () => {
                   </DropdownMenuItem>
 
                   {/* Option 3: Member Approval & Requests */}
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/admin/members')}
                     className="cursor-pointer font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/80 rounded-xl py-2 px-3 flex items-center gap-2.5 text-xs transition-colors"
                   >
@@ -292,7 +431,7 @@ const AdminLayout = () => {
                   </DropdownMenuItem>
 
                   {/* Option 4: View Public Website */}
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/')}
                     className="cursor-pointer font-medium text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/80 rounded-xl py-2 px-3 flex items-center gap-2.5 text-xs transition-colors"
                   >
@@ -308,7 +447,7 @@ const AdminLayout = () => {
                   <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
 
                   {/* Option 5: Logout */}
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={handleLogout}
                     className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer font-bold py-2.5 px-3 rounded-xl flex items-center gap-2.5 text-xs transition-colors"
                   >

@@ -16,6 +16,11 @@ export interface MagicPaymentLinkRecord {
   usedAt?: string | null;
   transactionId?: string | null;
   paymentMethod?: string | null;
+  senderAccount?: string | null;
+  payment_status?: 'submitted' | 'approved' | 'rejected';
+  is_paid?: boolean;
+  verifiedAt?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
   expiresAt: string; // ISO date string
 }
@@ -385,7 +390,8 @@ export const resolveMagicPaymentLink = async (
 export const markMagicLinkUsed = async (
   token: string,
   transactionId: string,
-  paymentMethod = 'bkash'
+  paymentMethod = 'bkash',
+  senderAccount = ''
 ): Promise<void> => {
   if (!token) return;
   try {
@@ -395,10 +401,55 @@ export const markMagicLinkUsed = async (
       store[token].usedAt = new Date().toISOString();
       store[token].transactionId = transactionId.trim().toUpperCase();
       store[token].paymentMethod = paymentMethod;
+      store[token].senderAccount = senderAccount;
+      store[token].payment_status = 'submitted';
+      store[token].is_paid = false;
       await saveMagicLinksStore(store);
     }
   } catch (err) {
     console.warn('Failed to mark magic link as used:', err);
+  }
+};
+
+/**
+ * Returns all submitted magic link payments pending admin/cashier verification
+ */
+export const getPendingMagicPayments = async (): Promise<MagicPaymentLinkRecord[]> => {
+  try {
+    const store = await getStoredMagicLinks();
+    return Object.values(store).filter(
+      (r) => r.isUsed && r.transactionId && (!r.payment_status || r.payment_status === 'submitted') && !r.is_paid
+    );
+  } catch (err) {
+    console.warn('Failed to fetch pending magic payments:', err);
+    return [];
+  }
+};
+
+/**
+ * Updates a magic payment link's status after admin verification
+ */
+export const updateMagicPaymentStatus = async (
+  token: string,
+  status: 'approved' | 'rejected',
+  rejectionReason?: string
+): Promise<void> => {
+  if (!token) return;
+  try {
+    const store = await getStoredMagicLinks();
+    if (store[token]) {
+      store[token].payment_status = status;
+      store[token].verifiedAt = new Date().toISOString();
+      if (status === 'approved') {
+        store[token].is_paid = true;
+      } else {
+        store[token].is_paid = false;
+        store[token].rejectionReason = rejectionReason || 'যাচাইয়ে তথ্য মেলেনি';
+      }
+      await saveMagicLinksStore(store);
+    }
+  } catch (err) {
+    console.warn('Failed to update magic payment status:', err);
   }
 };
 

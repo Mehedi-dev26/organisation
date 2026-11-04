@@ -178,7 +178,7 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
       // Mark magic link as used if paid via magic link
       if (magicToken) {
         try {
-          await markMagicLinkUsed(magicToken, cleanTrx, 'bkash');
+          await markMagicLinkUsed(magicToken, cleanTrx, 'bkash', senderAccount);
         } catch (mErr) {
           console.warn('Mark magic link error:', mErr);
         }

@@ -209,7 +209,7 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
       // Mark magic link as used if paid via magic link
       if (magicToken) {
         try {
-          await markMagicLinkUsed(magicToken, cleanTrx, methodId);
+          await markMagicLinkUsed(magicToken, cleanTrx, methodId, senderAccount);
         } catch (mErr) {
           console.warn('Mark magic link error:', mErr);
         }

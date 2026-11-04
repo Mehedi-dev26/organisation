@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { bn, enUS } from 'date-fns/locale';
+import { getPendingMagicPayments } from '@/lib/magicLinkUtils';
 
 interface AdminNoticeSheetProps {
   open: boolean;
@@ -53,7 +54,7 @@ export const AdminNoticeSheet: React.FC<AdminNoticeSheetProps> = ({ open, onOpen
     refetchInterval: 15000, // Auto-poll every 15s for live updates
   });
 
-  // 2. Fetch pending dues payment verification requests
+  // 2. Fetch pending dues payment verification requests (DB + Magic links)
   const { data: pendingPayments = [] } = useQuery({
     queryKey: ['notice-pending-payments'],
     queryFn: async () => {
@@ -72,10 +73,34 @@ export const AdminNoticeSheet: React.FC<AdminNoticeSheetProps> = ({ open, onOpen
         .eq('is_paid', false)
         .order('submitted_at', { ascending: false })
         .limit(10);
-      if (error) return [];
-      return data || [];
+      
+      const dbList = error ? [] : (data || []);
+
+      try {
+        const magicList = await getPendingMagicPayments();
+        const dbDueIds = new Set(dbList.map((d: any) => d.id));
+        const formattedMagic = magicList
+          .filter(m => !dbDueIds.has(m.dueId))
+          .map(m => ({
+            id: m.token,
+            amount: m.amount,
+            month_year: m.month_year || 'ম্যাজিক লিংক',
+            transaction_id: m.transactionId,
+            payment_method: m.paymentMethod || 'bkash',
+            submitted_at: m.submittedAt || m.createdAt,
+            members: {
+              full_name: m.memberName || 'সদস্য',
+              phone: m.memberPhone || m.senderAccount || ''
+            },
+            isMagic: true
+          }));
+
+        return [...formattedMagic, ...dbList].slice(0, 15);
+      } catch {
+        return dbList;
+      }
     },
-    refetchInterval: 15000,
+    refetchInterval: 10000,
   });
 
   // 3. Fetch recent activity logs
@@ -247,13 +272,18 @@ export const AdminNoticeSheet: React.FC<AdminNoticeSheetProps> = ({ open, onOpen
                           className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/70 dark:border-amber-900/40 shadow-xs hover:border-amber-400 transition-all flex items-center justify-between gap-3"
                         >
                           <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
                                 {memberName}
                               </span>
                               <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold">
                                 ৳{p.amount}
                               </span>
+                              {p.isMagic && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 text-[9px] font-extrabold border border-emerald-300/60">
+                                  Magic Link
+                                </span>
+                              )}
                             </div>
                             <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1 truncate">
                               <span className="capitalize">{p.payment_method || 'bkash'}</span>
