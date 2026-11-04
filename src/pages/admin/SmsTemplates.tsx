@@ -532,11 +532,22 @@ export const SmsTemplates: React.FC = () => {
                       <Button
                         type="button"
                         size="sm"
+                        onClick={() => saveMutation.mutate(templates)}
+                        disabled={saveMutation.isPending}
+                        className="bg-[#0B6B3A] hover:bg-[#09542e] text-white rounded-xl text-xs font-bold gap-1.5 shadow-xs"
+                      >
+                        {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                        <span>সংরক্ষণ</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
                         onClick={() => setTestModalTemplate(item)}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold gap-1.5 shadow-xs"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>এই ফরম্যাট টেস্ট পাঠান</span>
+                        <span>টেস্ট পাঠান</span>
                       </Button>
                     </div>
 
@@ -584,26 +595,6 @@ export const SmsTemplates: React.FC = () => {
             </Card>
           );
         })}
-      </div>
-
-      {/* Floating Save Bar */}
-      <div className="sticky bottom-4 z-20 p-4 rounded-2xl bg-[#14231B] text-white shadow-xl flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-yellow-400" />
-          <div>
-            <span className="text-sm font-bold block">সকল পরিবর্তন সংরক্ষণ করতে ভুলবেন না</span>
-            <span className="text-xs text-white/70">সেভ করার সাথে সাথে সদস্য ও পেমেন্ট ওয়ার্কফ্লোতে নতুন ফরম্যাট সক্রিয় হবে।</span>
-          </div>
-        </div>
-
-        <Button
-          onClick={() => saveMutation.mutate(templates)}
-          disabled={saveMutation.isPending}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md gap-1.5 px-5 py-2.5"
-        >
-          {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          <span>সংরক্ষণ করুন</span>
-        </Button>
       </div>
 
       {/* Instant Test SMS Dialog */}

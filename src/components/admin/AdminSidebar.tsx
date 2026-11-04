@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSiteLogo } from '@/hooks/useSiteLogo';
 import {
@@ -14,27 +14,39 @@ import {
   Newspaper,
   Calendar, 
   UserCog, 
-  ImageIcon,
-  Wallet,
-  Receipt,
-  CreditCard,
-  CheckSquare,
-  History,
-  UserCog2,
-  Settings,
-  Home,
-  ShieldCheck,
-  Sparkles,
-  MessageSquare,
-  Megaphone
+  ImageIcon, 
+  Wallet, 
+  Receipt, 
+  CreditCard, 
+  CheckSquare, 
+  History, 
+  UserCog2, 
+  Settings, 
+  Home, 
+  ShieldCheck, 
+  Sparkles, 
+  MessageSquare, 
+  Megaphone,
+  ChevronDown
 } from 'lucide-react';
 
 const AdminSidebar = () => {
   const { language } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   const { state } = useSidebar();
   const { logoUrl } = useSiteLogo();
   const collapsed = state === 'collapsed';
+
+  // SMS submenu expansion state: automatically open if on sms-gateway or sms-templates
+  const isSmsRoute = location.pathname.startsWith('/admin/sms-gateway') || location.pathname.startsWith('/admin/sms-templates');
+  const [smsSubmenuOpen, setSmsSubmenuOpen] = useState(isSmsRoute);
+
+  useEffect(() => {
+    if (isSmsRoute) {
+      setSmsSubmenuOpen(true);
+    }
+  }, [isSmsRoute]);
 
   // Navigation menu items
   const menuItems = [
@@ -97,12 +109,20 @@ const AdminSidebar = () => {
     { 
       title: language === 'bn' ? 'এসএমএস গেটওয়ে' : 'SMS Gateway', 
       url: '/admin/sms-gateway', 
-      icon: MessageSquare 
-    },
-    { 
-      title: language === 'bn' ? 'এসএমএস ফরম্যাট' : 'SMS Formats', 
-      url: '/admin/sms-templates', 
-      icon: Sparkles 
+      icon: MessageSquare,
+      isDropdown: true,
+      subItems: [
+        {
+          title: language === 'bn' ? 'গেটওয়ে কনফিগারেশন' : 'Gateway Config',
+          url: '/admin/sms-gateway',
+          exact: true,
+        },
+        {
+          title: language === 'bn' ? 'এসএমএস ফরম্যাট ও টেমপ্লেট' : 'SMS Formats',
+          url: '/admin/sms-templates',
+          exact: false,
+        },
+      ]
     },
     { 
       title: language === 'bn' ? 'নোটিশ ব্যবস্থাপনা' : 'Notices', 
@@ -175,6 +195,82 @@ const AdminSidebar = () => {
             )}
             <nav className="space-y-1">
               {menuItems.map((item) => {
+                // If it's a dropdown menu item (SMS Gateway with submenu)
+                if (item.isDropdown && item.subItems) {
+                  const parentActive = isSmsRoute;
+
+                  return (
+                    <div key={item.url} className="space-y-1">
+                      {/* Parent Item */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSmsSubmenuOpen(!smsSubmenuOpen);
+                          if (!parentActive) {
+                            navigate('/admin/sms-gateway');
+                          }
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 text-[14px] group text-left cursor-pointer",
+                          parentActive
+                            ? "bg-white/20 text-white font-bold shadow-md shadow-emerald-950/30 border border-white/30 backdrop-blur-md"
+                            : "text-white hover:bg-white/15 font-medium"
+                        )}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <item.icon 
+                            className={cn(
+                              "w-5 h-5 flex-shrink-0 stroke-[2.2] transition-transform duration-200 group-hover:scale-105",
+                              parentActive ? "text-amber-300" : "text-white group-hover:scale-110"
+                            )} 
+                          />
+                          {!collapsed && <span className="truncate">{item.title}</span>}
+                        </div>
+
+                        {!collapsed && (
+                          <ChevronDown
+                            className={cn(
+                              "w-4 h-4 text-emerald-200 transition-transform duration-200 shrink-0",
+                              smsSubmenuOpen ? "rotate-180 text-amber-300" : ""
+                            )}
+                          />
+                        )}
+                      </button>
+
+                      {/* Sub-menu items */}
+                      {!collapsed && smsSubmenuOpen && (
+                        <div className="pl-6 pr-1 py-1 space-y-1 border-l-2 border-emerald-400/30 ml-4 animate-in fade-in slide-in-from-top-1 duration-150">
+                          {item.subItems.map((sub) => {
+                            const isSubActive = sub.exact 
+                              ? location.pathname === sub.url 
+                              : location.pathname.startsWith(sub.url);
+
+                            return (
+                              <NavLink
+                                key={sub.url}
+                                to={sub.url}
+                                end={sub.exact}
+                                className={cn(
+                                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-150 block",
+                                  isSubActive
+                                    ? "bg-white/25 text-amber-300 font-bold border border-white/20 shadow-xs"
+                                    : "text-emerald-100 hover:text-white hover:bg-white/10 font-medium"
+                                )}
+                              >
+                                <span className={cn(
+                                  "w-1.5 h-1.5 rounded-full shrink-0",
+                                  isSubActive ? "bg-amber-300" : "bg-emerald-300/60"
+                                )} />
+                                <span className="truncate">{sub.title}</span>
+                              </NavLink>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 const active = isActive(item.url, item.exact);
                 return (
                   <NavLink
