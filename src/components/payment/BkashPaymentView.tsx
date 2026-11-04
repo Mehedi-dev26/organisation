@@ -23,6 +23,8 @@ interface BkashPaymentViewProps {
   recipientNumber?: string;
   dueId?: string | null;
   purpose?: string;
+  customLogoUrl?: string | null;
+  instructions?: string | null;
   onClose: () => void;
   onSuccess: (trxId: string, details: any) => void;
 }
@@ -33,6 +35,8 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
   recipientNumber = '01616355160',
   dueId,
   purpose = 'সময়ের বাতিঘর চাঁদা ও অনুদান',
+  customLogoUrl,
+  instructions,
   onClose,
   onSuccess,
 }) => {
@@ -195,16 +199,22 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
   return (
     <div className="w-full max-w-sm sm:max-w-md mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden font-sans relative animate-in fade-in zoom-in-95 duration-200">
       
-      {/* Top Header with bKash Logo and Close Icon (Exact layout of Image 2 & 3) */}
+      {/* Top Header with bKash Logo and Close Icon */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <BkashLogo className="w-7 h-7" />
-          <span className="font-extrabold text-xl text-[#E2136E] tracking-tight">bKash</span>
+          {customLogoUrl ? (
+            <img src={customLogoUrl} alt="bKash" className="h-8 max-w-[130px] object-contain" />
+          ) : (
+            <>
+              <BkashLogo className="w-7 h-7" />
+              <span className="font-extrabold text-xl text-[#E2136E] tracking-tight">bKash</span>
+            </>
+          )}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+          className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors cursor-pointer"
           title="বন্ধ করুন"
         >
           <X className="w-6 h-6 stroke-[2.5]" />
@@ -323,21 +333,32 @@ export const BkashPaymentView: React.FC<BkashPaymentViewProps> = ({
             </p>
           </div>
 
-          {/* Visual Instruction Steps */}
-          <div className="space-y-2 text-xs text-slate-700 font-medium bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-            <p className="flex items-start gap-1.5">
-              <span className="text-[#E2136E] font-bold">১.</span>
-              <span>আপনার Bkash অ্যাপ অথবা ইউএসএসডি (*২৪৭#) ব্যবহার করুন।</span>
-            </p>
-            <p className="flex items-start gap-1.5">
-              <span className="text-[#E2136E] font-bold">২.</span>
-              <span><strong>Send Money</strong> করে উপরের নম্বরে ৳{amount.toFixed(2)} টাকা পাঠান।</span>
-            </p>
-            <p className="flex items-start gap-1.5">
-              <span className="text-[#E2136E] font-bold">৩.</span>
-              <span>টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে প্রদান করুন।</span>
-            </p>
-          </div>
+          {/* Real-Time Database Instructions or Default Steps */}
+          {instructions && instructions.trim() ? (
+            <div className="space-y-1.5 text-xs text-slate-700 font-medium bg-slate-50 p-3.5 rounded-2xl border border-slate-100 leading-relaxed">
+              {instructions.split('\n').filter(Boolean).map((line, idx) => (
+                <p key={idx} className="flex items-start gap-1.5">
+                  <span className="text-[#E2136E] font-bold shrink-0">{line.match(/^[০-৯\d]+[\.\)]/)?.[0] || '•'}</span>
+                  <span>{line.replace(/^[০-৯\d]+[\.\)]\s*/, '')}</span>
+                </p>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2 text-xs text-slate-700 font-medium bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+              <p className="flex items-start gap-1.5">
+                <span className="text-[#E2136E] font-bold">১.</span>
+                <span>আপনার Bkash অ্যাপ অথবা ইউএসএসডি (*২৪৭#) ব্যবহার করুন।</span>
+              </p>
+              <p className="flex items-start gap-1.5">
+                <span className="text-[#E2136E] font-bold">২.</span>
+                <span><strong>Send Money</strong> করে উপরের নম্বরে ৳{amount.toFixed(2)} টাকা পাঠান।</span>
+              </p>
+              <p className="flex items-start gap-1.5">
+                <span className="text-[#E2136E] font-bold">৩.</span>
+                <span>টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে প্রদান করুন।</span>
+              </p>
+            </div>
+          )}
 
           {/* Live Checker Status */}
           <div className="text-center pt-1">

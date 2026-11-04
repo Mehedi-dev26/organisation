@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSiteLogo } from '@/hooks/useSiteLogo';
+import { usePaymentGatewayLogos } from '@/hooks/usePaymentGatewayLogos';
 import { 
   Home, 
   X, 
@@ -12,7 +15,8 @@ import {
   CheckCircle2, 
   ShieldCheck,
   Receipt,
-  ArrowLeft
+  ArrowLeft,
+  AlertCircle
 } from 'lucide-react';
 import { 
   BkashLogo, 
@@ -36,7 +40,7 @@ export interface PaymentOption {
   active: boolean;
 }
 
-export const PAYMENT_METHODS: PaymentOption[] = [
+export const BASE_PAYMENT_METHODS: PaymentOption[] = [
   {
     id: 'bkash',
     name: 'Bkash Personal',
@@ -118,11 +122,50 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
 }) => {
   const { language } = useLanguage();
   const { logoUrl } = useSiteLogo();
+  const { logos: customLogos } = usePaymentGatewayLogos();
   const navigate = useNavigate();
+
+  // Fetch live active methods from database
+  const { data: dbMethods, isLoading: isDbLoading } = useQuery({
+    queryKey: ['public-payment-methods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 30, // 30 seconds
+  });
+
+  // Filter to show ONLY active gateways configured in database
+  const activeGateways = React.useMemo(() => {
+    if (!dbMethods || dbMethods.length === 0) {
+      // Fallback: If no records yet, show default mobile methods
+      return BASE_PAYMENT_METHODS.filter((m) => ['bkash', 'nagad', 'rocket'].includes(m.id));
+    }
+
+    return BASE_PAYMENT_METHODS.filter((baseMethod) => {
+      const dbMatch = dbMethods.find((db) => db.method_type === baseMethod.id);
+      // If found in DB, respect is_active flag; if not found in DB, keep inactive
+      return dbMatch ? dbMatch.is_active === true : false;
+    });
+  }, [dbMethods]);
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('bkash');
 
+  // Auto-select first active gateway when active list updates
+  useEffect(() => {
+    if (activeGateways.length > 0) {
+      const isCurrentActive = activeGateways.some((m) => m.id === selectedMethod);
+      if (!isCurrentActive) {
+        setSelectedMethod(activeGateways[0].id);
+      }
+    }
+  }, [activeGateways, selectedMethod]);
+
   const handlePayNow = () => {
+    if (!selectedMethod || activeGateways.length === 0) return;
     onSelectPayment(selectedMethod, amount);
   };
 
@@ -190,7 +233,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           <button
             type="button"
             onClick={() => navigate('/contact')}
-            className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors shadow-xs"
+            className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors shadow-xs cursor-pointer"
             title="সহায়তা / হেল্পলাইন"
           >
             <Headphones className="w-4 h-4" />
@@ -199,7 +242,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition-colors shadow-xs"
+            className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition-colors shadow-xs cursor-pointer"
             title="রিফ্রেশ"
           >
             <RotateCcw className="w-4 h-4" />
@@ -208,7 +251,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           <button
             type="button"
             onClick={() => navigate('/about')}
-            className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors shadow-xs"
+            className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
             title="সংগঠনের তথ্য"
           >
             <Info className="w-4 h-4" />
@@ -232,50 +275,72 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
           <span className="text-xs font-bold tracking-wide">Mobile Banking</span>
         </div>
 
-        {/* 6 Gateway Selection Grid (Exact layout & LIVE badges of Image 1) */}
-        <div className="grid grid-cols-2 gap-2.5 pt-0.5">
-          {PAYMENT_METHODS.map((method) => {
-            const isSelected = selectedMethod === method.id;
-            return (
-              <button
-                key={method.id}
-                type="button"
-                onClick={() => setSelectedMethod(method.id)}
-                className={`relative p-3 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center text-center cursor-pointer group ${
-                  isSelected
-                    ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/30 ring-2 ring-blue-500/30 shadow-md'
-                    : 'border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800/60 hover:border-slate-300 hover:shadow-xs'
-                }`}
-              >
-                {/* Red LIVE Badge on Top-Right */}
-                <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-red-600 text-white shadow-xs">
-                    LIVE
-                  </span>
-                </div>
+        {/* Live Active Gateways Grid (Only active ones rendered) */}
+        {activeGateways.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+            {activeGateways.map((method) => {
+              const isSelected = selectedMethod === method.id;
+              const customLogoUrl = customLogos[method.id];
 
-                {/* Selected Checkmark Indicator */}
-                {isSelected && (
-                  <div className="absolute top-2 left-2 text-blue-600">
-                    <CheckCircle2 className="w-4 h-4 fill-blue-600 text-white" />
+              return (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => setSelectedMethod(method.id)}
+                  className={`relative p-3 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center text-center cursor-pointer group ${
+                    isSelected
+                      ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/30 ring-2 ring-blue-500/30 shadow-md'
+                      : 'border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800/60 hover:border-slate-300 hover:shadow-xs'
+                  }`}
+                >
+                  {/* Red LIVE Badge on Top-Right */}
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-red-600 text-white shadow-xs">
+                      LIVE
+                    </span>
                   </div>
-                )}
 
-                {/* Brand Logo */}
-                <div className="w-11 h-11 flex items-center justify-center my-0.5 group-hover:scale-105 transition-transform">
-                  {method.logo}
-                </div>
+                  {/* Selected Checkmark Indicator */}
+                  {isSelected && (
+                    <div className="absolute top-2 left-2 text-blue-600">
+                      <CheckCircle2 className="w-4 h-4 fill-blue-600 text-white" />
+                    </div>
+                  )}
 
-                {/* Brand Label */}
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">
-                  {method.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  {/* Brand Logo (Official Uploaded Logo OR Vector Fallback) */}
+                  <div className="w-12 h-12 flex items-center justify-center my-0.5 group-hover:scale-105 transition-transform">
+                    {customLogoUrl ? (
+                      <img
+                        src={customLogoUrl}
+                        alt={method.name}
+                        className="w-10 h-10 object-contain drop-shadow-xs"
+                      />
+                    ) : (
+                      method.logo
+                    )}
+                  </div>
 
-        {/* Automatic Prefilled Dues Summary (No manual selection needed as per user request) */}
+                  {/* Brand Label */}
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">
+                    {method.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 text-center space-y-2">
+            <AlertCircle className="w-8 h-8 text-amber-600 mx-auto" />
+            <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+              বর্তমানে কোনো অনলাইন পেমেন্ট গেটওয়ে সক্রিয় নেই।
+            </p>
+            <p className="text-[11px] text-amber-700 dark:text-amber-300">
+              অনুগ্রহ করে অ্যাডমিন প্যানেল থেকে গেটওয়ে সক্রিয় করুন অথবা অ্যাডমিনের সাথে যোগাযোগ করুন।
+            </p>
+          </div>
+        )}
+
+        {/* Automatic Prefilled Dues Summary */}
         <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-white dark:from-slate-800/80 dark:to-slate-800/40 border border-emerald-200/80 dark:border-slate-700 flex items-center justify-between shadow-xs">
           <div className="min-w-0 pr-2">
             <span className="text-[10px] font-extrabold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider block">
@@ -299,7 +364,8 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
         <button
           type="button"
           onClick={handlePayNow}
-          className="w-full mt-1 py-3.5 px-6 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] active:scale-[0.99] text-white font-extrabold text-base shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          disabled={activeGateways.length === 0}
+          className="w-full mt-1 py-3.5 px-6 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none text-white font-extrabold text-base shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <span>Pay ৳{amount.toFixed(2)}</span>
         </button>

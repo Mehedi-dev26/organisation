@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePaymentGatewayLogos } from '@/hooks/usePaymentGatewayLogos';
 import { 
   ShieldCheck, 
   ArrowLeft,
@@ -19,6 +20,7 @@ export const OnlinePaymentPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { logos } = usePaymentGatewayLogos();
 
   const dueId = searchParams.get('dueId');
   const methodParam = (searchParams.get('method') as PaymentMethodId) || null;
@@ -53,31 +55,49 @@ export const OnlinePaymentPage = () => {
     return 'SB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   });
 
-  useEffect(() => {
-    if (methodParam && ['bkash', 'nagad', 'rocket', 'upay', 'cellfin', 'tap'].includes(methodParam)) {
-      setActiveMethod(methodParam);
-    }
-  }, [methodParam]);
-
-  // Fetch live gateway numbers from database
+  // Fetch live active gateway records from database
   const { data: dbMethods } = useQuery({
     queryKey: ['public-payment-methods'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payment_methods')
-        .select('*')
-        .eq('is_active', true);
+        .select('*');
       if (error) return [];
       return data || [];
     },
+    staleTime: 1000 * 30, // 30s
   });
 
+  // Synchronize method param & verify it's active in database
+  useEffect(() => {
+    if (methodParam && ['bkash', 'nagad', 'rocket', 'upay', 'cellfin', 'tap'].includes(methodParam)) {
+      if (dbMethods && dbMethods.length > 0) {
+        const found = dbMethods.find((m) => m.method_type === methodParam);
+        if (found && found.is_active === false) {
+          // Inactive gateway: clear active method
+          setActiveMethod(null);
+          return;
+        }
+      }
+      setActiveMethod(methodParam);
+    }
+  }, [methodParam, dbMethods]);
+
+  const getGatewayRecord = (method: PaymentMethodId) => {
+    return dbMethods?.find((m) => m.method_type === method) || null;
+  };
+
   const getRecipientNumber = (method: PaymentMethodId) => {
-    const found = dbMethods?.find((m) => m.method_type === method);
-    if (found?.account_number && found.account_number !== '01XXXXXXXXX') {
-      return found.account_number;
+    const record = getGatewayRecord(method);
+    if (record?.account_number && record.account_number.trim() && record.account_number !== '01XXXXXXXXX') {
+      return record.account_number.trim();
     }
     return '01616355160';
+  };
+
+  const getInstructions = (method: PaymentMethodId) => {
+    const record = getGatewayRecord(method);
+    return record?.instructions_bn || null;
   };
 
   const handleSelectPayment = (method: PaymentMethodId, selectedAmount: number) => {
@@ -136,6 +156,8 @@ export const OnlinePaymentPage = () => {
             amount={amount}
             invoiceNo={invoiceNo}
             recipientNumber={getRecipientNumber('bkash')}
+            instructions={getInstructions('bkash')}
+            customLogoUrl={logos['bkash'] || null}
             dueId={dueId}
             purpose={purpose}
             onClose={handleCloseActiveView}
@@ -148,6 +170,8 @@ export const OnlinePaymentPage = () => {
             amount={amount}
             invoiceNo={invoiceNo}
             recipientNumber={getRecipientNumber('nagad')}
+            instructions={getInstructions('nagad')}
+            customLogoUrl={logos['nagad'] || null}
             dueId={dueId}
             purpose={purpose}
             onClose={handleCloseActiveView}
@@ -162,6 +186,8 @@ export const OnlinePaymentPage = () => {
             amount={amount}
             invoiceNo={invoiceNo}
             recipientNumber={getRecipientNumber(activeMethod)}
+            instructions={getInstructions(activeMethod)}
+            customLogoUrl={logos[activeMethod] || null}
             dueId={dueId}
             purpose={purpose}
             onClose={handleCloseActiveView}

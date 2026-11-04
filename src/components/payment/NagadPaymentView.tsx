@@ -23,6 +23,8 @@ interface NagadPaymentViewProps {
   recipientNumber?: string;
   dueId?: string | null;
   purpose?: string;
+  customLogoUrl?: string | null;
+  instructions?: string | null;
   onClose: () => void;
   onSuccess: (trxId: string, details: any) => void;
 }
@@ -33,6 +35,8 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
   recipientNumber = '01616355160',
   dueId,
   purpose = 'সময়ের বাতিঘর চাঁদা ও অনুদান',
+  customLogoUrl,
+  instructions,
   onClose,
   onSuccess,
 }) => {
@@ -326,6 +330,24 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
             </div>
           </div>
 
+          {/* Instructions Box (Dynamic from DB or Default) */}
+          {instructions && instructions.trim() ? (
+            <div className="p-3 rounded-2xl bg-black/25 border border-white/10 text-xs text-white/90 space-y-1.5 leading-relaxed">
+              {instructions.split('\n').filter(Boolean).map((line, idx) => (
+                <p key={idx} className="flex items-start gap-1.5">
+                  <span className="text-yellow-300 font-bold shrink-0">{line.match(/^[০-৯\d]+[\.\)]/)?.[0] || '•'}</span>
+                  <span>{line.replace(/^[০-৯\d]+[\.\)]\s*/, '')}</span>
+                </p>
+              ))}
+            </div>
+          ) : (
+            <div className="p-3 rounded-2xl bg-black/25 border border-white/10 text-xs text-white/90 space-y-1">
+              <p>১. নগদ অ্যাপ বা *১৬৭# ডায়াল করে Send Money করুন।</p>
+              <p>২. প্রাপক নম্বরে উপরের নম্বরটি দিন ও ৳{amount.toFixed(2)} পাঠান।</p>
+              <p>৩. প্রাপ্ত TrxID নিচে প্রদান করুন।</p>
+            </div>
+          )}
+
           {/* Countdown Timer */}
           <div className="bg-black/30 rounded-2xl p-3 text-center border border-white/10">
             <p className="text-[11px] text-white/80">পেমেন্ট সম্পন্ন করার বাকি সময়</p>
@@ -416,14 +438,18 @@ export const NagadPaymentView: React.FC<NagadPaymentViewProps> = ({
         </div>
       )}
 
-      {/* Official Nagad Bottom Branding (Exact signature of Reference Image 4) */}
+      {/* Official Nagad Bottom Branding */}
       <div className="pb-5 pt-3 text-center flex flex-col items-center justify-center gap-1 border-t border-white/10 bg-black/15">
-        <div className="flex items-center gap-2">
-          <NagadLogo className="w-7 h-7" />
-          <span className="font-heading font-black text-xl tracking-tight text-white">
-            নগদ
-          </span>
-        </div>
+        {customLogoUrl ? (
+          <img src={customLogoUrl} alt="Nagad" className="h-9 max-w-[140px] object-contain drop-shadow-sm" />
+        ) : (
+          <div className="flex items-center gap-2">
+            <NagadLogo className="w-7 h-7" />
+            <span className="font-heading font-black text-xl tracking-tight text-white">
+              নগদ
+            </span>
+          </div>
+        )}
         <p className="text-[10px] text-white/70 tracking-widest font-medium">
           ডাক বিভাগের ডিজিটাল লেনদেন
         </p>

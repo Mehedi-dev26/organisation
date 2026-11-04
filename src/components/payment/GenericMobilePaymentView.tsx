@@ -27,6 +27,8 @@ interface GenericMobilePaymentViewProps {
   recipientNumber?: string;
   dueId?: string | null;
   purpose?: string;
+  customLogoUrl?: string | null;
+  instructions?: string | null;
   onClose: () => void;
   onSuccess: (trxId: string, details: any) => void;
 }
@@ -74,6 +76,8 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
   recipientNumber = '01616355160',
   dueId,
   purpose = 'সময়ের বাতিঘর চাঁদা ও অনুদান',
+  customLogoUrl,
+  instructions,
   onClose,
   onSuccess,
 }) => {
@@ -227,7 +231,13 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
       {/* Top Header */}
       <div className={`px-5 py-4 text-white flex items-center justify-between ${theme.headerBg}`}>
         <div className="flex items-center gap-2.5">
-          {theme.logo}
+          {customLogoUrl ? (
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-sm">
+              <img src={customLogoUrl} alt={theme.name} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            theme.logo
+          )}
           <div>
             <h3 className="font-extrabold text-lg leading-tight">{theme.nameBn}</h3>
             <p className="text-[10px] text-white/80">Secured Payment Gateway</p>
@@ -307,10 +317,22 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
             <p className="font-mono text-2xl font-black text-amber-300">{formatTimer(secondsLeft)}</p>
           </div>
 
-          <div className="space-y-1 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border">
-            <p>💡 {theme.instructions}</p>
-            <p>টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে দিন।</p>
-          </div>
+          {/* Real-time Instructions from Database or fallback */}
+          {instructions && instructions.trim() ? (
+            <div className="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border leading-relaxed">
+              {instructions.split('\n').filter(Boolean).map((line, idx) => (
+                <p key={idx} className="flex items-start gap-1.5">
+                  <span className="font-bold shrink-0 text-slate-900">{line.match(/^[০-৯\d]+[\.\)]/)?.[0] || '•'}</span>
+                  <span>{line.replace(/^[০-৯\d]+[\.\)]\s*/, '')}</span>
+                </p>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-1 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border">
+              <p>💡 {theme.instructions}</p>
+              <p>টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে দিন।</p>
+            </div>
+          )}
 
           <input
             type="text"
