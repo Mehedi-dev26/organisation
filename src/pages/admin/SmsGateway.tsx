@@ -23,7 +23,9 @@ import {
   Loader2,
   FileText,
   HelpCircle,
-  Activity
+  Activity,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,12 +63,14 @@ export const SmsGateway: React.FC = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
   const [gatewayBalance, setGatewayBalance] = useState<number | null>(null);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
 
   // Test SMS State
   const [testPhone, setTestPhone] = useState('');
   const [testName, setTestName] = useState('');
   const [testMessage, setTestMessage] = useState('সময়ের বাতিঘর টেস্ট এসএমএস। গেটওয়ে সফলভাবে কানেক্টেড রয়েছে।');
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [lastTestResult, setLastTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Search in logs
   const [logSearch, setLogSearch] = useState('');
@@ -83,6 +87,17 @@ export const SmsGateway: React.FC = () => {
   useEffect(() => {
     if (settings) {
       setFormSettings(settings);
+      // Auto check balance if API key is present
+      if (settings.apiKey && settings.apiKey.trim()) {
+        checkGatewayBalance(settings).then((res) => {
+          if (res.success) {
+            setGatewayBalance(res.balance);
+            setBalanceError(null);
+          } else if (res.error) {
+            setBalanceError(res.error);
+          }
+        }).catch(() => {});
+      }
     }
   }, [settings]);
 
@@ -90,7 +105,7 @@ export const SmsGateway: React.FC = () => {
   const { data: logs = [], isLoading: isLogsLoading, refetch: refetchLogs } = useQuery({
     queryKey: ['sms-delivery-logs'],
     queryFn: getSmsDeliveryLogs,
-    refetchInterval: 20000,
+    refetchInterval: 15000,
   });
 
   // Query Members count for analytics
@@ -109,19 +124,21 @@ export const SmsGateway: React.FC = () => {
   // Save Settings Mutation
   const saveMutation = useMutation({
     mutationFn: saveSmsGatewaySettings,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sms-gateway-settings'] });
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['sms-gateway-settings'], saved);
       toast({
-        title: language === 'bn' ? 'সফল!' : 'Success!',
+        title: language === 'bn' ? 'সেটিংস সংরক্ষিত হয়েছে!' : 'Settings Saved!',
         description: language === 'bn' 
-          ? 'এসএমএস গেটওয়ে সেটিংস সফলভাবে সংরক্ষিত ও লাইভ কার্যকর হয়েছে।'
+          ? 'এসএমএস গেটওয়ে কনফিগারেশন সফলভাবে আপডেট করা হয়েছে।' 
           : 'SMS Gateway settings updated successfully.',
       });
+      // Re-check balance with saved settings
+      handleCheckBalance();
     },
     onError: (err: any) => {
       toast({
-        title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: err.message || 'সংরক্ষণ ব্যর্থ হয়েছে',
+        title: language === 'bn' ? 'সংরক্ষণ ব্যর্থ' : 'Save Failed',
+        description: err.message || 'ডাটাবেজে সেটিংস সংরক্ষণ করা সম্ভব হয়নি।',
         variant: 'destructive',
       });
     },
@@ -130,16 +147,27 @@ export const SmsGateway: React.FC = () => {
   // Check Balance
   const handleCheckBalance = async () => {
     setIsCheckingBalance(true);
+    setBalanceError(null);
     try {
       const res = await checkGatewayBalance(formSettings);
-      setGatewayBalance(res.balance);
-      toast({
-        title: language === 'bn' ? 'ব্যালেন্স আপডেট' : 'Balance Updated',
-        description: language === 'bn' 
-          ? `বর্তমান রিচার্জ ব্যালেন্স: ৳${res.balance.toFixed(2)}`
-          : `Current balance: BDT ${res.balance.toFixed(2)}`,
-      });
+      if (res.success) {
+        setGatewayBalance(res.balance);
+        toast({
+          title: language === 'bn' ? 'ব্যালেন্স আপডেট' : 'Balance Updated',
+          description: language === 'bn' 
+            ? `বর্তমান রিচার্জ ব্যালেন্স: ৳${res.balance.toFixed(2)}`
+            : `Current balance: BDT ${res.balance.toFixed(2)}`,
+        });
+      } else {
+        setBalanceError(res.error || 'ব্যালেন্স দেখতে ব্যর্থ');
+        toast({
+          title: 'ব্যালেন্স দেখতে ব্যর্থ',
+          description: res.error || 'API Key সঠিক কিনা যাচাই করুন।',
+          variant: 'destructive',
+        });
+      }
     } catch (err: any) {
+      setBalanceError(err.message);
       toast({
         title: 'ব্যালেন্স দেখতে ব্যর্থ',
         description: err.message,
@@ -162,7 +190,18 @@ export const SmsGateway: React.FC = () => {
       return;
     }
 
+    if (!formSettings.senderId || !formSettings.senderId.trim()) {
+      toast({
+        title: 'Sender ID অনুপস্থিত',
+        description: 'দয়া করে আগে আপনার Bulk SMS BD প্যানেলের অনুমোদিত Sender ID দিন এবং সংরক্ষণ করুন।',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSendingTest(true);
+    setLastTestResult(null);
+
     try {
       const res = await sendSingleSms(
         testPhone.trim(),
@@ -171,22 +210,27 @@ export const SmsGateway: React.FC = () => {
         'test'
       );
 
+      setLastTestResult({ success: res.success, message: res.message });
+
       if (res.success) {
         toast({
-          title: language === 'bn' ? 'টেস্ট এসএমএস প্রেরিত!' : 'Test SMS Sent!',
+          title: language === 'bn' ? 'টেস্ট এসএমএস সফলভাবে প্রেরিত!' : 'Test SMS Sent Successfully!',
           description: language === 'bn' 
-            ? `${testPhone} নম্বরে সফলভাবে পাঠানো হয়েছে। লগ রেকর্ড যুক্ত হয়েছে।`
+            ? `${testPhone} নম্বরে এসএমএস চলে গেছে। ডেলিভারি লগ দেখুন।`
             : `SMS delivered to ${testPhone}. Log recorded.`,
         });
         refetchLogs();
+        handleCheckBalance();
       } else {
         toast({
-          title: 'এসএমএস ব্যর্থ',
-          description: res.message || 'গেটওয়ে সাড়া দেয়নি',
+          title: 'এসএমএস প্রেরণ ব্যর্থ হয়েছে',
+          description: res.message,
           variant: 'destructive',
         });
+        refetchLogs();
       }
     } catch (err: any) {
+      setLastTestResult({ success: false, message: err.message });
       toast({
         title: 'ত্রুটি',
         description: err.message,
@@ -218,35 +262,35 @@ export const SmsGateway: React.FC = () => {
   const testSmsParts = calculateSmsParts(testMessage);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-600/20">
-            <MessageSquare className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>{language === 'bn' ? 'এসএমএস গেটওয়ে ও অটোমেশন' : 'SMS Gateway & Automation'}</span>
-              <Badge className="bg-emerald-600 text-white border-0 text-[11px] font-bold">
-                Bulk SMS BD
-              </Badge>
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {language === 'bn' 
-                ? 'সদস্যদের নোটিশ ঘোষণা, বকেয়া চাঁদা রিমাইন্ডার এবং তাৎক্ষণিক বাল্ক এসএমএস সম্প্রচার।' 
-                : 'Broadcast notices, automated dues payment reminders, and live gateway cost analysis.'}
-            </p>
-          </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 font-sans">
+      
+      {/* Top Header - Consistent with Finance & Members Management */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-[#14231B] dark:text-foreground flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center text-[#0B6B3A]">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <span>{language === 'bn' ? 'এসএমএস গেটওয়ে ও অটোমেশন' : 'SMS Gateway & Automation'}</span>
+            <Badge className="bg-emerald-600 text-white border-0 text-[11px] font-bold ml-1">
+              Bulk SMS BD
+            </Badge>
+          </h2>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {language === 'bn' 
+              ? 'সদস্যদের নোটিশ ঘোষণা, বকেয়া চাঁদা রিমাইন্ডার এবং তাৎক্ষণিক বাল্ক এসএমএস ব্রডকাস্ট নিয়ন্ত্রণ করুন' 
+              : 'Broadcast notices, automated dues payment reminders, and live gateway cost analysis.'}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             type="button"
             variant="outline"
+            size="sm"
             onClick={handleCheckBalance}
             disabled={isCheckingBalance}
-            className="rounded-xl border-slate-300 dark:border-slate-700 font-bold text-xs gap-1.5 shadow-2xs"
+            className="border-emerald-200 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-300 font-bold text-xs gap-1.5 shadow-2xs"
           >
             {isCheckingBalance ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
@@ -256,21 +300,22 @@ export const SmsGateway: React.FC = () => {
             <span>
               {gatewayBalance !== null 
                 ? `ব্যালেন্স: ৳${gatewayBalance.toFixed(2)}` 
-                : (language === 'bn' ? 'ব্যালেন্স চেক করুন' : 'Check Balance')}
+                : (language === 'bn' ? 'ব্যালেন্স রিফ্রেশ' : 'Check Balance')}
             </span>
           </Button>
 
           <Button
+            size="sm"
             onClick={() => saveMutation.mutate(formSettings)}
             disabled={saveMutation.isPending}
-            className="bg-[#0B6B3A] hover:bg-[#09542e] text-white font-bold text-xs rounded-xl shadow-md gap-1.5"
+            className="bg-[#0B6B3A] hover:bg-[#09542e] text-white font-medium text-xs rounded-xl shadow-sm gap-1.5"
           >
             {saveMutation.isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <Save className="w-3.5 h-3.5" />
             )}
-            <span>{language === 'bn' ? 'সেটিংস সেভ করুন' : 'Save Settings'}</span>
+            <span>{language === 'bn' ? 'কনফিগারেশন সংরক্ষণ' : 'Save Settings'}</span>
           </Button>
         </div>
       </div>
@@ -291,12 +336,14 @@ export const SmsGateway: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Total Cost */}
+        {/* Current Balance */}
         <Card className="rounded-2xl border-slate-200/90 shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-500 font-medium">{language === 'bn' ? 'মোট আনুমানিক খরচ' : 'Total Cost'}</p>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">৳{totalCost.toFixed(2)}</h3>
+              <p className="text-xs text-slate-500 font-medium">{language === 'bn' ? 'গেটওয়ে লাইভ ব্যালেন্স' : 'Gateway Balance'}</p>
+              <h3 className="text-2xl font-black text-emerald-600 mt-1">
+                {gatewayBalance !== null ? `৳${gatewayBalance.toFixed(2)}` : '৳০.০০'}
+              </h3>
               <p className="text-[11px] text-slate-400 font-medium mt-0.5">@ ৳{formSettings.costPerSms} / পার্ট</p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
@@ -338,7 +385,7 @@ export const SmsGateway: React.FC = () => {
         
         {/* Left Column: Gateway Configuration (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <Card className="rounded-3xl border-slate-200/90 shadow-md bg-white dark:bg-slate-900 overflow-hidden">
+          <Card className="rounded-2xl border-slate-200/90 shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
             <CardHeader className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800 p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -347,7 +394,7 @@ export const SmsGateway: React.FC = () => {
                     <span>{language === 'bn' ? 'বাল্ক এসএমএস বিডি (Bulk SMS BD) গেটওয়ে কনফিগারেশন' : 'Gateway Configuration'}</span>
                   </CardTitle>
                   <CardDescription className="text-xs mt-0.5">
-                    {language === 'bn' ? 'আপনার বাল্ক এসএমএস বিডি অ্যাকাউন্ট থেকে API Key ও Sender ID দিন।' : 'Enter your Bulk SMS BD credentials.'}
+                    {language === 'bn' ? 'আপনার বাল্ক এসএমএস বিডি অ্যাকাউন্ট থেকে API Key ও অনুমোদিত Sender ID দিন।' : 'Enter your Bulk SMS BD credentials.'}
                   </CardDescription>
                 </div>
 
@@ -365,6 +412,21 @@ export const SmsGateway: React.FC = () => {
 
             <CardContent className="p-5 sm:p-6 space-y-4">
               
+              {/* Important Sender ID Advisory Alert Box */}
+              <div className="p-4 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 space-y-1.5 text-xs leading-relaxed">
+                <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                  <span>জরুরি নির্দেশনা: Sender ID সঠিকভাবে পূরণ করুন</span>
+                </div>
+                <p>
+                  Bulk SMS BD-তে আপনার একাউন্টের জন্য অনুমোদিত প্রেরক আইডি (Sender ID) প্রদান করা বাধ্যতামূলক। 
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-800 dark:text-amber-300 pl-1">
+                  <li><strong>মাস্কিং অ্যাকাউন্ট:</strong> আপনার অনুমোদিত ব্র্যান্ড নাম (যেমন: <code className="bg-amber-100 dark:bg-amber-900 px-1 py-0.5 rounded font-mono">Batighor</code>) দিন।</li>
+                  <li><strong>নন-মাস্কিং অ্যাকাউন্ট:</strong> Bulk SMS BD ড্যাশবোর্ডে লগইন করে বাম পাশের <strong>"Sender ID"</strong> মেনুতে যান। সেখানে আপনার একাউন্টের জন্য বরাদ্দকৃত ১১ বা ১৩ ডিজিটের নম্বরটি (যেমন <code className="bg-amber-100 dark:bg-amber-900 px-1 py-0.5 rounded font-mono">88096...</code>) হুবহু কপি করে এখানে পেস্ট করুন।</li>
+                </ul>
+              </div>
+
               {/* Provider Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -379,14 +441,15 @@ export const SmsGateway: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    সেন্ডার আইডি / মাস্কিং নাম (Sender ID)
+                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span>সেন্ডার আইডি / প্রেরক নম্বর (Sender ID) *</span>
                   </Label>
                   <Input
                     value={formSettings.senderId}
                     onChange={(e) => setFormSettings((prev) => ({ ...prev, senderId: e.target.value }))}
-                    placeholder="যেমন: SomoyerBatighor অথবা নন-মাস্কিং"
-                    className="text-xs font-bold rounded-xl"
+                    placeholder="প্যানেল থেকে প্রাপ্ত Sender ID বা নম্বর দিন"
+                    className="text-xs font-bold rounded-xl border-amber-300/80 focus:border-[#0B6B3A]"
+                    required
                   />
                 </div>
               </div>
@@ -395,7 +458,7 @@ export const SmsGateway: React.FC = () => {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    API Key (গোপন এপিআই কী)
+                    API Key (গোপন এপিআই কী) *
                   </Label>
                   <button
                     type="button"
@@ -412,6 +475,7 @@ export const SmsGateway: React.FC = () => {
                   onChange={(e) => setFormSettings((prev) => ({ ...prev, apiKey: e.target.value }))}
                   placeholder="Bulk SMS BD থেকে প্রাপ্ত API Key পেস্ট করুন"
                   className="font-mono text-xs rounded-xl"
+                  required
                 />
               </div>
 
@@ -451,122 +515,66 @@ export const SmsGateway: React.FC = () => {
                     step="0.01"
                     value={formSettings.costPerSms}
                     onChange={(e) => setFormSettings((prev) => ({ ...prev, costPerSms: parseFloat(e.target.value) || 0.35 }))}
-                    className="font-bold text-xs rounded-xl"
+                    className="font-mono text-xs rounded-xl"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    লো-ব্যালেন্স অ্যালার্ট থ্রেশহোল্ড (BDT)
+                    কম ব্যালেন্স সতর্কবার্তা থ্রেশহোল্ড (BDT)
                   </Label>
                   <Input
                     type="number"
                     value={formSettings.lowBalanceAlertThreshold}
                     onChange={(e) => setFormSettings((prev) => ({ ...prev, lowBalanceAlertThreshold: parseFloat(e.target.value) || 50 }))}
-                    className="font-bold text-xs rounded-xl"
+                    className="font-mono text-xs rounded-xl"
                   />
-                </div>
-              </div>
-
-              {/* Auto Dues Reminder Automation Options */}
-              <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/60 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-300 flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
-                      <span>{language === 'bn' ? 'স্বয়ংক্রিয় বকেয়া চাঁদা রিমাইন্ডার' : 'Auto Dues Reminder Automation'}</span>
-                    </h4>
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                      প্রতি মাসের নির্দিষ্ট তারিখে বকেয়া সদস্যদের কাছে স্বয়ংক্রিয়ভাবে রিমাইন্ডার পৌঁছে যাবে।
-                    </p>
-                  </div>
-                  <Switch
-                    checked={formSettings.autoDuesReminderEnabled}
-                    onCheckedChange={(val) => setFormSettings((prev) => ({ ...prev, autoDuesReminderEnabled: val }))}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                  <label className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer text-xs font-bold">
-                    <input
-                      type="checkbox"
-                      checked={formSettings.duesNotificationChannels.sms}
-                      onChange={(e) => setFormSettings((prev) => ({
-                        ...prev,
-                        duesNotificationChannels: { ...prev.duesNotificationChannels, sms: e.target.checked }
-                      }))}
-                      className="rounded text-emerald-600"
-                    />
-                    <span>এসএমএস (SMS)</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer text-xs font-bold">
-                    <input
-                      type="checkbox"
-                      checked={formSettings.duesNotificationChannels.push}
-                      onChange={(e) => setFormSettings((prev) => ({
-                        ...prev,
-                        duesNotificationChannels: { ...prev.duesNotificationChannels, push: e.target.checked }
-                      }))}
-                      className="rounded text-emerald-600"
-                    />
-                    <span>পুশ নোটিফিকেশন</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer text-xs font-bold">
-                    <input
-                      type="checkbox"
-                      checked={formSettings.duesNotificationChannels.email}
-                      onChange={(e) => setFormSettings((prev) => ({
-                        ...prev,
-                        duesNotificationChannels: { ...prev.duesNotificationChannels, email: e.target.checked }
-                      }))}
-                      className="rounded text-emerald-600"
-                    />
-                    <span>ইমেইল (Email)</span>
-                  </label>
                 </div>
               </div>
 
               {/* Save Button */}
-              <Button
-                type="button"
-                onClick={() => saveMutation.mutate(formSettings)}
-                disabled={saveMutation.isPending}
-                className="w-full bg-[#0B6B3A] hover:bg-[#09542e] text-white font-bold h-11 rounded-xl shadow-md gap-2 cursor-pointer"
-              >
-                {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{language === 'bn' ? 'এসএমএস গেটওয়ে কনফিগারেশন সংরক্ষণ করুন' : 'Save Gateway Settings'}</span>
-              </Button>
+              <div className="pt-2">
+                <Button
+                  onClick={() => saveMutation.mutate(formSettings)}
+                  disabled={saveMutation.isPending}
+                  className="w-full bg-[#0B6B3A] hover:bg-[#09542e] text-white font-bold text-xs rounded-xl shadow-md py-2.5 gap-2"
+                >
+                  {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>কনফিগারেশন সংরক্ষণ করুন</span>
+                </Button>
+              </div>
+
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Quick Test SMS Composer (5 Cols) */}
+        {/* Right Column: Instant Live SMS Tester (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <Card className="rounded-3xl border-slate-200/90 shadow-md bg-white dark:bg-slate-900 overflow-hidden">
-            <CardHeader className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800 p-5">
+          <Card className="rounded-2xl border-slate-200/90 shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
+            <CardHeader className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100 dark:border-emerald-900/40 p-5">
               <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Send className="w-5 h-5 text-emerald-600" />
-                <span>{language === 'bn' ? 'তাৎক্ষণিক টেস্ট এসএমএস পাঠান' : 'Send Test SMS'}</span>
+                <Send className="w-4 h-4 text-emerald-600" />
+                <span>তাৎক্ষণিক টেস্ট এসএমএস পাঠান</span>
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                যেকোনো বাংলাদেশি মোবাইল নম্বরে সরাসরি টেস্ট এসএমএস পাঠিয়ে যাচাই করুন।
+                যেকোনো সচল নম্বরে টেস্ট মেসেজ পাঠিয়ে রিয়েল-টাইম গেটওয়ে ও ডেলিভারি নিশ্চিত করুন।
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="p-5 sm:p-6">
-              <form onSubmit={handleSendTestSms} className="space-y-4">
+            <CardContent className="p-5 space-y-4">
+              <form onSubmit={handleSendTestSms} className="space-y-3.5">
+                
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    প্রাপকের ফোন নম্বর
+                    প্রাপকের মোবাইল নম্বর *
                   </Label>
                   <Input
-                    type="text"
+                    type="tel"
                     value={testPhone}
                     onChange={(e) => setTestPhone(e.target.value)}
-                    placeholder="যেমন: 01712345678"
-                    className="font-mono text-xs font-bold rounded-xl"
+                    placeholder="e.g. 017XXXXXXXX বা 88017XXXXXXXX"
+                    className="font-mono text-xs rounded-xl"
+                    required
                   />
                 </div>
 
@@ -578,7 +586,7 @@ export const SmsGateway: React.FC = () => {
                     type="text"
                     value={testName}
                     onChange={(e) => setTestName(e.target.value)}
-                    placeholder="যেমন: মোঃ সাকিব হাসান"
+                    placeholder="যেমন: মোঃ মেহেদী হাসান"
                     className="text-xs rounded-xl"
                   />
                 </div>
@@ -586,9 +594,9 @@ export const SmsGateway: React.FC = () => {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      মেসেজ কনটেন্ট
+                      মেসেজের বিষয়বস্তু *
                     </Label>
-                    <span className="text-[11px] font-mono text-slate-500 font-bold">
+                    <span className="text-[11px] font-bold text-emerald-700">
                       {testSmsParts.chars} অক্ষর ({testSmsParts.parts} পার্ট)
                     </span>
                   </div>
@@ -596,150 +604,161 @@ export const SmsGateway: React.FC = () => {
                     rows={4}
                     value={testMessage}
                     onChange={(e) => setTestMessage(e.target.value)}
-                    className="text-xs rounded-xl leading-relaxed font-sans"
+                    className="text-xs rounded-xl font-sans leading-relaxed"
+                    required
                   />
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
-                    <span>বাংলা ইউনিকোড: ৭০ অক্ষরের বেশি হলে ২ পার্ট হবে</span>
-                    <span className="font-bold text-emerald-600">খরচ: ৳{(testSmsParts.parts * formSettings.costPerSms).toFixed(2)}</span>
-                  </div>
                 </div>
+
+                {/* Live Cost estimation */}
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium">প্রাক্কলিত খরচ:</span>
+                  <span className="font-bold text-[#0B6B3A]">
+                    ৳{(testSmsParts.parts * formSettings.costPerSms).toFixed(2)} BDT
+                  </span>
+                </div>
+
+                {/* Live Feedback Result */}
+                {lastTestResult && (
+                  <div className={`p-3 rounded-xl text-xs space-y-1 border ${
+                    lastTestResult.success 
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
+                      : 'bg-rose-50 text-rose-900 border-rose-200'
+                  }`}>
+                    <div className="flex items-center gap-1.5 font-bold">
+                      {lastTestResult.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-rose-600" />
+                      )}
+                      <span>{lastTestResult.success ? 'সফল ডেলিভারি:' : 'ডেলিভারি ব্যর্থ:'}</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed pl-5">
+                      {lastTestResult.message}
+                    </p>
+                  </div>
+                )}
 
                 <Button
                   type="submit"
                   disabled={isSendingTest}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-md gap-2"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl py-2.5 shadow-md gap-2"
                 >
                   {isSendingTest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  <span>{language === 'bn' ? 'টেস্ট এসএমএস পাঠান' : 'Send Test SMS'}</span>
+                  <span>টেস্ট এসএমএস পাঠান</span>
                 </Button>
               </form>
             </CardContent>
           </Card>
         </div>
+
       </div>
 
-      {/* SMS Delivery Logs & Cost Analysis Table */}
-      <Card className="rounded-3xl border-slate-200/90 shadow-md bg-white dark:bg-slate-900 overflow-hidden">
-        <CardHeader className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+      {/* Delivery Logs Table */}
+      <Card className="rounded-2xl border-slate-200/90 shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
+        <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Activity className="w-5 h-5 text-emerald-600" />
-                <span>{language === 'bn' ? 'এসএমএস ডেলিভারি হিস্ট্রি ও খরচ অডিট' : 'SMS Delivery Logs & Audit'}</span>
+                <FileText className="w-4 h-4 text-emerald-600" />
+                <span>এসএমএস ডেলিভারি ও খরচ হিস্ট্রি (Delivery Logs)</span>
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                সদস্যদের প্রেরিত প্রতিটি এসএমএসের অবস্থা, সময় ও খরচ বিশ্লেষণ।
+                সরাসরি গেটওয়ে থেকে প্রাপ্ত ডেলিভারি ফলাফল, রেসপন্স মেসেজ ও খরচ অডিট।
               </CardDescription>
             </div>
 
-            {/* Search and Filters */}
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input
-                  type="text"
-                  placeholder="ফোন, নাম বা মেসেজ খুঁজুন..."
                   value={logSearch}
                   onChange={(e) => setLogSearch(e.target.value)}
+                  placeholder="নম্বর বা নাম খুঁজুন..."
                   className="pl-8 text-xs rounded-xl h-9 w-44 sm:w-56"
                 />
               </div>
-
-              <select
-                value={logFilter}
-                onChange={(e) => setLogFilter(e.target.value as any)}
-                className="h-9 px-3 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-              >
-                <option value="all">সকল ধরন</option>
-                <option value="dues_reminder">বকেয়া চাঁদা রিমাইন্ডার</option>
-                <option value="notice">নোটিশ ঘোষণা</option>
-                <option value="test">টেস্ট এসএমএস</option>
-              </select>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => refetchLogs()}
-                className="h-9 rounded-xl border-slate-300 text-xs font-bold"
+                className="h-9 px-2.5 rounded-xl border-slate-200"
+                title="লগ রিফ্রেশ"
               >
-                <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+                <RefreshCw className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
-                <TableRow>
-                  <TableHead className="text-xs font-bold">তারিখ ও সময়</TableHead>
-                  <TableHead className="text-xs font-bold">প্রাপক</TableHead>
-                  <TableHead className="text-xs font-bold">উদ্দেশ্য</TableHead>
-                  <TableHead className="text-xs font-bold min-w-[200px]">মেসেজ</TableHead>
-                  <TableHead className="text-xs font-bold text-center">পার্ট</TableHead>
-                  <TableHead className="text-xs font-bold text-right">খরচ</TableHead>
-                  <TableHead className="text-xs font-bold text-center">স্ট্যাটাস</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.length > 0 ? (
-                  filteredLogs.map((log) => (
-                    <TableRow key={log.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 text-xs">
-                      <TableCell className="font-mono text-slate-500 whitespace-nowrap">
+          {filteredLogs.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/70 dark:bg-slate-800/40 text-[11px]">
+                    <TableHead className="font-bold">তারিখ ও সময়</TableHead>
+                    <TableHead className="font-bold">প্রাপক</TableHead>
+                    <TableHead className="font-bold">উদ্দেশ্য</TableHead>
+                    <TableHead className="font-bold">মেসেজ প্রিভিউ</TableHead>
+                    <TableHead className="font-bold text-center">পার্ট / খরচ</TableHead>
+                    <TableHead className="font-bold text-center">স্ট্যাটাস</TableHead>
+                    <TableHead className="font-bold">গেটওয়ে রেসপন্স</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.map((log) => (
+                    <TableRow key={log.id} className="text-xs hover:bg-slate-50/50">
+                      <TableCell className="font-mono text-[11px] text-slate-500 whitespace-nowrap">
                         {log.createdAt ? format(new Date(log.createdAt), 'dd MMM yyyy, hh:mm a') : 'N/A'}
                       </TableCell>
                       <TableCell>
-                        <div className="font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                          {log.recipientName}
-                        </div>
-                        <div className="font-mono text-[11px] text-slate-400 mt-0.5">
-                          {log.recipientPhone}
-                        </div>
+                        <div className="font-bold text-slate-800 dark:text-slate-200">{log.recipientName}</div>
+                        <div className="font-mono text-[11px] text-slate-500">{log.recipientPhone}</div>
                       </TableCell>
                       <TableCell>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          {log.purpose === 'dues_reminder' ? 'বকেয়া চাঁদা' : log.purpose === 'notice' ? 'নোটিশ' : 'টেস্ট/কাস্টম'}
-                        </span>
+                        <Badge variant="outline" className="text-[10px] font-bold">
+                          {log.purpose === 'dues_reminder' ? '💰 চাঁদা রিমাইন্ডার' : log.purpose === 'notice' ? '📢 নোটিশ' : '🧪 টেস্ট'}
+                        </Badge>
                       </TableCell>
-                      <TableCell className="max-w-[260px] truncate text-slate-600 dark:text-slate-400" title={log.message}>
+                      <TableCell className="max-w-xs truncate text-[11px] text-slate-600 dark:text-slate-300" title={log.message}>
                         {log.message}
                       </TableCell>
-                      <TableCell className="text-center font-mono font-bold">
-                        {log.smsCount}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-bold text-emerald-600">
-                        ৳{log.cost.toFixed(2)}
+                      <TableCell className="text-center font-mono text-[11px]">
+                        <div>{log.smsCount} পার্ট</div>
+                        <div className="text-emerald-700 font-bold">৳{log.cost.toFixed(2)}</div>
                       </TableCell>
                       <TableCell className="text-center">
                         {log.status === 'delivered' ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] font-bold">
-                            ডেলিভার্ড
-                          </Badge>
-                        ) : log.status === 'failed' ? (
-                          <Badge variant="destructive" className="text-[10px] font-bold">
-                            ব্যর্থ
+                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] font-bold">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            সফল
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] font-bold">
-                            প্রক্রিয়াধীন
+                          <Badge className="bg-rose-100 text-rose-800 border-rose-200 text-[10px] font-bold">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            ব্যর্থ
                           </Badge>
                         )}
                       </TableCell>
+                      <TableCell className="text-[10px] text-slate-500 max-w-[200px] truncate" title={log.responseMessage}>
+                        {log.responseMessage || 'সফলভাবে সম্পন্ন'}
+                      </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-slate-400">
-                      কোনো এসএমএস লগ রেকর্ড পাওয়া যায়নি।
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-slate-400 space-y-2">
+              <MessageSquare className="w-10 h-10 mx-auto text-slate-300" />
+              <p className="text-sm font-bold">কোনো এসএমএস লগ রেকর্ড পাওয়া যায়নি</p>
+              <p className="text-xs">টেস্ট এসএমএস পাঠালে অথবা নোটিশ ব্রডকাস্ট করলে স্বয়ংক্রিয়ভাবে এখানে লগ যুক্ত হবে।</p>
+            </div>
+          )}
         </CardContent>
       </Card>
+
     </div>
   );
 };
