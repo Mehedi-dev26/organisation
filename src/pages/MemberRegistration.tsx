@@ -351,7 +351,7 @@ const MemberRegistration: React.FC = () => {
 আবেদনের অবস্থা: প্রাথমিক পর্যালোচনাধীন (Pending Verification)
 তারিখ: ${new Date().toLocaleDateString('bn-BD')}
 ------------------------------------------------
-ভেরিফিকেশনের পর লগইন লিংক: https://somoyerbatighor.org/login
+ভেরিফিকেশনের পর লগইন লিংক: https://samoyerbatighor.pro.bd/login
 হটলাইন: ০১৯১৬-৩১৪৩১৫ / ০১৭১১-০৫০৮৪১`;
 
     try {

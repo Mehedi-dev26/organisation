@@ -122,6 +122,7 @@ const App = () => {
                   <Route path="/member-registration" element={<MemberRegistration />} />
                   <Route path="/payment" element={<OnlinePaymentPage />} />
                   <Route path="/online-payment" element={<OnlinePaymentPage />} />
+                  <Route path="/pay" element={<OnlinePaymentPage />} />
                   {/* Member Portal Multi-Page Architecture */}
                   <Route path="/member" element={<MemberLayout />}>
                     <Route index element={<MemberDashboardHome />} />

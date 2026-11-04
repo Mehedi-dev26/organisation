@@ -308,7 +308,7 @@ const PaymentVerification = () => {
               amount: payment.amount,
               month: payment.month_year,
               reject_reason: reason || 'ভুল বা অসম্পূর্ণ পেমেন্ট তথ্য',
-              payment_link: 'batighor.org/payment',
+              payment_link: 'https://samoyerbatighor.pro.bd/pay',
               org_name: 'সময়ের বাতিঘর',
             },
             'payment_rejected',

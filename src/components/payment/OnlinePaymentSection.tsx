@@ -16,7 +16,9 @@ import {
   ShieldCheck,
   Receipt,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  UserCheck
 } from 'lucide-react';
 import { 
   BkashLogo, 
@@ -107,6 +109,13 @@ interface OnlinePaymentSectionProps {
   amount: number;
   dueId?: string | null;
   purpose?: string;
+  magicMember?: {
+    id: string;
+    full_name: string;
+    member_id: string;
+    phone?: string;
+    month?: string;
+  } | null;
   onSelectPayment: (method: PaymentMethodId, amount: number) => void;
   onClose?: () => void;
   className?: string;
@@ -116,6 +125,7 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
   amount = 0,
   dueId,
   purpose = 'সদস্য মাসিক চাঁদা',
+  magicMember = null,
   onSelectPayment,
   onClose,
   className = '',
@@ -257,6 +267,42 @@ export const OnlinePaymentSection: React.FC<OnlinePaymentSectionProps> = ({
       {/* Main Payment Selection Box */}
       <div className="px-3 sm:px-5 pb-6 space-y-3.5">
         
+        {/* Personalized Smart Magic Link Member Info Card */}
+        {magicMember && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 border border-emerald-300/80 shadow-xs text-left space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0B6B3A] text-white flex items-center gap-1 shadow-2xs">
+                <Sparkles className="w-3 h-3 text-yellow-300" />
+                <span>ম্যাজিক পেমেন্ট লিংক সক্রিয়</span>
+              </span>
+              <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold bg-white/80 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                {magicMember.month || purpose}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-emerald-600/10 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-sm font-bold text-slate-900 truncate">
+                    {magicMember.full_name}
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium">
+                    সদস্য আইডি: <strong className="text-emerald-700">{magicMember.member_id}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0">
+                <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">প্রদেয় বকেয়া</span>
+                <span className="text-lg sm:text-xl font-black text-[#0B6B3A]">৳{amount}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header Banner */}
         <div className="w-full py-3 px-4 rounded-xl bg-[#1E293B] text-white text-center shadow-md">
           <p className="text-sm font-bold tracking-wide">

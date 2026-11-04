@@ -41,6 +41,7 @@ import {
   type SmsGatewaySettings,
   DEFAULT_SMS_SETTINGS
 } from '@/services/smsService';
+import { createBatchMagicPaymentLinks } from '@/lib/magicLinkUtils';
 
 interface DuesReminderSetupDialogProps {
   open: boolean;
@@ -103,28 +104,62 @@ export const DuesReminderSetupDialog: React.FC<DuesReminderSetupDialogProps> = (
   // Calculate live SMS parts for the template
   const sampleData = {
     name: unpaidSummary[0]?.member?.full_name || 'মোঃ কামরুল হাসান',
-    member_id: unpaidSummary[0]?.member?.member_id || '01',
+    member_id: unpaidSummary[0]?.member?.member_id || 'SB-2601',
     month: currentMonthName,
     amount: unpaidSummary[0]?.totalUnpaid || 100,
     org_name: 'সময়ের বাতিঘর',
-    payment_link: 'batighor.org/payment',
+    payment_link: 'https://samoyerbatighor.pro.bd/pay?t=PL-2601-8K3M',
   };
 
   const previewSmsText = renderSmsTemplate(localSettings.duesSmsTemplate, sampleData);
   const smsParts = calculateSmsParts(previewSmsText);
 
-  // Instant Broadcast Now to All Currently Unpaid Members
+  // Instant Broadcast Now to All Currently Unpaid Members with Smart Magic Links
   const handleBroadcastInstantReminders = async () => {
-    const validRecipients = unpaidSummary
-      .filter((s) => s.member?.phone && s.member.phone.length >= 10)
-      .map((s) => {
+    const eligibleMembers = unpaidSummary.filter(
+      (s) => s.member?.phone && s.member.phone.length >= 10
+    );
+
+    if (eligibleMembers.length === 0) {
+      toast({
+        title: 'কোনো প্রাপক পাওয়া যায়নি',
+        description: 'কোনো বকেয়া সদস্যের বৈধ ফোন নম্বর নেই অথবা সবার চাঁদা পরিশোধিত।',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!window.confirm(`আপনি কি ${eligibleMembers.length} জন বকেয়া সদস্যকে ব্যক্তিগত ওয়ান-টাইম ম্যাজিক পেমেন্ট লিংক সহ SMS রিমাইন্ডার পাঠাতে চান?`)) {
+      return;
+    }
+
+    setIsBroadcasting(true);
+    setBroadcastProgress({ current: 0, total: eligibleMembers.length });
+
+    try {
+      // 1. Generate unique personalized Magic Payment Links for every member in batch
+      const magicLinksMap = await createBatchMagicPaymentLinks(
+        eligibleMembers.map((s) => ({
+          memberId: s.member.id,
+          memberDisplayId: s.member.member_id || '2601',
+          memberName: s.member.full_name,
+          memberPhone: s.member.phone || '',
+          amount: s.totalUnpaid,
+          month: currentMonthName,
+          dueId: (s as any).dueRecordId || null,
+        }))
+      );
+
+      // 2. Prepare personalized SMS with member's exact one-time magic link
+      const validRecipients = eligibleMembers.map((s) => {
+        const magicUrl = magicLinksMap[s.member.id]?.url || `https://samoyerbatighor.pro.bd/pay?m=${s.member.member_id || ''}`;
         const text = renderSmsTemplate(localSettings.duesSmsTemplate, {
           name: s.member.full_name,
           member_id: s.member.member_id || 'N/A',
           month: currentMonthName,
           amount: s.totalUnpaid,
           org_name: 'সময়ের বাতিঘর',
-          payment_link: 'https://batighor.org/payment',
+          payment_link: magicUrl,
         });
 
         return {
@@ -135,23 +170,6 @@ export const DuesReminderSetupDialog: React.FC<DuesReminderSetupDialogProps> = (
         };
       });
 
-    if (validRecipients.length === 0) {
-      toast({
-        title: 'কোনো প্রাপক পাওয়া যায়নি',
-        description: 'কোনো বকেয়া সদস্যের বৈধ ফোন নম্বর নেই অথবা সবার চাঁদা পরিশোধিত।',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!window.confirm(`আপনি কি ${validRecipients.length} জন বকেয়া সদস্যকে এই মুহূর্তে ব্যক্তিগত SMS রিমাইন্ডার পাঠাতে চান?`)) {
-      return;
-    }
-
-    setIsBroadcasting(true);
-    setBroadcastProgress({ current: 0, total: validRecipients.length });
-
-    try {
       const result = await sendBulkSms(
         validRecipients,
         previewSmsText,
@@ -162,10 +180,10 @@ export const DuesReminderSetupDialog: React.FC<DuesReminderSetupDialogProps> = (
       );
 
       toast({
-        title: language === 'bn' ? 'রিমাইন্ডার ব্রডকাস্ট সম্পন্ন!' : 'Reminders Sent!',
+        title: language === 'bn' ? 'ম্যাজিক রিমাইন্ডার ব্রডকাস্ট সম্পন্ন!' : 'Magic Reminders Sent!',
         description: language === 'bn'
-          ? `মোট ${result.successCount} জন সদস্যকে সফলভাবে SMS পাঠানো হয়েছে (মোট খরচ: ৳${result.totalCost})।`
-          : `Sent ${result.successCount} SMS. Total cost: BDT ${result.totalCost}`,
+          ? `মোট ${result.successCount} জন সদস্যকে সফলভাবে ব্যক্তিগত ম্যাজিক পেমেন্ট লিংক সহ SMS পাঠানো হয়েছে (মোট খরচ: ৳${result.totalCost})।`
+          : `Sent ${result.successCount} SMS with personalized payment links. Total cost: BDT ${result.totalCost}`,
       });
 
       queryClient.invalidateQueries({ queryKey: ['sms-delivery-logs'] });

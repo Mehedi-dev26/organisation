@@ -576,7 +576,7 @@ const MembersManagement: React.FC = () => {
               member_id: finalMemberId || '',
               password: defaultPassword,
               phone: memberData.phone,
-              login_link: 'somoyerbatighor.org/login',
+              login_link: 'https://samoyerbatighor.pro.bd/login',
               org_name: 'সময়ের বাতিঘর',
             },
             'welcome',

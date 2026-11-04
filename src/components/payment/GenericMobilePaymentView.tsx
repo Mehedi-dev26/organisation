@@ -25,6 +25,8 @@ import {
   TapLogo 
 } from './PaymentLogos';
 
+import { markMagicLinkUsed } from '@/lib/magicLinkUtils';
+
 interface GenericMobilePaymentViewProps {
   methodId: 'rocket' | 'upay' | 'cellfin' | 'tap';
   methodName: string;
@@ -35,6 +37,8 @@ interface GenericMobilePaymentViewProps {
   purpose?: string;
   customLogoUrl?: string | null;
   instructions?: string | null;
+  magicMember?: { id: string; full_name: string; member_id: string; phone?: string } | null;
+  magicToken?: string | null;
   onClose: () => void;
   onSuccess: (trxId: string, details: any) => void;
 }
@@ -84,6 +88,8 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
   purpose = 'সময়ের বাতিঘর চাঁদা ও অনুদান',
   customLogoUrl,
   instructions,
+  magicMember,
+  magicToken,
   onClose,
   onSuccess,
 }) => {
@@ -150,9 +156,13 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
 
     try {
       const cleanTrx = trxId.trim().toUpperCase();
-      const { data: memberProfile } = user?.id 
-        ? await supabase.from('members').select('id, full_name, member_id').eq('user_id', user.id).maybeSingle()
-        : { data: null };
+      let memberProfile: { id: string; full_name: string; member_id: string } | null = null;
+      if (user?.id) {
+        const { data } = await supabase.from('members').select('id, full_name, member_id').eq('user_id', user.id).maybeSingle();
+        memberProfile = data;
+      } else if (magicMember?.id) {
+        memberProfile = magicMember;
+      }
 
       let targetDueId = dueId;
       if (!targetDueId && memberProfile?.id) {
@@ -194,6 +204,15 @@ export const GenericMobilePaymentView: React.FC<GenericMobilePaymentViewProps> =
           submitted_at: now.toISOString(),
           is_paid: false,
         });
+      }
+
+      // Mark magic link as used if paid via magic link
+      if (magicToken) {
+        try {
+          await markMagicLinkUsed(magicToken, cleanTrx, methodId);
+        } catch (mErr) {
+          console.warn('Mark magic link error:', mErr);
+        }
       }
 
       try {
