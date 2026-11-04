@@ -1,12 +1,14 @@
 /**
- * Notification Chime Sound Generator for Somoyer Batighor (সময়ের বাতিঘর) Admin Panel
- * Uses Web Audio API to synthesize a pleasant, crystal-clear, instant chime ("টুং" শব্দ)
- * without needing external MP3 asset downloads.
+ * Audio Chime & Interactive Click Sound Service for Somoyer Batighor (সময়ের বাতিঘর)
+ * Synthesizes crisp crystal chimes ("টুং") and plays low-latency aesthetic mouse click sounds.
  */
 
 class NotificationSoundService {
   private audioCtx: AudioContext | null = null;
   private soundEnabled: boolean = true;
+  private clickAudioBuffer: AudioBuffer | null = null;
+  private isBufferLoading: boolean = false;
+  private lastClickTime: number = 0;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -15,6 +17,10 @@ class NotificationSoundService {
         this.soundEnabled = stored !== 'false';
       } catch {
         this.soundEnabled = true;
+      }
+      // Preload the mouse click sound buffer for instant latency-free clicks
+      if (this.soundEnabled) {
+        this.loadClickBuffer().catch(() => {});
       }
     }
   }
@@ -33,6 +39,26 @@ class NotificationSoundService {
     return this.audioCtx;
   }
 
+  public async loadClickBuffer(): Promise<AudioBuffer | null> {
+    if (this.clickAudioBuffer) return this.clickAudioBuffer;
+    if (this.isBufferLoading) return null;
+    const ctx = this.getAudioContext();
+    if (!ctx) return null;
+
+    try {
+      this.isBufferLoading = true;
+      const res = await fetch('/sounds/mouse-click.mp3');
+      if (!res.ok) return null;
+      const arrayBuffer = await res.arrayBuffer();
+      this.clickAudioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      return this.clickAudioBuffer;
+    } catch {
+      return null;
+    } finally {
+      this.isBufferLoading = false;
+    }
+  }
+
   public isEnabled(): boolean {
     return this.soundEnabled;
   }
@@ -42,6 +68,43 @@ class NotificationSoundService {
     try {
       localStorage.setItem('batighor_admin_sound_enabled', enabled ? 'true' : 'false');
     } catch {}
+    if (enabled && !this.clickAudioBuffer) {
+      this.loadClickBuffer().catch(() => {});
+    }
+  }
+
+  /**
+   * Plays low-latency aesthetic mouse click sound
+   * Debounced by 35ms to avoid accidental micro double-triggers
+   */
+  public playClick(volume: number = 0.45): void {
+    if (!this.soundEnabled) return;
+
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.lastClickTime < 35) return;
+    this.lastClickTime = now;
+
+    try {
+      const ctx = this.getAudioContext();
+      if (ctx && this.clickAudioBuffer) {
+        const source = ctx.createBufferSource();
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(Math.min(1, Math.max(0, volume)), ctx.currentTime);
+        source.buffer = this.clickAudioBuffer;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+        return;
+      }
+
+      // If buffer is still loading or not decoded yet, start loading and fallback to HTML5 Audio
+      this.loadClickBuffer().catch(() => {});
+      const audio = new Audio('/sounds/mouse-click.mp3');
+      audio.volume = Math.min(1, Math.max(0, volume));
+      audio.play().catch(() => {});
+    } catch (err) {
+      // Graceful fallback
+    }
   }
 
   /**
@@ -97,4 +160,4 @@ class NotificationSoundService {
 
 export const notificationSound = new NotificationSoundService();
 export const playNotificationChime = () => notificationSound.playChime();
-
+export const playClickSound = (vol?: number) => notificationSound.playClick(vol);

@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getPendingMagicPayments } from '@/lib/magicLinkUtils';
-import { notificationSound, playNotificationChime } from '@/lib/notificationSound';
+import { notificationSound, playNotificationChime, playClickSound } from '@/lib/notificationSound';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
@@ -204,11 +204,34 @@ const AdminLayout = () => {
     };
   }, [language, navigate, queryClient]);
 
+  // Global aesthetic mouse click sound listener for the Admin Panel
+  useEffect(() => {
+    const handleAdminClick = (e: MouseEvent) => {
+      if (!notificationSound.isEnabled()) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const clickable = target.closest(
+        'button, a, [role="button"], [role="tab"], [role="menuitem"], [role="switch"], [role="option"], [data-clickable="true"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], select, summary, .cursor-pointer'
+      );
+
+      if (clickable) {
+        playClickSound(0.45);
+      }
+    };
+
+    window.addEventListener('click', handleAdminClick, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('click', handleAdminClick, { capture: true });
+    };
+  }, []);
+
   const toggleSound = () => {
     const nextState = !isSoundEnabled;
     notificationSound.setEnabled(nextState);
     setIsSoundEnabled(nextState);
     if (nextState) {
+      playClickSound(0.5);
       notificationSound.playChime();
       toast.success(
         language === 'bn' ? '🔔 লাইভ সাউন্ড নোটিফিকেশন চালু হয়েছে (টুং)' : 'Live sound alerts enabled'
@@ -307,7 +330,7 @@ const AdminLayout = () => {
                 aria-label="Toggle Sound Notification"
                 title={
                   isSoundEnabled
-                    ? (language === 'bn' ? 'সাউন্ড অন আছে (ক্লিক করে টেস্ট বা মিউট করুন)' : 'Sound ON (Click to test or mute)')
+                    ? (language === 'bn' ? 'অডিও ও ক্লিক সাউন্ড চালু আছে (মিউট করতে ক্লিক করুন)' : 'Audio & Click Sounds ON (Click to mute)')
                     : (language === 'bn' ? 'সাউন্ড মিউট আছে (ক্লিক করে অন করুন)' : 'Sound MUTED (Click to enable)')
                 }
               >
