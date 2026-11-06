@@ -14,7 +14,8 @@ import {
   Calendar, 
   MapPin, 
   Briefcase,
-  CheckCircle2
+  CheckCircle2,
+  FileText
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getMemberRoleDetails, CommitteeMember } from '@/lib/committeeUtils';
+import { getMemberRoleDetails, CommitteeMember, CommitteeCustomDetailsMap } from '@/lib/committeeUtils';
 
 const Committee = () => {
   const { language } = useLanguage();
@@ -53,6 +54,21 @@ const Committee = () => {
     placeholderData: (prev) => prev,
   });
 
+  // Fetch custom roles, responsibilities & about text from site_settings
+  const { data: customDetailsMap = {} } = useQuery<CommitteeCustomDetailsMap>({
+    queryKey: ['committee-custom-details'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'committee_custom_details')
+        .maybeSingle();
+      if (error || !data?.value) return {};
+      return data.value as CommitteeCustomDetailsMap;
+    },
+    staleTime: 1000 * 60,
+  });
+
   // 1. President (Tier 1 - Top)
   const president = committeeMembers.find(m => 
     m.position_bn.includes('সভাপতি') && !m.position_bn.includes('সহ')
@@ -73,9 +89,10 @@ const Committee = () => {
   const cashierOrTreasurer = committeeMembers.find(m => 
     m.id !== president?.id && 
     m.id !== generalSecretaryOrVp?.id && (
+      m.position_bn.includes('কোষাধ্যক্ষ') ||
       m.position_bn.includes('ক্যাশিয়ার') ||
       m.position_bn.toLowerCase().includes('cashier') ||
-      m.position_bn.includes('কোষাধ্যক্ষ') ||
+      m.position_bn.toLowerCase().includes('treasurer') ||
       m.position_bn.includes('অর্থ')
     )
   );
@@ -133,7 +150,11 @@ const Committee = () => {
   };
 
   const selectedMemberRole = selectedMember 
-    ? getMemberRoleDetails(selectedMember.position_bn, language)
+    ? getMemberRoleDetails(
+        selectedMember.position_bn, 
+        language, 
+        customDetailsMap[selectedMember.id]
+      )
     : null;
 
   return (
@@ -208,7 +229,7 @@ const Committee = () => {
                 <div className="pt-6 border-t border-slate-100">
                   <div className="text-center mb-10 sm:mb-14">
                     <h2 className="font-heading font-black text-xl sm:text-2xl text-slate-800">
-                      {language === 'bn' ? 'কার্যনির্বাহী সদস্যবৃন্দ' : 'Executive Members'}
+                      {language === 'bn' ? 'কার্যনির্বাহী পরিষদ সদস্যবৃন্দ' : 'Executive Council Members'}
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-400 mt-1">
                       {language === 'bn' 
@@ -261,6 +282,7 @@ const Committee = () => {
                   <img
                     src={selectedMember.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedMember.name_bn)}`}
                     alt={selectedMember.name_bn}
+                    style={{ objectPosition: 'center 20%' }}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -302,7 +324,20 @@ const Committee = () => {
                   </div>
                 )}
 
-                {/* 2. পরিচিতি, এলাকা ও কার্যকাল (Origin, Area & Term) */}
+                {/* 2. Custom Bio / Short About Message */}
+                {customDetailsMap?.[selectedMember.id]?.about && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-1.5 text-xs text-slate-700">
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+                      <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>{language === 'bn' ? 'পরিচিতি ও বার্তা' : 'About / Bio'}</span>
+                    </div>
+                    <p className="leading-relaxed italic pl-5 text-slate-600">
+                      "{customDetailsMap[selectedMember.id].about}"
+                    </p>
+                  </div>
+                )}
+
+                {/* 3. পরিচিতি, এলাকা ও কার্যকাল (Origin, Area & Term) */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1">
                     <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
@@ -322,12 +357,12 @@ const Committee = () => {
                     <p className="font-semibold text-slate-800 pl-5">
                       {selectedMember.term_start 
                         ? `${new Date(selectedMember.term_start).getFullYear()} - ${selectedMember.term_end ? new Date(selectedMember.term_end).getFullYear() : 'চলমান'}`
-                        : (language === 'bn' ? '২০২৬ - ২০২৭ পরিষদ' : '2026 - 2027 Term')}
+                        : (language === 'bn' ? '২০২৪ - ২০২৬ পরিষদ' : '2024 - 2026 Term')}
                     </p>
                   </div>
                 </div>
 
-                {/* 3. যোগাযোগ অ্যাকশন: কল ও কপি বাটন */}
+                {/* 4. যোগাযোগ অ্যাকশন: কল ও কপি বাটন */}
                 {selectedMember.phone && (
                   <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
                     <div className="flex items-center justify-between text-xs">
@@ -430,7 +465,8 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
           <img
             src={member.photo_url || fallbackImage}
             alt={name}
-            className="w-full h-full object-cover object-center aspect-square rounded-full group-hover:scale-105 transition-transform duration-300"
+            style={{ objectPosition: 'center 20%' }}
+            className="w-full h-full object-cover aspect-square rounded-full group-hover:scale-105 transition-transform duration-300"
             onError={handleImageError}
           />
         </div>

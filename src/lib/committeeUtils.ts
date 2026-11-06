@@ -13,9 +13,38 @@ export interface CommitteeMember {
   member_id?: string | null;
 }
 
+export interface CustomCommitteeDetail {
+  role_category?: string;
+  responsibilities?: string[];
+  about?: string;
+}
+
+export type CommitteeCustomDetailsMap = Record<string, CustomCommitteeDetail>;
+
 // Professional Organizational Role & Responsibilities Helper
-export const getMemberRoleDetails = (position: string, language: string = 'bn') => {
-  const pos = position.toLowerCase();
+export const getMemberRoleDetails = (
+  position: string,
+  language: string = 'bn',
+  customDetail?: CustomCommitteeDetail | null
+) => {
+  // If custom responsibilities are provided by admin, prioritize them!
+  if (customDetail && (
+    (customDetail.responsibilities && customDetail.responsibilities.length > 0) ||
+    customDetail.about ||
+    customDetail.role_category
+  )) {
+    return {
+      category: customDetail.role_category || (language === 'bn' ? 'সংগঠনের নির্ধারিত ভূমিকা ও দায়িত্ব' : 'Assigned Role & Responsibilities'),
+      responsibilities: (customDetail.responsibilities && customDetail.responsibilities.length > 0)
+        ? customDetail.responsibilities
+        : (language === 'bn' 
+            ? ['সংগঠনের অর্পিত দায়িত্ব নিষ্ঠা ও স্বচ্ছতার সাথে পালন করা।']
+            : ['Fulfilling assigned organizational responsibilities with dedication.']),
+      about: customDetail.about || '',
+    };
+  }
+
+  const pos = (position || '').toLowerCase();
 
   if (pos.includes('সভাপতি') && !pos.includes('সহ')) {
     return {

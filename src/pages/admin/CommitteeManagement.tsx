@@ -7,6 +7,7 @@ import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -26,18 +27,21 @@ import {
   Users,
   ShieldCheck,
   Award,
-  Clock,
+  Calendar,
   Phone,
   Mail,
-  Calendar,
   Sparkles,
   Eye,
   RefreshCw,
-  RotateCcw,
-  CheckCircle,
+  Crop,
   Briefcase,
+  ListChecks,
+  FileText,
+  UserCheck,
 } from 'lucide-react';
 import { compressImage } from '@/lib/imageUtils';
+import LogoCropModal from '@/components/common/LogoCropModal';
+import { getMemberRoleDetails, CommitteeCustomDetailsMap, CustomCommitteeDetail } from '@/lib/committeeUtils';
 
 export interface CommitteeMember {
   id: string;
@@ -71,7 +75,7 @@ const PREDEFINED_ROLES: OrganizationRole[] = [
   { id: 'sr_vp', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সিনিয়র সহ-সভাপতি', title_en: 'Senior Vice President', default_sort: 2 },
   { id: 'vp', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সভাপতি', title_en: 'Vice President', default_sort: 3 },
   { id: 'gs', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাধারণ সম্পাদক', title_en: 'General Secretary', default_sort: 4 },
-  { id: 'cashier', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'ক্যাশিয়ার', title_en: 'Cashier', default_sort: 5 },
+  { id: 'cashier', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'কোষাধ্যক্ষ', title_en: 'Treasurer / Cashier', default_sort: 5 },
   { id: 'ict_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'আইসিটি ও তথ্যপ্রযুক্তি সম্পাদক', title_en: 'ICT & IT Affairs Secretary', default_sort: 6 },
   { id: 'jgs', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'যুগ্ম সাধারণ সম্পাদক', title_en: 'Joint General Secretary', default_sort: 7 },
   { id: 'ags', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সাধারণ সম্পাদক', title_en: 'Assistant General Secretary', default_sort: 8 },
@@ -85,13 +89,13 @@ const PREDEFINED_ROLES: OrganizationRole[] = [
   { id: 'asst_office_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-দপ্তর সম্পাদক', title_en: 'Assistant Office Secretary', default_sort: 14 },
   { id: 'pub_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'প্রচার ও প্রকাশনা সম্পাদক', title_en: 'Publicity & Publication Secretary', default_sort: 15 },
   { id: 'blood_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'রক্তদান ও স্বাস্থ্য বিষয়ক সম্পাদক', title_en: 'Blood Donation & Health Affairs Secretary', default_sort: 16 },
-  { id: 'social_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সমাজকল্যাণ ও ত্রাণ সম্পাদক', title_en: 'Social Welfare & Relief Secretary', default_sort: 16 },
-  { id: 'edu_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'শিক্ষা ও পাঠাগার বিষয়ক সম্পাদক', title_en: 'Education & Library Affairs Secretary', default_sort: 17 },
-  { id: 'cult_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাংস্কৃতিক ও ক্রীড়া সম্পাদক', title_en: 'Cultural & Sports Secretary', default_sort: 18 },
-  { id: 'women_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'নারী ও শিশু বিষয়ক সম্পাদিকা', title_en: 'Women & Child Welfare Secretary', default_sort: 19 },
-  { id: 'env_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'পরিবেশ ও বৃক্ষরোপণ সম্পাদক', title_en: 'Environment & Tree Plantation Secretary', default_sort: 20 },
-  { id: 'law_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'আইন ও মানবাধিকার বিষয়ক সম্পাদক', title_en: 'Law & Human Rights Secretary', default_sort: 21 },
-  { id: 'vol_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'দুর্যোগ ব্যবস্থাপনা ও স্বেচ্ছাসেবক সম্পাদক', title_en: 'Disaster Management & Volunteer Secretary', default_sort: 22 },
+  { id: 'social_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সমাজকল্যাণ ও ত্রাণ সম্পাদক', title_en: 'Social Welfare & Relief Secretary', default_sort: 17 },
+  { id: 'edu_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'শিক্ষা ও পাঠাগার বিষয়ক সম্পাদক', title_en: 'Education & Library Affairs Secretary', default_sort: 18 },
+  { id: 'cult_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাংস্কৃতিক ও ক্রীড়া সম্পাদক', title_en: 'Cultural & Sports Secretary', default_sort: 19 },
+  { id: 'women_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'নারী ও শিশু বিষয়ক সম্পাদিকা', title_en: 'Women & Child Welfare Secretary', default_sort: 20 },
+  { id: 'env_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'পরিবেশ ও বৃক্ষরোপণ সম্পাদক', title_en: 'Environment & Tree Plantation Secretary', default_sort: 21 },
+  { id: 'law_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'আইন ও মানবাধিকার বিষয়ক সম্পাদক', title_en: 'Law & Human Rights Secretary', default_sort: 22 },
+  { id: 'vol_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'দুর্যোগ ব্যবস্থাপনা ও স্বেচ্ছাসেবক সম্পাদক', title_en: 'Disaster Management & Volunteer Secretary', default_sort: 23 },
   { id: 'exec_mem', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'কার্যনির্বাহী সদস্য', title_en: 'Executive Member', default_sort: 30 },
 
   // ৩. উপদেষ্টা পরিষদ (Advisory Council)
@@ -147,10 +151,21 @@ const CommitteeManagement: React.FC = () => {
   });
 
   const [selectedRolePreset, setSelectedRolePreset] = useState<string>('');
+  const [selectedTenurePreset, setSelectedTenurePreset] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Photo Cropping States
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+
+  // Custom Role, Responsibilities & Bio States
+  const [customResponsibilitiesText, setCustomResponsibilitiesText] = useState<string>('');
+  const [customAboutText, setCustomAboutText] = useState<string>('');
+  const [customRoleCategory, setCustomRoleCategory] = useState<string>('');
 
   // Enable Realtime Subscription
   useRealtimeSubscription({ table: 'committee_members', queryKey: ['admin-committee'] });
@@ -169,6 +184,58 @@ const CommitteeManagement: React.FC = () => {
       return (data || []) as CommitteeMember[];
     },
   });
+
+  // Query Custom Role & Responsibilities from site_settings
+  const { data: customDetailsMap = {} } = useQuery<CommitteeCustomDetailsMap>({
+    queryKey: ['committee-custom-details'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'committee_custom_details')
+        .maybeSingle();
+      if (error || !data?.value) return {};
+      return data.value as CommitteeCustomDetailsMap;
+    },
+    staleTime: 1000 * 60,
+  });
+
+  // Helper: Persist custom role details into site_settings
+  const saveMemberCustomDetails = async (
+    memberId: string,
+    responsibilities: string,
+    about: string,
+    category: string
+  ) => {
+    try {
+      const respArray = responsibilities
+        .split('\n')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      const current = { ...(customDetailsMap || {}) };
+      current[memberId] = {
+        role_category: category.trim() || undefined,
+        responsibilities: respArray.length > 0 ? respArray : undefined,
+        about: about.trim() || undefined,
+      };
+
+      await supabase
+        .from('site_settings')
+        .upsert(
+          {
+            key: 'committee_custom_details',
+            value: current as any,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'key' }
+        );
+
+      queryClient.invalidateQueries({ queryKey: ['committee-custom-details'] });
+    } catch (err) {
+      console.warn('Failed to persist custom details to site_settings:', err);
+    }
+  };
 
   // Dynamic Statistics for Top 4 Cards
   const stats = useMemo(() => {
@@ -271,15 +338,15 @@ const CommitteeManagement: React.FC = () => {
     });
   }, [committeeMembers, selectedFilterTab, selectedRoleCategory, selectedTenureFilter, searchQuery]);
 
-  // Image Selection & High Quality Processing
+  // Image Selection & Launch Crop Modal
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: language === 'bn' ? 'ত্রুটি' : 'Error',
-        description: language === 'bn' ? 'ছবি ৫MB এর কম হতে হবে' : 'Photo must be under 5MB',
+        description: language === 'bn' ? 'ছবি ১০MB এর কম হতে হবে' : 'Photo must be under 10MB',
         variant: 'destructive',
       });
       return;
@@ -288,23 +355,35 @@ const CommitteeManagement: React.FC = () => {
     setSelectedImage(file);
     const reader = new FileReader();
     reader.onload = (event) => {
-      setImagePreview(event.target?.result as string);
+      const src = event.target?.result as string;
+      setCropImageSrc(src);
+      setIsCropModalOpen(true);
     };
     reader.readAsDataURL(file);
   };
 
+  // Handle Crop Modal Save (Round avatar blob with user-chosen framing)
+  const handleCropSave = (blob: Blob, previewUrl: string) => {
+    setCroppedBlob(blob);
+    setImagePreview(previewUrl);
+    setIsCropModalOpen(false);
+    toast({
+      title: language === 'bn' ? 'ছবি ফ্রেম সমন্বয় সম্পন্ন' : 'Photo framing saved',
+      description: language === 'bn' ? 'মুখমণ্ডল সুন্দরভাবে ফ্রেমে বসানো হয়েছে।' : 'Head & face positioned inside circular frame.',
+    });
+  };
+
   const uploadHighQualityPhoto = async (): Promise<string | null> => {
-    if (!selectedImage) return formData.photo_url || null;
+    const blobToUpload = croppedBlob || (selectedImage ? await compressImage(selectedImage, 600, 600, 0.92) : null);
+    if (!blobToUpload) return formData.photo_url || null;
 
     try {
       setIsUploading(true);
-      // High Quality Portrait Compression (600x600 @ 0.92 quality)
-      const compressedBlob = await compressImage(selectedImage, 600, 600, 0.92);
-      const fileName = `committee/${Date.now()}-${selectedImage.name.replace(/\s+/g, '_')}`;
+      const fileName = `committee/${Date.now()}-${(selectedImage?.name || 'leader_photo.jpg').replace(/\s+/g, '_')}`;
 
       const { data, error } = await supabase.storage
         .from('member-photos')
-        .upload(fileName, compressedBlob, {
+        .upload(fileName, blobToUpload, {
           contentType: 'image/jpeg',
           upsert: true,
         });
@@ -337,28 +416,50 @@ const CommitteeManagement: React.FC = () => {
         position_en: role.title_en,
         sort_order: role.default_sort,
       }));
+
+      // If user hasn't typed custom responsibilities, auto-fill default ones for this role!
+      if (!customResponsibilitiesText.trim()) {
+        const defaultRoleDetails = getMemberRoleDetails(role.title_bn, 'bn');
+        setCustomResponsibilitiesText(defaultRoleDetails.responsibilities.join('\n'));
+        setCustomRoleCategory(defaultRoleDetails.category || role.category_bn);
+      }
     }
   };
 
   // Mutations
   const createMutation = useMutation({
     mutationFn: async (dataToSubmit: typeof formData) => {
-      const { error } = await supabase.from('committee_members').insert([
-        {
-          name_bn: dataToSubmit.name_bn.trim(),
-          name_en: dataToSubmit.name_en?.trim() || null,
-          position_bn: dataToSubmit.position_bn.trim(),
-          position_en: dataToSubmit.position_en?.trim() || null,
-          photo_url: dataToSubmit.photo_url || null,
-          phone: dataToSubmit.phone?.trim() || null,
-          email: dataToSubmit.email?.trim() || null,
-          sort_order: dataToSubmit.sort_order || 0,
-          is_active: dataToSubmit.is_active,
-          term_start: dataToSubmit.term_start || null,
-          term_end: dataToSubmit.term_end || null,
-        },
-      ]);
+      const { data, error } = await supabase
+        .from('committee_members')
+        .insert([
+          {
+            name_bn: dataToSubmit.name_bn.trim(),
+            name_en: dataToSubmit.name_en?.trim() || null,
+            position_bn: dataToSubmit.position_bn.trim(),
+            position_en: dataToSubmit.position_en?.trim() || null,
+            photo_url: dataToSubmit.photo_url || null,
+            phone: dataToSubmit.phone?.trim() || null,
+            email: dataToSubmit.email?.trim() || null,
+            sort_order: dataToSubmit.sort_order || 0,
+            is_active: dataToSubmit.is_active,
+            term_start: dataToSubmit.term_start || null,
+            term_end: dataToSubmit.term_end || null,
+          },
+        ])
+        .select('id')
+        .single();
+
       if (error) throw error;
+
+      // Persist custom role duties and about bio to site_settings
+      if (data?.id) {
+        await saveMemberCustomDetails(
+          data.id,
+          customResponsibilitiesText,
+          customAboutText,
+          customRoleCategory
+        );
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-committee'] });
@@ -399,7 +500,16 @@ const CommitteeManagement: React.FC = () => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);
+
       if (error) throw error;
+
+      // Persist custom role duties and about bio to site_settings
+      await saveMemberCustomDetails(
+        id,
+        customResponsibilitiesText,
+        customAboutText,
+        customRoleCategory
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-committee'] });
@@ -407,7 +517,7 @@ const CommitteeManagement: React.FC = () => {
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
           language === 'bn'
-            ? 'কমিটি সদস্যের তথ্য সফলভাবে আপডেট হয়েছে।'
+            ? 'কমিটি সদস্যের তথ্য ও দায়িত্ব সফলভাবে আপডেট হয়েছে।'
             : 'Committee member updated successfully.',
       });
       resetForm();
@@ -425,6 +535,23 @@ const CommitteeManagement: React.FC = () => {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('committee_members').delete().eq('id', id);
       if (error) throw error;
+
+      // Clean up from customDetailsMap
+      if (customDetailsMap && customDetailsMap[id]) {
+        const current = { ...customDetailsMap };
+        delete current[id];
+        await supabase
+          .from('site_settings')
+          .upsert(
+            {
+              key: 'committee_custom_details',
+              value: current as any,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'key' }
+          );
+        queryClient.invalidateQueries({ queryKey: ['committee-custom-details'] });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-committee'] });
@@ -461,13 +588,19 @@ const CommitteeManagement: React.FC = () => {
       term_end: '2026-12-31',
     });
     setSelectedRolePreset('');
+    setSelectedTenurePreset('');
     setSelectedImage(null);
     setImagePreview(null);
+    setCroppedBlob(null);
+    setCropImageSrc(null);
+    setCustomResponsibilitiesText('');
+    setCustomAboutText('');
+    setCustomRoleCategory('');
     setEditingMember(null);
     setIsDialogOpen(false);
   };
 
-  // Open Edit Form
+  // Open Edit Form - Pre-fill all fields including presets and custom responsibilities
   const handleEdit = (member: CommitteeMember) => {
     setEditingMember(member);
     setFormData({
@@ -483,7 +616,39 @@ const CommitteeManagement: React.FC = () => {
       term_start: member.term_start || '2024-01-01',
       term_end: member.term_end || '2026-12-31',
     });
+
+    // 1. Pre-fill role preset if matched
+    const matchedRole = PREDEFINED_ROLES.find(
+      (r) =>
+        r.title_bn.trim() === member.position_bn?.trim() ||
+        (member.position_en && r.title_en.toLowerCase() === member.position_en.toLowerCase())
+    );
+    setSelectedRolePreset(matchedRole ? matchedRole.id : '');
+
+    // 2. Pre-fill tenure preset if matched
+    const matchedTenure = TENURE_PRESETS.find(
+      (p) => p.start === member.term_start && p.end === member.term_end
+    );
+    setSelectedTenurePreset(matchedTenure ? matchedTenure.label : '');
+
+    // 3. Pre-fill custom responsibilities & about from site_settings or fallback defaults
+    const custom = customDetailsMap?.[member.id];
+    if (custom) {
+      setCustomResponsibilitiesText(custom.responsibilities ? custom.responsibilities.join('\n') : '');
+      setCustomAboutText(custom.about || '');
+      setCustomRoleCategory(custom.role_category || '');
+    } else {
+      // Fallback: Populate standard responsibilities from committeeUtils
+      const defaultRoleDetails = getMemberRoleDetails(member.position_bn, 'bn');
+      setCustomResponsibilitiesText(defaultRoleDetails.responsibilities.join('\n'));
+      setCustomAboutText('');
+      setCustomRoleCategory(defaultRoleDetails.category || '');
+    }
+
     setImagePreview(member.photo_url || null);
+    setSelectedImage(null);
+    setCroppedBlob(null);
+    setCropImageSrc(null);
     setIsDialogOpen(true);
   };
 
@@ -527,8 +692,8 @@ const CommitteeManagement: React.FC = () => {
           </h2>
           <p className="text-muted-foreground text-sm mt-0.5">
             {language === 'bn'
-              ? 'সময়ের বাতিঘরের কার্যনির্বাহী পরিষদ, উপদেষ্টা পরিষদ ও উপ-কমিটির মেয়াদ ও দায়িত্ব নিয়ন্ত্রণ করুন'
-              : 'Manage executive committee, advisory council, portfolio categories, tenures & photos.'}
+              ? 'সময়ের বাতিঘরের শীর্ষ ৫ নেতৃত্ব, কার্যনির্বাহী পরিষদ, উপদেষ্টা পরিষদ, ছবি ক্রপ ও দায়িত্ব নিয়ন্ত্রণ করুন'
+              : 'Manage committee members, 5-leader hierarchy, responsibilities, tenures & circular photo crops.'}
           </p>
         </div>
 
@@ -536,7 +701,10 @@ const CommitteeManagement: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
+            onClick={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: ['committee-custom-details'] });
+            }}
             className="gap-1.5 border-emerald-200 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-300"
           >
             <RefreshCw className="w-4 h-4" />
@@ -558,242 +726,204 @@ const CommitteeManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Top 4 Multi-Color Stat / Filter Buttons (Matching Blood Donors & Members Management) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. All Committee Members */}
-        <button
-          type="button"
+      {/* Top 4 Metric Filter Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Total Members */}
+        <Card
           onClick={() => setSelectedFilterTab('all')}
-          className={`text-left bg-card border rounded-2xl p-4 shadow-sm transition-all duration-200 flex items-center gap-3.5 hover:shadow-md cursor-pointer ${
+          className={`cursor-pointer transition-all border ${
             selectedFilterTab === 'all'
-              ? 'ring-2 ring-[#0B6B3A] border-[#0B6B3A] bg-emerald-50/40 dark:bg-emerald-950/20'
-              : 'hover:border-emerald-300'
+              ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs'
+              : 'border-slate-200 hover:border-emerald-300'
           }`}
         >
-          <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-[#0B6B3A] shrink-0">
-            <Users className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              {language === 'bn' ? 'মোট কমিটি সদস্য' : 'Total Committee'}
-            </p>
-            <h3 className="text-2xl font-bold text-[#14231B] dark:text-foreground">
-              {stats.total}
-            </h3>
-          </div>
-        </button>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {language === 'bn' ? 'মোট পরিষদ সদস্য' : 'Total Members'}
+              </p>
+              <h3 className="text-2xl font-black text-[#14231B] dark:text-foreground mt-0.5 font-mono">
+                {stats.total}
+              </h3>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-[#0B6B3A] flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* 2. Executive Council Members */}
-        <button
-          type="button"
+        {/* Executive Council */}
+        <Card
           onClick={() => setSelectedFilterTab('executive')}
-          className={`text-left bg-card border rounded-2xl p-4 shadow-sm transition-all duration-200 flex items-center gap-3.5 hover:shadow-md cursor-pointer ${
+          className={`cursor-pointer transition-all border ${
             selectedFilterTab === 'executive'
-              ? 'ring-2 ring-blue-600 border-blue-600 bg-blue-50/40 dark:bg-blue-950/20'
-              : 'hover:border-blue-300'
+              ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs'
+              : 'border-slate-200 hover:border-emerald-300'
           }`}
         >
-          <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 shrink-0">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              {language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive Council'}
-            </p>
-            <h3 className="text-2xl font-bold text-blue-600">{stats.executive}</h3>
-          </div>
-        </button>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive Council'}
+              </p>
+              <h3 className="text-2xl font-black text-[#0B6B3A] mt-0.5 font-mono">
+                {stats.executive}
+              </h3>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-[#0B6B3A] flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* 3. Advisory Council & Patrons */}
-        <button
-          type="button"
+        {/* Advisory Council */}
+        <Card
           onClick={() => setSelectedFilterTab('advisory')}
-          className={`text-left bg-card border rounded-2xl p-4 shadow-sm transition-all duration-200 flex items-center gap-3.5 hover:shadow-md cursor-pointer ${
+          className={`cursor-pointer transition-all border ${
             selectedFilterTab === 'advisory'
-              ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/40 dark:bg-amber-950/20'
-              : 'hover:border-amber-300'
+              ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs'
+              : 'border-slate-200 hover:border-emerald-300'
           }`}
         >
-          <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600 shrink-0">
-            <Award className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              {language === 'bn' ? 'উপদেষ্টা পরিষদ' : 'Advisory Council'}
-            </p>
-            <h3 className="text-2xl font-bold text-amber-600">{stats.advisory}</h3>
-          </div>
-        </button>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {language === 'bn' ? 'উপদেষ্টা পরিষদ' : 'Advisory Council'}
+              </p>
+              <h3 className="text-2xl font-black text-amber-600 mt-0.5 font-mono">
+                {stats.advisory}
+              </h3>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+              <Award className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* 4. Past / Inactive Members */}
-        <button
-          type="button"
+        {/* Inactive Members */}
+        <Card
           onClick={() => setSelectedFilterTab('inactive')}
-          className={`text-left bg-card border rounded-2xl p-4 shadow-sm transition-all duration-200 flex items-center gap-3.5 hover:shadow-md cursor-pointer ${
+          className={`cursor-pointer transition-all border ${
             selectedFilterTab === 'inactive'
-              ? 'ring-2 ring-rose-500 border-rose-500 bg-rose-50/40 dark:bg-rose-950/20'
-              : 'hover:border-rose-300'
+              ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs'
+              : 'border-slate-200 hover:border-emerald-300'
           }`}
         >
-          <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-950 flex items-center justify-center text-rose-600 shrink-0">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground font-medium truncate">
-              {language === 'bn' ? 'সাবেক / নিষ্ক্রিয়' : 'Past / Inactive'}
-            </p>
-            <h3 className="text-2xl font-bold text-rose-600">{stats.inactive}</h3>
-          </div>
-        </button>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {language === 'bn' ? 'সাবেক / নিষ্ক্রিয়' : 'Past / Inactive'}
+              </p>
+              <h3 className="text-2xl font-black text-slate-600 mt-0.5 font-mono">
+                {stats.inactive}
+              </h3>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 flex items-center justify-center">
+              <UserCheck className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Filter and Search Bar Directly Below the 4 Buttons */}
-      <div className="bg-card border rounded-2xl p-4 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                language === 'bn'
-                  ? 'কমিটি সদস্যের নাম, পদবি, মোবাইল বা ইমেইল খুঁজুন...'
-                  : 'Search by committee member name, designation, phone or email...'
-              }
-              className="pl-9 h-10 text-sm rounded-xl border-emerald-100 focus-visible:ring-[#0B6B3A]"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+      {/* Filter Toolbar: Search, Role Category & Tenure Filters */}
+      <Card className="border-slate-200 shadow-2xs">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                placeholder={
+                  language === 'bn'
+                    ? 'নাম, পদবি, মোবাইল বা ইমেইল দিয়ে খুঁজুন...'
+                    : 'Search by name, role, phone or email...'
+                }
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 text-sm"
+              />
+            </div>
 
-          {/* Committee Tenure Filter (কমিটির মেয়াদ ফিল্টার) */}
-          <div className="w-full md:w-56">
-            <Select value={selectedTenureFilter} onValueChange={setSelectedTenureFilter}>
-              <SelectTrigger className="h-10 rounded-xl">
-                <SelectValue placeholder={language === 'bn' ? 'কমিটির মেয়াদ' : 'Committee Tenure'} />
+            {/* Category Dropdown */}
+            <Select value={selectedRoleCategory} onValueChange={setSelectedRoleCategory}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder={language === 'bn' ? 'কমিটি ক্যাটাগরি' : 'Category'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">
-                  {language === 'bn' ? 'সকল কমিটির মেয়াদ' : 'All Tenures'}
-                </SelectItem>
-                {distinctTenures.map((tenure) => (
-                  <SelectItem key={tenure} value={tenure}>
-                    {tenure}
+                <SelectItem value="all">{language === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</SelectItem>
+                <SelectItem value="executive">{language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive'}</SelectItem>
+                <SelectItem value="advisory">{language === 'bn' ? 'উপদেষ্টা পরিষদ' : 'Advisory'}</SelectItem>
+                <SelectItem value="subcommittee">{language === 'bn' ? 'বিশেষ উইং ও উপ-কমিটি' : 'Subcommittees'}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Tenure Dropdown */}
+            <Select value={selectedTenureFilter} onValueChange={setSelectedTenureFilter}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder={language === 'bn' ? 'মেয়াদ অনুযায়ী ফিল্টার' : 'Filter by Tenure'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{language === 'bn' ? 'সকল মেয়াদ' : 'All Tenures'}</SelectItem>
+                {distinctTenures.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Committee Category / Wing Filter */}
-          <div className="w-full md:w-48">
-            <Select value={selectedRoleCategory} onValueChange={setSelectedRoleCategory}>
-              <SelectTrigger className="h-10 rounded-xl">
-                <SelectValue placeholder={language === 'bn' ? 'দায়িত্বের পরিষদ' : 'Portfolio Wing'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{language === 'bn' ? 'সকল পরিষদ' : 'All Portfolios'}</SelectItem>
-                <SelectItem value="executive">{language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive'}</SelectItem>
-                <SelectItem value="advisory">{language === 'bn' ? 'উপদেষ্টা পরিষদ' : 'Advisory'}</SelectItem>
-                <SelectItem value="subcommittee">{language === 'bn' ? 'বিশেষ উইং / উপ-কমিটি' : 'Sub-Committee'}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Reset Filters */}
-          {(selectedFilterTab !== 'all' ||
-            selectedRoleCategory !== 'all' ||
-            selectedTenureFilter !== 'all' ||
-            searchQuery.trim()) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSelectedFilterTab('all');
-                setSelectedRoleCategory('all');
-                setSelectedTenureFilter('all');
-                setSearchQuery('');
-              }}
-              className="h-10 px-3 text-xs text-muted-foreground hover:text-foreground gap-1.5"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              {language === 'bn' ? 'রিসেট' : 'Reset'}
-            </Button>
-          )}
-        </div>
-
-        {/* Summary Counter */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
-          <span>
-            {language === 'bn'
-              ? `প্রদর্শিত হচ্ছে ${filteredMembers.length} জন কমিটি সদস্য`
-              : `Showing ${filteredMembers.length} committee members`}
-          </span>
-          <span className="font-medium text-[#0B6B3A]">
-            {language === 'bn' ? 'সময়ের বাতিঘর নির্বাহী কাউন্সিল' : 'Somoyer Batighor Executive Council'}
-          </span>
-        </div>
-      </div>
-
-      {/* Committee Members Table */}
-      <Card className="rounded-2xl border shadow-sm overflow-hidden">
+      {/* Main Committee Members Table */}
+      <Card className="border-slate-200 shadow-2xs overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-[#0B6B3A]" />
-              <p className="text-sm font-medium">
-                {language === 'bn' ? 'কমিটি সদস্যদের তথ্য লোড হচ্ছে...' : 'Loading committee directory...'}
+            <div className="py-20 text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#0B6B3A]" />
+              <p className="text-sm text-muted-foreground mt-2">
+                {language === 'bn' ? 'কমিটির তথ্য লোড হচ্ছে...' : 'Loading committee members...'}
               </p>
             </div>
           ) : filteredMembers.length === 0 ? (
-            <div className="text-center py-16 px-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-[#0B6B3A] mx-auto flex items-center justify-center mb-3">
-                <ShieldCheck className="w-8 h-8 opacity-60" />
-              </div>
-              <h4 className="text-base font-semibold text-foreground">
+            <div className="py-16 text-center text-muted-foreground">
+              <ShieldCheck className="w-12 h-12 mx-auto mb-2 opacity-40 text-[#0B6B3A]" />
+              <p className="font-semibold text-base">
                 {language === 'bn' ? 'কোন কমিটি সদস্য পাওয়া যায়নি' : 'No committee members found'}
-              </h4>
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
                 {language === 'bn'
-                  ? 'আপনার দেওয়া সার্চ বা ফিল্টারের সাথে মিল রেখে কোনো সদস্য পাওয়া যায়নি।'
-                  : 'No committee member matches the current query or filter.'}
+                  ? 'ফিল্টার পরিবর্তন করুন অথবা নতুন কমিটি সদস্য যুক্ত করুন'
+                  : 'Try changing filters or add a new member.'}
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
-                  <TableRow className="bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-50/60">
-                    <TableHead className="w-14 text-center font-semibold">
-                      {language === 'bn' ? 'ক্রম' : 'Serial'}
+                <TableHeader className="bg-slate-50 dark:bg-muted/40">
+                  <TableRow>
+                    <TableHead className="w-16 text-center font-bold">
+                      {language === 'bn' ? 'ক্রম' : 'Rank'}
                     </TableHead>
-                    <TableHead className="w-16 text-center font-semibold">
+                    <TableHead className="w-16 text-center font-bold">
                       {language === 'bn' ? 'ছবি' : 'Photo'}
                     </TableHead>
-                    <TableHead className="font-semibold">
-                      {language === 'bn' ? 'নাম (বাংলা ও ইংরেজি)' : 'Name'}
+                    <TableHead className="font-bold">
+                      {language === 'bn' ? 'নাম' : 'Name'}
                     </TableHead>
-                    <TableHead className="font-semibold">
-                      {language === 'bn' ? 'দায়িত্ব ও পদবি' : 'Position / Portfolio'}
+                    <TableHead className="font-bold">
+                      {language === 'bn' ? 'পদবি ও ক্যাটাগরি' : 'Designation'}
                     </TableHead>
-                    <TableHead className="font-semibold">
-                      {language === 'bn' ? 'কমিটির মেয়াদ' : 'Tenure'}
+                    <TableHead className="font-bold">
+                      {language === 'bn' ? 'কার্যকাল / মেয়াদ' : 'Tenure Period'}
                     </TableHead>
-                    <TableHead className="font-semibold">
-                      {language === 'bn' ? 'যোগাযোগ (ফোন/ইমেইল)' : 'Contact'}
+                    <TableHead className="font-bold">
+                      {language === 'bn' ? 'যোগাযোগ' : 'Contact'}
                     </TableHead>
-                    <TableHead className="w-24 text-center font-semibold">
-                      {language === 'bn' ? 'স্ট্যাটাস' : 'Status'}
+                    <TableHead className="text-center font-bold">
+                      {language === 'bn' ? 'অবস্থা' : 'Status'}
                     </TableHead>
-                    <TableHead className="w-32 text-right font-semibold pr-4">
+                    <TableHead className="text-right font-bold pr-6">
                       {language === 'bn' ? 'অ্যাকশন' : 'Actions'}
                     </TableHead>
                   </TableRow>
@@ -813,11 +943,12 @@ const CommitteeManagement: React.FC = () => {
 
                       {/* Photo Avatar */}
                       <TableCell className="text-center py-3">
-                        <Avatar className="w-11 h-11 border-2 border-emerald-300 shadow-sm mx-auto">
+                        <Avatar className="w-11 h-11 border-2 border-emerald-300 shadow-xs mx-auto">
                           <AvatarImage
                             src={member.photo_url || undefined}
                             alt={member.name_bn}
                             className="object-cover"
+                            style={{ objectPosition: 'center 20%' }}
                           />
                           <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] font-bold text-sm">
                             {member.name_bn?.charAt(0) || 'K'}
@@ -971,8 +1102,8 @@ const CommitteeManagement: React.FC = () => {
               </div>
               {editingMember
                 ? language === 'bn'
-                  ? 'কমিটি সদস্য তথ্য সম্পাদনা'
-                  : 'Edit Committee Member'
+                  ? 'কমিটি সদস্য তথ্য ও দায়িত্ব সম্পাদনা'
+                  : 'Edit Committee Member & Role'
                 : language === 'bn'
                 ? 'নতুন কমিটি সদস্য যুক্ত করুন'
                 : 'Add New Committee Member'}
@@ -998,7 +1129,9 @@ const CommitteeManagement: React.FC = () => {
                   {language === 'bn' ? 'দ্রুত মেয়াদ নির্বাচন (প্রিসেট)' : 'Quick Tenure Preset'}
                 </Label>
                 <Select
+                  value={selectedTenurePreset}
                   onValueChange={(val) => {
+                    setSelectedTenurePreset(val);
                     const preset = TENURE_PRESETS.find((p) => p.label === val);
                     if (preset) {
                       setFormData((prev) => ({
@@ -1213,7 +1346,9 @@ const CommitteeManagement: React.FC = () => {
                     className="h-10 text-sm font-mono font-bold"
                   />
                   <p className="text-xs text-muted-foreground font-medium">
-                    {language === 'bn' ? '১ = সভাপতি, ৪ = সাধারণ সম্পাদক ইত্যাদি' : '1 = President, 4 = General Secretary'}
+                    {language === 'bn'
+                      ? 'শীর্ষ ৫ নেতৃত্ব: ১ = সভাপতি, ২ = সিনিয়র সহ-সভাপতি, ৩ = সহ-সভাপতি, ৪ = সাধারণ সম্পাদক, ৫ = কোষাধ্যক্ষ'
+                      : 'Top 5 leadership: 1 = President, 2 = Sr VP, 3 = VP, 4 = GS, 5 = Treasurer'}
                   </p>
                 </div>
 
@@ -1237,20 +1372,114 @@ const CommitteeManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* 4. Direct High-Quality Photo Upload Section */}
+            {/* 4. Custom Role Responsibilities & Bio Description Section */}
+            <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-4 sm:p-5 rounded-2xl border border-emerald-200 dark:border-emerald-800 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-2">
+                  <ListChecks className="w-4 h-4" />
+                  {language === 'bn' ? 'সংগঠনের ভূমিকা ও দায়িত্বাবলি' : 'Role & Responsibilities'}
+                </h4>
+                <Badge variant="outline" className="text-emerald-700 bg-white border-emerald-300 text-xs">
+                  {language === 'bn' ? '(i) বাটনে প্রদর্শিত হবে' : 'Shown in (i) modal'}
+                </Badge>
+              </div>
+
+              {/* Custom Role Category Name */}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-bold text-slate-800 dark:text-foreground">
+                  {language === 'bn' ? 'ভূমিকার ধরণ বা ক্যাটাগরি ট্যাগ' : 'Role Category Tag'}
+                </Label>
+                <Input
+                  value={customRoleCategory}
+                  onChange={(e) => setCustomRoleCategory(e.target.value)}
+                  placeholder={language === 'bn' ? 'যেমন: শীর্ষ নেতৃত্ব ও নীতিনির্ধারণ' : 'e.g. Supreme Executive Leadership'}
+                  className="h-10 text-sm font-semibold text-[#0B6B3A]"
+                />
+              </div>
+
+              {/* Responsibilities Bullet Points (one per line) */}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-bold text-slate-800 dark:text-foreground flex items-center justify-between">
+                  <span>{language === 'bn' ? 'সংগঠনের মূল দায়িত্বসমূহ (প্রতি লাইনে একটি করে বুলেট পয়েন্ট)' : 'Key Responsibilities (one per line)'}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{language === 'bn' ? 'Enter চাপুন নতুন লাইনের জন্য' : 'Press Enter for new point'}</span>
+                </Label>
+                <Textarea
+                  value={customResponsibilitiesText}
+                  onChange={(e) => setCustomResponsibilitiesText(e.target.value)}
+                  rows={4}
+                  placeholder={
+                    language === 'bn'
+                      ? 'সংগঠনের প্রধান অভিভাবক ও সকল কার্যনির্বাহী সিদ্ধান্তের চূড়ান্ত অনুমোদনকারী।\nপরিষদের সাধারণ ও জরুরি সভায় সভাপতিত্ব করা এবং দিকনির্দেশনা প্রদান।\nসংগঠনের গঠনতন্ত্র, আদর্শ এবং দীর্ঘমেয়াদী জনকল্যাণমূলক পরিকল্পনা তদারকি।'
+                      : 'Presides over executive meetings.\nEnsures compliance with organizational constitution.\nDirects humanitarian initiatives.'
+                  }
+                  className="text-sm font-medium leading-relaxed"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {language === 'bn'
+                    ? 'ওয়েবসাইটে দর্শনার্থীরা যখন এই সদস্যের নামের পাশের (i) বাটনে ক্লিক করবেন, তখন এই বুলেট পয়েন্টগুলো হুবহু প্রদর্শিত হবে।'
+                    : 'These bullet points will appear verbatim when users click the (i) button next to this member.'}
+                </p>
+              </div>
+
+              {/* Member Bio / About Text (Optional) */}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-bold text-slate-800 dark:text-foreground flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{language === 'bn' ? 'সদস্যের সংক্ষিপ্ত পরিচিতি ও বার্তা (ঐচ্ছিক)' : 'Member Short Bio / Message (Optional)'}</span>
+                </Label>
+                <Textarea
+                  value={customAboutText}
+                  onChange={(e) => setCustomAboutText(e.target.value)}
+                  rows={2}
+                  placeholder={
+                    language === 'bn'
+                      ? 'সময়ের বাতিঘরের প্রতিষ্ঠাতা সদস্য ও একজন নিবেদিতপ্রাণ সমাজকর্মী...'
+                      : 'Founding member and humanitarian volunteer...'
+                  }
+                  className="text-sm font-medium leading-relaxed"
+                />
+              </div>
+            </div>
+
+            {/* 5. Direct Photo Upload Section with Circular Crop Face-Adjustment Tool */}
             <div className="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5" />
-                {language === 'bn' ? 'হাই-কোয়ালিটি ছবি আপলোড' : 'High Quality Photo Upload'}
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" />
+                  {language === 'bn' ? 'পোর্ট্রেট ছবি আপলোড ও ক্রপ ফ্রেম' : 'Photo Upload & Circular Crop'}
+                </h4>
+                <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                  {language === 'bn' ? 'গোলাকার ফ্রেমে মাথা কাটা বন্ধ' : 'Face-centering Protection'}
+                </span>
+              </div>
 
               <div className="flex items-center gap-4">
                 {imagePreview ? (
-                  <div className="relative">
+                  <div className="relative group">
                     <Avatar className="w-20 h-20 border-2 border-emerald-500 shadow-sm">
-                      <AvatarImage src={imagePreview} alt="Preview" className="object-cover" />
+                      <AvatarImage
+                        src={imagePreview}
+                        alt="Preview"
+                        className="object-cover"
+                        style={{ objectPosition: 'center 20%' }}
+                      />
                       <AvatarFallback>{formData.name_bn.charAt(0) || 'K'}</AvatarFallback>
                     </Avatar>
+
+                    {/* Re-Crop Button on Hover or Mobile */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCropImageSrc(imagePreview);
+                        setIsCropModalOpen(true);
+                      }}
+                      title={language === 'bn' ? 'ছবি পুনরায় ক্রপ / মুখমণ্ডল কেন্দ্রিক করুন' : 'Recrop / Center Face'}
+                      className="absolute inset-0 bg-black/45 rounded-full text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    >
+                      <Crop className="w-5 h-5 text-amber-300" />
+                      <span className="text-[9px] font-bold mt-0.5">{language === 'bn' ? 'ক্রপ' : 'Crop'}</span>
+                    </button>
+
                     <Button
                       type="button"
                       variant="destructive"
@@ -1258,6 +1487,7 @@ const CommitteeManagement: React.FC = () => {
                       className="absolute -top-2 -right-2 w-6 h-6 rounded-full shadow"
                       onClick={() => {
                         setSelectedImage(null);
+                        setCroppedBlob(null);
                         setImagePreview(null);
                         setFormData({ ...formData, photo_url: '' });
                         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -1267,12 +1497,12 @@ const CommitteeManagement: React.FC = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-muted border border-dashed border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-muted-foreground">
+                  <div className="w-20 h-20 rounded-full bg-muted border border-dashed border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-muted-foreground">
                     <Upload className="w-7 h-7 text-emerald-600/70" />
                   </div>
                 )}
 
-                <div className="flex-1 space-y-1.5">
+                <div className="flex-1 space-y-2">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1281,20 +1511,38 @@ const CommitteeManagement: React.FC = () => {
                     className="hidden"
                     id="committee-photo-upload"
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="gap-2 border-emerald-300 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-300"
-                  >
-                    <Upload className="w-4 h-4" />
-                    {language === 'bn' ? 'গ্যালারি / ডিভাইস থেকে ছবি দিন' : 'Upload From Device'}
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="gap-2 border-emerald-300 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-300 font-semibold"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {language === 'bn' ? 'ডিভাইস থেকে ছবি বেছে নিন' : 'Choose Photo'}
+                    </Button>
+
+                    {imagePreview && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setCropImageSrc(imagePreview);
+                          setIsCropModalOpen(true);
+                        }}
+                        className="gap-1.5 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-semibold text-xs"
+                      >
+                        <Crop className="w-3.5 h-3.5 text-amber-700" />
+                        {language === 'bn' ? 'ছবি ও মুখ ক্রপ সমন্বয়' : 'Crop / Center Face'}
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
                     {language === 'bn'
-                      ? 'হাই রেজোলিউশন JPG/PNG ছবি। স্বয়ংক্রিয়ভাবে প্রফেশনাল পোর্ট্রেট কোয়ালিটিতে অপ্টিমাইজ হবে।'
-                      : 'High-res JPG/PNG. Auto-optimized to crisp 600x600 portrait.'}
+                      ? 'ছবি নির্বাচন করার সাথে সাথে ক্রপ উইন্ডো খুলবে, যেখানে জুম ও ড্র্যাগ করে মুখমণ্ডল ঠিক মাঝে বসানো যায়।'
+                      : 'Crop modal opens automatically to let you zoom and frame the face inside the circular area.'}
                   </p>
                 </div>
               </div>
@@ -1319,7 +1567,7 @@ const CommitteeManagement: React.FC = () => {
                     : 'Uploading photo...'
                   : editingMember
                   ? language === 'bn'
-                    ? 'আপডেট করুন'
+                    ? 'আপডেট সংরক্ষণ করুন'
                     : 'Update Member'
                   : language === 'bn'
                   ? 'সংরক্ষণ করুন'
@@ -1329,6 +1577,24 @@ const CommitteeManagement: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* =========================================================================
+          Logo / Photo Crop Modal for Face Centering & Cut-Off Prevention
+      ========================================================================= */}
+      <LogoCropModal
+        isOpen={isCropModalOpen}
+        onClose={() => setIsCropModalOpen(false)}
+        imageSrc={cropImageSrc}
+        onCropSave={handleCropSave}
+        title={language === 'bn' ? 'কমিটি সদস্যের ছবি ক্রপ ও মুখমণ্ডল সমন্বয়' : 'Crop Member Portrait Photo'}
+        subtitle={
+          language === 'bn'
+            ? 'ছবিটি ড্র্যাগ এবং জুম করে বৃত্তের ভেতরে মুখমণ্ডল সুন্দরভাবে সাজান যাতে মাথা বা কপাল কেটে না যায়।'
+            : 'Position and zoom the photo inside the circular frame so the head and forehead are never cut off.'
+        }
+        defaultCropShape="round"
+        defaultAspect={1}
+      />
 
       {/* =========================================================================
           Committee Member Profile Details Modal
@@ -1352,13 +1618,14 @@ const CommitteeManagement: React.FC = () => {
               {/* Avatar & Badges */}
               <div className="px-6 pb-6 pt-0 relative space-y-4">
                 <div className="flex justify-between items-end -mt-12">
-                  <Avatar className="w-24 h-24 border-4 border-background shadow-lg rounded-2xl">
+                  <Avatar className="w-24 h-24 border-4 border-background shadow-lg rounded-full">
                     <AvatarImage
                       src={viewingMember.photo_url || undefined}
                       alt={viewingMember.name_bn}
                       className="object-cover"
+                      style={{ objectPosition: 'center 20%' }}
                     />
-                    <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] text-2xl font-bold rounded-2xl">
+                    <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] text-2xl font-bold rounded-full">
                       {viewingMember.name_bn.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
@@ -1424,7 +1691,7 @@ const CommitteeManagement: React.FC = () => {
 
                   <div className="space-y-0.5 sm:col-span-2">
                     <p className="text-muted-foreground font-medium flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-emerald-600" />
+                      <Calendar className="w-3.5 h-3.5 text-emerald-600" />
                       {language === 'bn' ? 'কমিটির মেয়াদ' : 'Tenure Period'}
                     </p>
                     <p className="font-semibold text-foreground">
