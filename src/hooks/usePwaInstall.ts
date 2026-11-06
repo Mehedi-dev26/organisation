@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -10,7 +10,14 @@ export interface BeforeInstallPromptEvent extends Event {
 }
 
 export const usePwaInstall = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const getGlobalPrompt = (): BeforeInstallPromptEvent | null => {
+    if (typeof window !== 'undefined') {
+      return (window as any).__batighor_pwa_prompt || null;
+    }
+    return null;
+  };
+
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(getGlobalPrompt);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -21,7 +28,8 @@ export const usePwaInstall = () => {
     const checkStandalone = () => {
       const isStandaloneMode = 
         window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
+        (window.navigator as any).standalone === true ||
+        (window as any).__batighor_pwa_installed === true;
       setIsInstalled(isStandaloneMode);
     };
 
@@ -34,47 +42,71 @@ export const usePwaInstall = () => {
     setIsIOS(isIosDevice);
     setIsAndroid(isAndroidDevice);
 
-    // 3. Listen for native browser beforeinstallprompt event
+    // 3. Sync if early global prompt was already captured
+    const initialPrompt = getGlobalPrompt();
+    if (initialPrompt) {
+      setDeferredPrompt(initialPrompt);
+      setIsInstallable(true);
+    }
+
+    // 4. Event handlers
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      (window as any).__batighor_pwa_prompt = e;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
+    };
+
+    const handleCustomInstallable = (e: any) => {
+      const promptEvent = e.detail || getGlobalPrompt();
+      if (promptEvent) {
+        setDeferredPrompt(promptEvent);
+        setIsInstallable(true);
+      }
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
+      (window as any).__batighor_pwa_prompt = null;
+      (window as any).__batighor_pwa_installed = true;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('batighor_pwa_installable', handleCustomInstallable);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('batighor_pwa_installed', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('batighor_pwa_installable', handleCustomInstallable);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('batighor_pwa_installed', handleAppInstalled);
     };
   }, []);
 
-  const triggerInstall = async (): Promise<'accepted' | 'dismissed' | 'manual_instructions'> => {
-    if (deferredPrompt) {
+  const triggerInstall = useCallback(async (): Promise<'accepted' | 'dismissed' | 'manual_instructions'> => {
+    const promptToUse = deferredPrompt || getGlobalPrompt();
+    if (promptToUse) {
       try {
-        await deferredPrompt.prompt();
-        const choice = await deferredPrompt.userChoice;
+        await promptToUse.prompt();
+        const choice = await promptToUse.userChoice;
         if (choice.outcome === 'accepted') {
           setIsInstalled(true);
           setIsInstallable(false);
+          (window as any).__batighor_pwa_installed = true;
         }
         setDeferredPrompt(null);
+        (window as any).__batighor_pwa_prompt = null;
         return choice.outcome;
       } catch (err) {
-        console.error('Install prompt error:', err);
+        console.error('Install prompt trigger error:', err);
         return 'manual_instructions';
       }
     }
-    // No native prompt available (e.g. iOS Safari or desktop browser without active prompt)
     return 'manual_instructions';
-  };
+  }, [deferredPrompt]);
 
   return {
     isInstallable,
@@ -82,7 +114,6 @@ export const usePwaInstall = () => {
     isIOS,
     isAndroid,
     triggerInstall,
-    hasNativePrompt: !!deferredPrompt,
+    hasNativePrompt: !!deferredPrompt || !!getGlobalPrompt(),
   };
 };
-

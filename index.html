@@ -56,6 +56,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="বাতিঘর" />
 
+    <!-- Early Global PWA Install Prompt Capture for Instant 1-Click Install -->
+    <script>
+      window.__batighor_pwa_prompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__batighor_pwa_prompt = e;
+        window.dispatchEvent(new CustomEvent('batighor_pwa_installable', { detail: e }));
+      });
+      window.addEventListener('appinstalled', function() {
+        window.__batighor_pwa_prompt = null;
+        window.__batighor_pwa_installed = true;
+        window.dispatchEvent(new CustomEvent('batighor_pwa_installed'));
+      });
+    </script>
+
     <!-- 7. High-Performance Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

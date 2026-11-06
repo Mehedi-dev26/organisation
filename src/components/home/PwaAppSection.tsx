@@ -8,27 +8,18 @@ import {
   Zap, 
   BellRing, 
   HardDrive, 
-  Share2, 
-  PlusSquare, 
-  ArrowRight, 
-  Sprout,
-  Check,
-  Info,
-  X,
-  HeartHandshake,
+  Check, 
   Users,
-  Droplet
+  Droplet,
+  HeartHandshake
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { toast } from 'sonner';
 
 export const PwaAppSection: React.FC = () => {
   const { language } = useLanguage();
-  const { isInstallable, isInstalled, isIOS, isAndroid, triggerInstall } = usePwaInstall();
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const { isInstalled, isIOS, triggerInstall } = usePwaInstall();
   const [installState, setInstallState] = useState<'idle' | 'installing' | 'installed'>(
     isInstalled ? 'installed' : 'idle'
   );
@@ -50,20 +41,34 @@ export const PwaAppSection: React.FC = () => {
       setInstallState('installed');
       toast.success(
         language === 'bn' 
-          ? 'অভিনন্দন! সময়ের বাতিঘর অ্যাপটি সফলভাবে ইনস্টল হয়েছে।' 
+          ? 'অভিনন্দন! সময়ের বাতিঘর অ্যাপটি সফলভাবে ইনস্টল হচ্ছে।' 
           : 'Congratulations! Somoyer Batighor App installed successfully.'
       );
-    } else if (result === 'manual_instructions' || isIOS) {
-      setInstallState('idle');
-      // Open step-by-step installation guide dialog
-      setIsGuideOpen(true);
-    } else {
+    } else if (result === 'dismissed') {
       setInstallState('idle');
       toast.info(
         language === 'bn'
-          ? 'ইনস্টলেশন বাতিল করা হয়েছে। প্রয়োজনে নির্দেশিকা দেখতে পারেন।'
-          : 'Installation dismissed.'
+          ? 'ইনস্টলেশন অনুরোধ বাতিল করা হয়েছে।'
+          : 'Installation prompt dismissed.'
       );
+    } else {
+      // Prompt not triggered via single-click API (e.g. iOS or browser already prompted)
+      setInstallState('idle');
+      if (isIOS) {
+        toast.info(
+          language === 'bn'
+            ? 'সাফারি ব্রাউজারের শেয়ার (Share) বাটনে ট্যাপ করে "Add to Home Screen" চাপুন।'
+            : 'Tap Safari Share icon and select "Add to Home Screen".',
+          { duration: 4000 }
+        );
+      } else {
+        toast.info(
+          language === 'bn'
+            ? 'ব্রাউজারের উপরের মেনু (⋮) থেকে "Install app" অথবা "Add to Home screen" চাপুন।'
+            : 'Select "Install app" from browser menu (⋮).',
+          { duration: 4000 }
+        );
+      }
     }
   };
 
@@ -148,19 +153,23 @@ export const PwaAppSection: React.FC = () => {
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-heading tracking-tight leading-tight">
               <span className="text-[#14231B]">
-                {language === 'bn' ? 'স্মার্টফোনে ব্যবহার করুন ' : 'Experience the '}
+                {language === 'bn' ? 'আমাদের ' : 'Our '}
               </span>
-              <span className="text-[#0B6B3A] relative inline-block">
-                {language === 'bn' ? 'সময়ের বাতিঘর অ্যাপ' : 'Official Mobile App'}
-                {/* Yellow-Green Brush Stroke SVG Underline */}
-                <svg 
-                  className="absolute -bottom-2 md:-bottom-2.5 left-0 w-full h-3 md:h-3.5 text-[#9BD038] pointer-events-none" 
-                  viewBox="0 0 240 14" 
-                  fill="none" 
+              <span className="relative inline-block text-[#0B6B3A]">
+                {language === 'bn' ? 'মোবাইল অ্যাপ্লিকেশন' : 'Mobile Application'}
+                <svg
+                  className="absolute -bottom-2.5 left-0 w-full h-3 sm:h-3.5 text-[#9BD038] -z-10"
+                  viewBox="0 0 240 18"
+                  fill="none"
                   preserveAspectRatio="none"
                   aria-hidden="true"
                 >
-                  <path d="M3 10C52 4 172 3 237 8C194 12.2 88 12 3 10Z" fill="currentColor" opacity="0.95" />
+                  <path
+                    d="M3 13.5C45 4.5 140 3 237 11.5"
+                    stroke="currentColor"
+                    strokeWidth="4.5"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </span>
             </h2>
@@ -178,25 +187,24 @@ export const PwaAppSection: React.FC = () => {
             </svg>
           </div>
 
-          <p className="mt-3.5 sm:mt-4 text-sm sm:text-base text-[#6B7A72] max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-[#4A5850] max-w-2xl mx-auto mt-4 leading-relaxed font-normal">
             {language === 'bn'
-              ? 'প্লে স্টোর ছাড়াই সরাসরি যেকোনো স্মার্টফোনে ইনস্টল করে নিন আমাদের অফিশিয়াল অ্যাপ। বিদ্যুৎ গতির পারফরম্যান্স এবং তাৎক্ষণিক নোটিফিকেশন এখন আপনার হাতের মুঠোয়।'
-              : 'Directly install our official Progressive Web App on any smartphone without app store hassles. Enjoy ultra-fast performance and instant real-time alerts.'}
+              ? 'প্লে স্টোরে না গিয়ে সরাসরি যেকোনো ব্রাউজার থেকে মাত্র ১ ক্লিকে ইনস্টল করুন। বিদ্যুৎ গতির পারফরম্যান্স এবং জিরো স্টোরেজ প্রেসার।'
+              : 'Direct 1-tap installation directly from your browser. Blazing fast speed, offline support and zero storage overhead.'}
           </p>
         </div>
 
-        {/* Big Showcase Hero Card with Light Theme (হালকা ব্যাকগ্রাউন্ড কালার) */}
-        <div className="relative rounded-[28px] sm:rounded-[36px] bg-gradient-to-br from-[#FFFFFF] via-[#F6FBF7] to-[#ECF7EE] text-[#14231B] p-6 sm:p-10 lg:p-14 overflow-hidden shadow-[0_15px_45px_rgba(11,107,58,0.08)] border border-[#C8E6C9]">
+        {/* Main Content Layout: Left Benefits & Actions, Right Realistic Smartphone */}
+        <div className="relative rounded-[32px] sm:rounded-[36px] bg-gradient-to-br from-[#FFFFFF] via-[#F8FCF9] to-[#EDF8F1] border border-emerald-950/10 p-6 sm:p-10 lg:p-12 shadow-[0_12px_45px_rgba(11,107,58,0.06)] overflow-hidden">
           
-          {/* Subtle Ambient Pastel Glows in Background */}
-          <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-emerald-200/40 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-teal-200/30 blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(16,185,129,0.06),transparent_60%)] pointer-events-none" />
+          {/* Subtle Background Radial Glow */}
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-emerald-200/30 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-emerald-100/40 blur-3xl pointer-events-none" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center relative z-10">
             
-            {/* Left Content Area (7 Cols on Desktop) */}
-            <div className="lg:col-span-7 space-y-6 sm:space-y-7 text-left">
+            {/* Left Side: App Pitch & Direct 1-Click Install Button */}
+            <div className="lg:col-span-7 space-y-6 text-left">
               
               {/* Badge with Light Emerald Styling */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs sm:text-sm font-bold shadow-2xs">
@@ -229,7 +237,7 @@ export const PwaAppSection: React.FC = () => {
                 </p>
               </div>
 
-              {/* 4 Core Features Grid - Each with Unique Individual Icon Colors */}
+              {/* 4 Core Features Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-1">
                 {features.map((feat, idx) => (
                   <div 
@@ -252,41 +260,30 @@ export const PwaAppSection: React.FC = () => {
                 ))}
               </div>
 
-              {/* Primary Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 pt-2">
-                {/* 1. Direct Install Button */}
+              {/* Primary Direct 1-Click Install Button */}
+              <div className="pt-2">
                 <button
                   type="button"
                   onClick={handleInstallClick}
                   disabled={installState === 'installing'}
-                  className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 rounded-full bg-gradient-to-r from-[#0B6B3A] via-[#0D7F45] to-[#0A5C34] hover:from-[#09572F] hover:to-[#084A2A] text-white font-extrabold text-sm sm:text-base shadow-lg shadow-emerald-900/15 hover:shadow-emerald-700/25 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-[#C8E6C9]/40"
+                  className="inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 rounded-full bg-gradient-to-r from-[#0B6B3A] via-[#0D7F45] to-[#0A5C34] hover:from-[#09572F] hover:to-[#084A2A] text-white font-black text-base sm:text-lg shadow-xl shadow-emerald-900/20 hover:shadow-emerald-700/35 transition-all hover:scale-105 active:scale-95 cursor-pointer border-2 border-white/40"
                 >
                   {isInstalled || installState === 'installed' ? (
                     <>
-                      <Check className="w-5 h-5 text-emerald-200" />
+                      <Check className="w-6 h-6 text-emerald-200" />
                       <span>{language === 'bn' ? 'অ্যাপটি ইনস্টল রয়েছে' : 'App Installed'}</span>
                     </>
                   ) : installState === 'installing' ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>{language === 'bn' ? 'ইনস্টল হচ্ছে...' : 'Installing...'}</span>
                     </>
                   ) : (
                     <>
-                      <Download className="w-5 h-5 text-white animate-bounce" />
-                      <span>{language === 'bn' ? 'ডিরেক্ট অ্যাপ ইনস্টল করুন' : 'Direct Install App'}</span>
+                      <Download className="w-6 h-6 text-white animate-bounce" />
+                      <span>{language === 'bn' ? 'এখনই ইনস্টল করুন (Install Now)' : 'Install Now'}</span>
                     </>
                   )}
-                </button>
-
-                {/* 2. Manual Installation Guide Button with Light Styling */}
-                <button
-                  type="button"
-                  onClick={() => setIsGuideOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-white hover:bg-[#E6F4EA] text-[#0B6B3A] font-bold text-xs sm:text-sm border border-[#C8E6C9] shadow-xs transition-all active:scale-95 cursor-pointer"
-                >
-                  <Info className="w-4 h-4 text-[#0B6B3A]" />
-                  <span>{language === 'bn' ? 'ইনস্টলেশন নির্দেশিকা' : 'How to Install?'}</span>
                 </button>
               </div>
 
@@ -362,7 +359,6 @@ export const PwaAppSection: React.FC = () => {
                           alt="সময়ের বাতিঘর" 
                           className="w-full h-full object-contain rounded-2xl shadow-md border border-slate-200 bg-white p-1"
                           onError={(e) => {
-                            // Graceful fallback to round logo
                             (e.target as HTMLImageElement).src = '/logo-round.png';
                           }}
                         />
@@ -451,106 +447,6 @@ export const PwaAppSection: React.FC = () => {
         </div>
 
       </div>
-
-      {/* Step-by-Step Installation Guide Modal (For iOS Safari or Manual Setup) */}
-      <Dialog open={isGuideOpen} onOpenChange={setIsGuideOpen}>
-        <DialogContent className="max-w-lg w-[95vw] sm:w-full p-0 overflow-hidden rounded-[28px] border-emerald-950/10 shadow-2xl bg-white">
-          
-          {/* Header with App Logo */}
-          <div className="bg-gradient-to-br from-[#062415] via-[#0A3D24] to-[#041A0E] text-white p-6 relative">
-            <button
-              type="button"
-              onClick={() => setIsGuideOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-3.5">
-              <img 
-                src="/logo-app.jpg" 
-                alt="বাতিঘর" 
-                className="w-12 h-12 rounded-xl border border-white/80 bg-white p-0.5 object-contain" 
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/logo-round.png';
-                }}
-              />
-              <div>
-                <span className="text-[11px] font-bold text-[#9BD038] tracking-wider uppercase">
-                  PWA Installation Guide
-                </span>
-                <DialogTitle className="text-xl font-bold font-heading text-white">
-                  {language === 'bn' ? 'কীভাবে অ্যাপটি ইনস্টল করবেন?' : 'How to Install the App?'}
-                </DialogTitle>
-              </div>
-            </div>
-          </div>
-
-          {/* Guide Steps */}
-          <div className="p-6 space-y-5 text-left max-h-[75vh] overflow-y-auto">
-            
-            {/* Android / Chrome Section */}
-            <div className="p-4 rounded-2xl bg-[#F4FAF5] border border-[#C8E6C9] space-y-2.5">
-              <div className="flex items-center gap-2 text-[#0B6B3A] font-bold text-sm">
-                <span className="w-6 h-6 rounded-full bg-[#0B6B3A] text-white flex items-center justify-center text-xs">১</span>
-                <span>অ্যান্ড্রয়েড ফোন (Android / Chrome / Samsung Internet)</span>
-              </div>
-              <ul className="text-xs sm:text-sm text-[#2C4A3E] space-y-1.5 pl-8 list-disc">
-                <li>উপরে দেওয়া <strong>"ডিরেক্ট অ্যাপ ইনস্টল করুন"</strong> বাটনে চাপ দিন।</li>
-                <li>অথবা ব্রাউজারের উপরে ডানদিকের <strong>তিনটি ডট (⋮)</strong> মেনুতে ক্লিক করুন।</li>
-                <li>মেনু থেকে <strong>"Install app"</strong> অথবা <strong>"Add to Home screen"</strong> চাপুন।</li>
-                <li>কয়েক সেকেন্ডের মধ্যেই অ্যাপটি আপনার ফোনে ইনস্টল হয়ে যাবে।</li>
-              </ul>
-            </div>
-
-            {/* iPhone / iPad / Safari Section */}
-            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2.5">
-              <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
-                <span className="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">২</span>
-                <span>আইফোন / আইপ্যাড (iPhone / iPad - Safari)</span>
-              </div>
-              <ul className="text-xs sm:text-sm text-amber-950 space-y-1.5 pl-8 list-disc">
-                <li>সাফারি ব্রাউজারের নিচের <strong>শেয়ার আইকন ( <Share2 className="w-3.5 h-3.5 inline text-blue-600" /> Share )</strong> এ ট্যাপ করুন।</li>
-                <li>নিচে স্ক্রল করে <strong>"Add to Home Screen" ( <PlusSquare className="w-3.5 h-3.5 inline text-slate-700" /> হোম স্ক্রিনে যোগ করুন )</strong> নির্বাচন করুন।</li>
-                <li>উপরে ডানদিকে <strong>"Add"</strong> বাটনে ক্লিক করলেই হোম স্ক্রিনে বাতিঘর অ্যাপ আইকন চলে আসবে।</li>
-              </ul>
-            </div>
-
-            {/* Computer / Desktop Section */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
-              <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
-                <span className="w-6 h-6 rounded-full bg-slate-700 text-white flex items-center justify-center text-xs">৩</span>
-                <span>কম্পিউটার (Windows / Mac / Chrome / Edge)</span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-600 pl-8 leading-relaxed">
-                ব্রাউজারের অ্যাড্রেস বারের ডান পাশে থাকা <strong>ইনস্টল আইকনে (Install icon)</strong> ক্লিক করলেই ডেস্কটপ অ্যাপ হিসেবে ওপেন হয়ে যাবে।
-              </p>
-            </div>
-
-            {/* Dialog Footer Action */}
-            <div className="pt-2 flex justify-between items-center">
-              <Button
-                onClick={handleInstallClick}
-                className="bg-[#0B6B3A] hover:bg-[#09572F] text-white rounded-full px-5 py-2 text-xs sm:text-sm font-bold gap-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>{language === 'bn' ? 'এখনই ইনস্টল করুন' : 'Install Now'}</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setIsGuideOpen(false)}
-                className="rounded-full px-5 py-2 text-xs sm:text-sm border-slate-200"
-              >
-                {language === 'bn' ? 'বুঝেছি / বন্ধ করুন' : 'Got it / Close'}
-              </Button>
-            </div>
-
-          </div>
-
-        </DialogContent>
-      </Dialog>
     </section>
   );
 };
