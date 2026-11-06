@@ -54,6 +54,14 @@ import {
   MoreVertical,
   Copy,
   Check,
+  Laptop,
+  Smartphone,
+  Globe,
+  Coins,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Heart,
 } from 'lucide-react';
 import { compressImage, formatFileSize } from '@/lib/imageUtils';
 import { useReactToPrint } from 'react-to-print';
@@ -61,6 +69,7 @@ import { bangladeshGeoData, professionsList, getUnionsForUpazila } from '@/data/
 import { useSiteLogo } from '@/hooks/useSiteLogo';
 import { computeNextMemberId, generateNextMemberId } from '@/lib/memberIdUtils';
 import { sendTemplatedSms } from '@/services/smsService';
+import { extractDeviceAudit } from '@/lib/deviceAudit';
 
 export interface Member {
   id: string;
@@ -69,6 +78,8 @@ export interface Member {
   email: string | null;
   phone: string | null;
   address: string | null;
+  present_address?: string | null;
+  permanent_address?: string | null;
   occupation: string | null;
   blood_group: string | null;
   member_type: string | null;
@@ -76,6 +87,11 @@ export interface Member {
   joining_date: string | null;
   photo_url: string | null;
   user_id: string | null;
+  willing_to_donate_blood?: boolean | null;
+  willing_to_pay_subscription?: boolean | null;
+  subscription_frequency?: string | null;
+  subscription_amount?: number | null;
+  created_at?: string | null;
 }
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -130,6 +146,7 @@ const MembersManagement: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const idCardPrintRef = useRef<HTMLDivElement>(null);
+  const applicationPrintRef = useRef<HTMLDivElement>(null);
 
   // Form Cascading Address State
   const [geoDivision, setGeoDivision] = useState<string>('রাজশাহী');
@@ -160,6 +177,11 @@ const MembersManagement: React.FC = () => {
   const handlePrintIdCard = useReactToPrint({
     contentRef: idCardPrintRef,
     documentTitle: `${idCardMember?.member_id || 'member'}-id-card`,
+  });
+
+  const handlePrintApplication = useReactToPrint({
+    contentRef: applicationPrintRef,
+    documentTitle: `${viewingMember?.member_id || 'member'}-application-dossier`,
   });
 
   // Enable Realtime Subscription
@@ -563,6 +585,40 @@ const MembersManagement: React.FC = () => {
         }
       }
 
+      // 4.5. Automated Dues Generation based on subscription willingness
+      let duesGenerated = false;
+      const willPaySub = Boolean(memberData.willing_to_pay_subscription);
+      const subAmount = Number(memberData.subscription_amount || 0);
+
+      if (willPaySub && subAmount > 0) {
+        try {
+          const currentMonthYear = new Date().toISOString().slice(0, 7); // e.g. "2026-11"
+          const { data: existingDue } = await supabase
+            .from('member_dues')
+            .select('id')
+            .eq('member_id', id)
+            .eq('month_year', currentMonthYear)
+            .maybeSingle();
+
+          if (!existingDue) {
+            const { error: dueInsertError } = await supabase
+              .from('member_dues')
+              .insert({
+                member_id: id,
+                month_year: currentMonthYear,
+                amount: subAmount,
+                is_paid: false,
+                payment_status: 'unpaid',
+              });
+            if (!dueInsertError) {
+              duesGenerated = true;
+            }
+          }
+        } catch (duesErr) {
+          console.warn('Auto dues generation error:', duesErr);
+        }
+      }
+
       // 5. Automated Welcome SMS dispatch via configured SMS template
       if (memberData.phone) {
         try {
@@ -587,24 +643,39 @@ const MembersManagement: React.FC = () => {
         }
       }
 
-      return { id, name: memberData.full_name };
+      return {
+        id,
+        name: memberData.full_name,
+        duesGenerated,
+        subAmount,
+        willPaySub,
+      };
     },
     onSuccess: (data) => {
       invalidateAllMemberQueries();
       queryClient.invalidateQueries({ queryKey: ['admin-blood-donors'] });
       queryClient.invalidateQueries({ queryKey: ['blood-donors'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['member-dues'] });
+      queryClient.invalidateQueries({ queryKey: ['members-for-dues'] });
       refetch();
 
       // Automatically switch from 'pending' filter to 'all' so the newly approved member remains visible
       setSelectedStatus((prev) => (prev === 'pending' ? 'all' : prev));
 
+      let duesNote = '';
+      if (data?.willPaySub && data?.duesGenerated) {
+        duesNote = language === 'bn' ? ` এবং চলতি মাসের ৳${data.subAmount} চাঁদা স্বয়ংক্রিয়ভাবে তৈরি হয়েছে।` : ` and monthly dues of ৳${data.subAmount} generated.`;
+      } else if (!data?.willPaySub) {
+        duesNote = language === 'bn' ? ' (চাঁদা দিতে সম্মত না থাকায় কোনো চাঁদা ধার্য করা হয়নি)।' : ' (No dues generated as member declined).';
+      }
+
       toast({
         title: language === 'bn' ? 'সদস্য অনুমোদিত ও সক্রিয়!' : 'Member Approved & Activated!',
         description:
           language === 'bn'
-            ? `"${data?.name || ''}" - সদস্য অনুমোদন সম্পন্ন হয়েছে, রক্তদাতা তালিকা সক্রিয় হয়েছে এবং লগইন অ্যাকাউন্ট তৈরি হয়েছে।`
-            : `"${data?.name || ''}" application approved, blood donor activated, and login credentials generated.`,
+            ? `"${data?.name || ''}" - সদস্য অনুমোদন সম্পন্ন হয়েছে, রক্তদাতা তালিকা সক্রিয় হয়েছে${duesNote}`
+            : `"${data?.name || ''}" application approved, blood donor activated${duesNote}`,
       });
     },
     onError: (error: any) => {
@@ -760,7 +831,7 @@ const MembersManagement: React.FC = () => {
       full_name: member.full_name,
       email: member.email || '',
       phone: member.phone || '',
-      address: member.address || '',
+      address: extractDeviceAudit(member.address).cleanAddress || '',
       occupation: member.occupation || '',
       blood_group: member.blood_group || 'A+',
       member_type: member.member_type || 'general',
@@ -1297,7 +1368,7 @@ const MembersManagement: React.FC = () => {
                         <div className="flex items-start gap-1.5 text-xs text-foreground/90 max-w-[240px]">
                           <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                           <span className="line-clamp-2 leading-relaxed">
-                            {member.address || (language === 'bn' ? 'নওগাঁ, বাংলাদেশ' : 'Naogaon, Bangladesh')}
+                            {extractDeviceAudit(member.address).cleanAddress || (language === 'bn' ? 'নওগাঁ, বাংলাদেশ' : 'Naogaon, Bangladesh')}
                           </span>
                         </div>
                       </TableCell>
@@ -1864,215 +1935,689 @@ const MembersManagement: React.FC = () => {
       </Dialog>
 
       {/* =========================================================================
-          Member Profile Details Modal
+          Member Profile Details & Application Dossier Modal
       ========================================================================= */}
       <Dialog open={!!viewingMember} onOpenChange={() => setViewingMember(null)}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl">
-          {viewingMember && (
-            <div>
-              {/* Profile Header Banner */}
-              <div className="h-28 bg-gradient-to-r from-[#0B6B3A] to-[#14532d] relative p-4 flex items-end">
-                <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-white/80 hover:text-white hover:bg-white/20 h-8 px-2.5 rounded-lg text-xs gap-1.5"
-                    onClick={() => {
-                      setIdCardMember(viewingMember);
-                      setViewingMember(null);
-                    }}
-                  >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    {language === 'bn' ? 'আইডি কার্ড' : 'ID Card'}
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-white/80 hover:text-white hover:bg-white/20 h-8 w-8 rounded-lg"
-                    onClick={() => setViewingMember(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 rounded-2xl">
+          {viewingMember && (() => {
+            const { cleanAddress, audit: deviceAudit } = extractDeviceAudit(viewingMember.address);
+            const willPaySub = Boolean(viewingMember.willing_to_pay_subscription);
+            const subAmount = Number(viewingMember.subscription_amount || 0);
+            const willDonateBlood = Boolean(viewingMember.willing_to_donate_blood);
 
-              {/* Avatar & Badges */}
-              <div className="px-6 pb-6 pt-0 relative space-y-4">
-                <div className="flex justify-between items-end -mt-12">
-                  <Avatar className="w-24 h-24 border-4 border-background shadow-lg rounded-2xl">
-                    <AvatarImage src={viewingMember.photo_url || undefined} alt={viewingMember.full_name} />
-                    <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] text-2xl font-bold rounded-2xl">
-                      {viewingMember.full_name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="flex flex-col items-end gap-1.5">
-                    {getStatusBadge(viewingMember.status)}
-                    {getMemberTypeBadge(viewingMember.member_type)}
-                  </div>
-                </div>
-
-                {/* Name & ID */}
-                <div>
-                  <h3 className="text-xl font-bold text-[#14231B] dark:text-foreground">
-                    {viewingMember.full_name}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-xs font-bold text-[#0B6B3A] bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                      ID: {viewingMember.member_id}
-                    </span>
-                    {viewingMember.blood_group && (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200">
-                        <Droplet className="w-3 h-3 fill-rose-600" />
-                        {viewingMember.blood_group}
+            return (
+              <div>
+                {/* Profile Header Banner */}
+                <div className="bg-gradient-to-r from-[#0B6B3A] via-emerald-800 to-[#14532d] text-white p-5 relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center backdrop-blur-xs">
+                        <FileText className="w-4 h-4 text-emerald-200" />
+                      </div>
+                      <span className="text-xs uppercase font-bold tracking-wider text-emerald-200">
+                        {language === 'bn' ? 'সদস্য আবেদন ও পূর্ণাঙ্গ বিবরণী' : 'Member Application Dossier'}
                       </span>
-                    )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="bg-white/90 hover:bg-white text-emerald-950 font-bold h-8 px-3 rounded-lg text-xs gap-1.5 shadow-xs"
+                        onClick={() => handlePrintApplication()}
+                      >
+                        <Printer className="w-3.5 h-3.5 text-emerald-700" />
+                        {language === 'bn' ? 'প্রিন্ট করুন' : 'Print Dossier'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-white hover:bg-white/20 h-8 px-2.5 rounded-lg text-xs gap-1.5"
+                        onClick={() => {
+                          setIdCardMember(viewingMember);
+                          setViewingMember(null);
+                        }}
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        {language === 'bn' ? 'আইডি কার্ড' : 'ID Card'}
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-white hover:bg-white/20 h-8 w-8 rounded-lg"
+                        onClick={() => setViewingMember(null)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2">
+                    <Avatar className="w-20 h-20 border-3 border-white shadow-md rounded-2xl shrink-0">
+                      <AvatarImage src={viewingMember.photo_url || undefined} alt={viewingMember.full_name} />
+                      <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] text-2xl font-bold rounded-2xl">
+                        {viewingMember.full_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="text-xl font-bold text-white drop-shadow-xs">
+                          {viewingMember.full_name}
+                        </h3>
+                        {getStatusBadge(viewingMember.status)}
+                        {getMemberTypeBadge(viewingMember.member_type)}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-emerald-100 font-medium">
+                        <span className="font-mono bg-white/15 px-2 py-0.5 rounded border border-white/20 text-white font-bold">
+                          ID: {viewingMember.member_id}
+                        </span>
+                        {viewingMember.blood_group && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-600/80 text-white font-bold">
+                            <Droplet className="w-3 h-3 fill-white" />
+                            {viewingMember.blood_group}
+                          </span>
+                        )}
+                        <span>•</span>
+                        <span>{viewingMember.occupation || (language === 'bn' ? 'পেশা উল্লেখ নেই' : 'No Occupation')}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Details Grid with Enhanced Professional Typography & One-Click Phone Copy */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 bg-slate-50 dark:bg-card/70 rounded-2xl border border-slate-200/90 text-[13px]">
-                  {/* Phone with Copy Action */}
-                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
-                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                      {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'}
-                    </p>
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="font-bold text-slate-800 dark:text-foreground font-mono text-sm">
-                        {viewingMember.phone || '-'}
-                      </p>
-                      {viewingMember.phone && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopyPhone(viewingMember.phone!)}
-                          className="h-7 px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg gap-1 border border-emerald-200/60"
-                          title={language === 'bn' ? 'নম্বর কপি করুন' : 'Copy phone number'}
-                        >
-                          {copiedPhone ? (
-                            <>
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              <span className="text-[11px] font-bold text-emerald-700">{language === 'bn' ? 'কপি হয়েছে' : 'Copied'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3 text-emerald-600" />
-                              <span className="text-[11px] font-bold">{language === 'bn' ? 'কপি' : 'Copy'}</span>
-                            </>
+                {/* Dossier Body Content */}
+                <div className="p-5 space-y-5 bg-slate-50/60 dark:bg-card">
+                  {/* Section 1: Contact & Personal Information */}
+                  <div className="bg-white dark:bg-background rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] dark:text-emerald-400 flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+                      <Phone className="w-3.5 h-3.5" />
+                      {language === 'bn' ? '১. যোগাযোগ ও ব্যক্তিগত তথ্য' : '1. Contact & Personal Information'}
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                        <span className="text-slate-500 font-medium block mb-1">
+                          {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'}
+                        </span>
+                        <div className="flex items-center justify-between gap-1">
+                          <a
+                            href={`tel:${viewingMember.phone}`}
+                            className="font-bold text-slate-900 dark:text-foreground font-mono hover:text-emerald-600 hover:underline"
+                          >
+                            {viewingMember.phone || '-'}
+                          </a>
+                          {viewingMember.phone && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopyPhone(viewingMember.phone!)}
+                              className="h-6 px-1.5 text-[10px] text-emerald-700 hover:bg-emerald-50 rounded"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
                           )}
-                        </Button>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                        <span className="text-slate-500 font-medium block mb-1">
+                          {language === 'bn' ? 'ইমেইল অ্যাড্রেস' : 'Email Address'}
+                        </span>
+                        <p className="font-bold text-slate-900 dark:text-foreground truncate" title={viewingMember.email || ''}>
+                          {viewingMember.email || '-'}
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                        <span className="text-slate-500 font-medium block mb-1">
+                          {language === 'bn' ? 'আবেদনের তারিখ' : 'Application Date'}
+                        </span>
+                        <p className="font-bold text-slate-900 dark:text-foreground">
+                          {viewingMember.created_at || viewingMember.joining_date
+                            ? new Date(viewingMember.created_at || viewingMember.joining_date!).toLocaleDateString('bn-BD', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })
+                            : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Address Breakdown */}
+                  <div className="bg-white dark:bg-background rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] dark:text-emerald-400 flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {language === 'bn' ? '২. ঠিকানা বিবরণী' : '2. Address Breakdown'}
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40">
+                        <span className="font-bold text-emerald-800 dark:text-emerald-300 block mb-1">
+                          {language === 'bn' ? '📍 বর্তমান ঠিকানা' : '📍 Present Address'}
+                        </span>
+                        <p className="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
+                          {viewingMember.present_address || cleanAddress || '-'}
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                        <span className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                          {language === 'bn' ? '🏠 স্থায়ী ঠিকানা' : '🏠 Permanent Address'}
+                        </span>
+                        <p className="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
+                          {viewingMember.permanent_address || cleanAddress || '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Subscription & Dues Commitment */}
+                  <div className="bg-white dark:bg-background rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] dark:text-emerald-400 flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+                      <Coins className="w-3.5 h-3.5" />
+                      {language === 'bn' ? '৩. চাঁদা প্রতিশ্রুতি ও চাঁদা ব্যবস্থাপনা' : '3. Dues & Subscription Commitment'}
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                        <span className="text-slate-500 font-medium block mb-1">
+                          {language === 'bn' ? 'চাঁদা প্রদানে আগ্রহ' : 'Willing to Pay Subscription'}
+                        </span>
+                        {willPaySub ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            {language === 'bn' ? 'হ্যাঁ, আগ্রহী' : 'Yes, Willing'}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                            <X className="w-3.5 h-3.5 text-slate-500" />
+                            {language === 'bn' ? 'না (আগ্রহী নন)' : 'No (Declined)'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                        <span className="text-slate-500 font-medium block mb-1">
+                          {language === 'bn' ? 'চাঁদা প্রদানের ধরণ' : 'Payment Frequency'}
+                        </span>
+                        <p className="font-bold text-slate-900 dark:text-foreground">
+                          {viewingMember.subscription_frequency === 'yearly'
+                            ? (language === 'bn' ? 'বাৎসরিক' : 'Yearly')
+                            : (language === 'bn' ? 'মাসিক' : 'Monthly')}
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                        <span className="text-emerald-800 dark:text-emerald-300 font-medium block mb-1">
+                          {language === 'bn' ? 'চাঁদার পরিমাণ' : 'Subscription Amount'}
+                        </span>
+                        <p className="text-base font-extrabold text-[#0B6B3A] dark:text-emerald-400">
+                          {willPaySub && subAmount > 0 ? `৳${subAmount}` : '৳০ (ধার্য নেই)'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Dues Automation Status Banner */}
+                    <div className={`p-3 rounded-xl text-xs flex items-start gap-2.5 ${
+                      willPaySub && subAmount > 0
+                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                        : 'bg-amber-50 text-amber-900 border border-amber-200'
+                    }`}>
+                      {willPaySub && subAmount > 0 ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold">
+                              {language === 'bn' ? 'স্বয়ংক্রিয় চাঁদা সংযোজন সক্রিয়:' : 'Automatic Dues Automation Active:'}
+                            </span>{' '}
+                            {language === 'bn'
+                              ? `এই সদস্যকে অনুমোদন করলে চাঁদা ব্যবস্থাপনায় চলতি মাসের ৳${subAmount} চাঁদা স্বয়ংক্রিয়ভাবে তৈরি হবে।`
+                              : `Approving this member will automatically generate monthly dues of ৳${subAmount}.`}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold">
+                              {language === 'bn' ? 'চাঁদা ধার্য করা হবে না:' : 'No Dues Will Be Generated:'}
+                            </span>{' '}
+                            {language === 'bn'
+                              ? 'আবেদনকারী চাঁদা প্রদানে অপারগতা বা অস্বীকৃতি জানিয়েছেন। অনুমোদনের পরেও কোনো চাঁদা বকেয়া হবে না।'
+                              : 'Member opted out of subscription. No dues will be generated upon approval.'}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
 
-                  {/* Email */}
-                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
-                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-emerald-600" />
-                      {language === 'bn' ? 'ইমেইল অ্যাড্রেস' : 'Email Address'}
-                    </p>
-                    <p className="font-bold text-slate-800 dark:text-foreground text-[13px] truncate">
-                      {viewingMember.email || '-'}
-                    </p>
+                  {/* Section 4: Blood Donation & Social Welfare */}
+                  <div className="bg-white dark:bg-background rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] dark:text-emerald-400 flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+                      <Droplet className="w-3.5 h-3.5 text-rose-500" />
+                      {language === 'bn' ? '৪. রক্তদান ও সামাজিক অবদান' : '4. Blood Donation & Social Welfare'}
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70 flex items-center justify-between">
+                        <div>
+                          <span className="text-slate-500 font-medium block mb-1">
+                            {language === 'bn' ? 'রক্তের গ্রুপ' : 'Blood Group'}
+                          </span>
+                          <span className="font-extrabold text-base text-rose-600">
+                            {viewingMember.blood_group || (language === 'bn' ? 'জানা নেই' : 'Unknown')}
+                          </span>
+                        </div>
+                        {viewingMember.blood_group && (
+                          <div className="w-9 h-9 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold">
+                            <Droplet className="w-5 h-5 fill-rose-600" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                        <span className="text-slate-500 font-medium block mb-1">
+                          {language === 'bn' ? 'রক্তদানে আগ্রহ' : 'Willing to Donate Blood'}
+                        </span>
+                        {willDonateBlood ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-100/80 px-2.5 py-0.5 rounded-full">
+                            <Heart className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
+                            {language === 'bn' ? 'হ্যাঁ, রক্তদানে আগ্রহী' : 'Yes, Blood Donor'}
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-slate-600">
+                            {language === 'bn' ? 'না / আগ্রহী নন' : 'No / Not Available'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Address (National Cascading View with Location Icon) */}
-                  <div className="space-y-1 sm:col-span-2 bg-white dark:bg-background p-3 rounded-xl border border-slate-200/80 shadow-2xs">
-                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                      {language === 'bn' ? 'স্থায়ী / বর্তমান ঠিকানা (লোকেশন)' : 'Location & Address'}
-                    </p>
-                    <p className="font-bold text-slate-800 dark:text-foreground text-sm leading-relaxed">
-                      {viewingMember.address || (language === 'bn' ? 'নওগাঁ, রাজশাহী, বাংলাদেশ' : 'Naogaon, Rajshahi, Bangladesh')}
-                    </p>
+                  {/* Section 5: Device & Security Audit Footprint */}
+                  <div className="bg-white dark:bg-background rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B6B3A] dark:text-emerald-400 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        {language === 'bn' ? '৫. ডিজিটাল নিরাপত্তা ও ডিভাইস অডিট ফুটপ্রিন্ট' : '5. Security & Device Footprint'}
+                      </h4>
+                      <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 px-2 py-0.5 rounded">
+                        Audit Verified
+                      </span>
+                    </div>
+
+                    {deviceAudit ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                          <span className="text-slate-500 font-medium flex items-center gap-1 mb-1">
+                            {deviceAudit.deviceType === 'Mobile' ? (
+                              <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <Laptop className="w-3.5 h-3.5 text-emerald-600" />
+                            )}
+                            {language === 'bn' ? 'ডিভাইস ও মডেল' : 'Device & Model'}
+                          </span>
+                          <p className="font-bold text-slate-900 dark:text-foreground">
+                            {deviceAudit.deviceModel} ({deviceAudit.deviceType})
+                          </p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                          <span className="text-slate-500 font-medium flex items-center gap-1 mb-1">
+                            <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                            {language === 'bn' ? 'অপারেটিং সিস্টেম ও ব্রাউজার' : 'OS & Browser'}
+                          </span>
+                          <p className="font-bold text-slate-900 dark:text-foreground">
+                            {deviceAudit.os} • {deviceAudit.browser}
+                          </p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                          <span className="text-slate-500 font-medium flex items-center gap-1 mb-1">
+                            <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                            {language === 'bn' ? 'স্ক্রিন ও টাইমজোন' : 'Screen & Timezone'}
+                          </span>
+                          <p className="font-bold text-slate-900 dark:text-foreground font-mono">
+                            {deviceAudit.screenResolution} ({deviceAudit.timezone})
+                          </p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70 sm:col-span-2">
+                          <span className="text-slate-500 font-medium flex items-center gap-1 mb-1">
+                            <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                            {language === 'bn' ? 'নেটওয়ার্ক আইপি ও লোকেশন' : 'Network IP & Location'}
+                          </span>
+                          <p className="font-bold text-slate-900 dark:text-foreground font-mono text-[11px]">
+                            {deviceAudit.ip} {deviceAudit.city ? `• ${deviceAudit.city}, ${deviceAudit.country}` : ''}
+                          </p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-card/50 border border-slate-200/70">
+                          <span className="text-slate-500 font-medium block mb-1">
+                            {language === 'bn' ? 'আবেদনের সময়' : 'Submission Time'}
+                          </span>
+                          <p className="font-bold text-slate-900 dark:text-foreground text-[11px]">
+                            {new Date(deviceAudit.submittedAt).toLocaleTimeString('bn-BD', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-card/50 text-xs text-slate-600 border border-slate-200/60">
+                        {language === 'bn'
+                          ? 'স্ট্যান্ডার্ড ওয়েব পোর্টাল রেজিস্ট্রেশন — ডিভাইস অডিট ক্যাপচার সক্রিয়।'
+                          : 'Standard web registration record.'}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Profession */}
-                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
-                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
-                      {language === 'bn' ? 'পেশা / কর্মক্ষেত্র' : 'Profession'}
-                    </p>
-                    <p className="font-bold text-slate-800 dark:text-foreground text-sm">
-                      {viewingMember.occupation || '-'}
-                    </p>
+                  {/* Modal Action Buttons */}
+                  <div className="flex flex-wrap gap-2.5 pt-2">
+                    <Button
+                      variant="outline"
+                      className="border-emerald-600 text-emerald-800 hover:bg-emerald-50 font-bold gap-1.5 h-10 px-4"
+                      onClick={() => handlePrintApplication()}
+                    >
+                      <Printer className="w-4 h-4 text-emerald-600" />
+                      {language === 'bn' ? 'আবেদন ফরম প্রিন্ট করুন' : 'Print Application Form'}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="border-amber-300 text-amber-800 hover:bg-amber-50 font-semibold gap-1.5 h-10 px-4"
+                      onClick={() => {
+                        setIdCardMember(viewingMember);
+                        setViewingMember(null);
+                      }}
+                    >
+                      <CreditCard className="w-4 h-4 text-amber-600" />
+                      {language === 'bn' ? 'আইডি কার্ড তৈরি' : 'ID Card'}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="gap-1.5 h-10 px-4"
+                      onClick={() => {
+                        handleEdit(viewingMember);
+                        setViewingMember(null);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                      {language === 'bn' ? 'সম্পাদনা' : 'Edit'}
+                    </Button>
+
+                    {viewingMember.status === 'pending' && (
+                      <div className="flex-1 flex gap-2 min-w-[200px]">
+                        <Button
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 h-10 shadow-sm"
+                          onClick={() => {
+                            approveMutation.mutate({ id: viewingMember.id, name: viewingMember.full_name });
+                            setViewingMember(null);
+                          }}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          {language === 'bn' ? 'অনুমোদন করুন' : 'Approve'}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="flex-1 font-bold gap-1.5 h-10 shadow-sm"
+                          onClick={() => {
+                            rejectMutation.mutate({ id: viewingMember.id, name: viewingMember.full_name });
+                            setViewingMember(null);
+                          }}
+                        >
+                          <XCircle className="w-4 h-4" />
+                          {language === 'bn' ? 'প্রত্যাখ্যান' : 'Reject'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Joining Date */}
-                  <div className="space-y-1 bg-white dark:bg-background p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
-                    <p className="text-slate-500 font-semibold text-xs flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                      {language === 'bn' ? 'সদস্য হওয়ার তারিখ' : 'Joining Date'}
-                    </p>
-                    <p className="font-bold text-slate-800 dark:text-foreground text-sm">
-                      {viewingMember.joining_date
-                        ? new Date(viewingMember.joining_date).toLocaleDateString('bn-BD')
-                        : language === 'bn'
-                        ? 'সংরক্ষিত'
-                        : 'Enrolled'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action Buttons in Profile */}
-                <div className="flex gap-2 pt-2">
-                  {viewingMember.status === 'pending' && (
-                    <>
-                      <Button
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
-                        onClick={() => {
-                          approveMutation.mutate({ id: viewingMember.id, name: viewingMember.full_name });
-                          setViewingMember(null);
-                        }}
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        {language === 'bn' ? 'অনুমোদন করুন' : 'Approve'}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="flex-1 gap-1.5"
-                        onClick={() => {
-                          rejectMutation.mutate({ id: viewingMember.id, name: viewingMember.full_name });
-                          setViewingMember(null);
-                        }}
-                      >
-                        <XCircle className="w-4 h-4" />
-                        {language === 'bn' ? 'প্রত্যাখ্যান' : 'Reject'}
-                      </Button>
-                    </>
-                  )}
-
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-50"
-                    onClick={() => {
-                      setIdCardMember(viewingMember);
-                      setViewingMember(null);
-                    }}
-                  >
-                    <CreditCard className="w-4 h-4 text-amber-600" />
-                    {language === 'bn' ? 'আইডি কার্ড তৈরি' : 'ID Card'}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-1.5"
-                    onClick={() => {
-                      handleEdit(viewingMember);
-                      setViewingMember(null);
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                    {language === 'bn' ? 'সম্পাদনা' : 'Edit'}
-                  </Button>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
+
+      {/* =========================================================================
+          Hidden Printable Application Dossier Layout (A4 Official Form)
+      ========================================================================= */}
+      <div className="hidden">
+        {viewingMember && (
+          <div
+            ref={applicationPrintRef}
+            className="p-10 bg-white text-slate-900 font-sans max-w-[800px] mx-auto print:block"
+            style={{ width: '210mm', minHeight: '297mm', color: '#111827' }}
+          >
+            {/* Header */}
+            <div className="border-b-2 border-[#0B6B3A] pb-4 mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/logo.png"
+                  alt="Logo"
+                  className="w-16 h-16 object-contain"
+                  onError={(e) => {
+                    // Fallback
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div>
+                  <h1 className="text-2xl font-black text-[#0B6B3A] tracking-tight">
+                    সময়ের বাতিঘর
+                  </h1>
+                  <p className="text-xs font-semibold text-slate-600">
+                    একটি সামাজিক স্বেচ্ছাসেবী সংগঠন
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    কেন্দ্রীয় কার্যালয়: নওগাঁ, রাজশাহী, বাংলাদেশ | ওয়েব: https://samoyerbatighor.pro.bd
+                  </p>
+                </div>
+              </div>
+
+              {/* Passport Photo Box */}
+              <div className="w-24 h-28 border-2 border-slate-300 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0">
+                {viewingMember.photo_url ? (
+                  <img
+                    src={viewingMember.photo_url}
+                    alt={viewingMember.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-semibold text-center p-1">
+                    পাসপোর্ট সাইজ ছবি
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Document Title Banner */}
+            <div className="text-center mb-5 bg-[#E6F4EA] border border-[#C8E6C9] py-1.5 rounded-lg">
+              <h2 className="text-base font-black text-[#0B6B3A] uppercase tracking-wide">
+                সদস্য আবেদন ফরম ও প্রাতিষ্ঠানিক জীবনবৃত্তান্ত
+              </h2>
+              <p className="text-[11px] font-bold text-slate-600">
+                Member Application & Official Profile Dossier
+              </p>
+            </div>
+
+            {/* Key Meta Badges */}
+            <div className="grid grid-cols-3 gap-2 mb-4 text-xs">
+              <div className="border border-slate-200 p-2 rounded bg-slate-50">
+                <span className="text-[10px] text-slate-500 block">সদস্য পরিচিতি (ID)</span>
+                <span className="font-black text-sm font-mono text-[#0B6B3A]">
+                  {viewingMember.member_id}
+                </span>
+              </div>
+              <div className="border border-slate-200 p-2 rounded bg-slate-50">
+                <span className="text-[10px] text-slate-500 block">আবেদনের ধরন</span>
+                <span className="font-bold text-slate-800">
+                  {viewingMember.member_type === 'renewal' ? 'নবায়নকৃত সদস্য' : 'নতুন সাধারণ সদস্য'}
+                </span>
+              </div>
+              <div className="border border-slate-200 p-2 rounded bg-slate-50">
+                <span className="text-[10px] text-slate-500 block">আবেদনের বর্তমান স্থিতি</span>
+                <span className="font-bold text-slate-800">
+                  {viewingMember.status === 'approved' ? 'অনুমোদিত ও সক্রিয়' : 'অপেক্ষমান (Pending)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Section 1: Personal & Contact */}
+            <div className="mb-4">
+              <h3 className="text-xs font-black uppercase text-[#0B6B3A] border-b border-emerald-200 pb-1 mb-2">
+                ১. ব্যক্তিগত ও যোগাযোগ সংক্রান্ত তথ্য
+              </h3>
+              <table className="w-full text-xs border border-slate-200 rounded">
+                <tbody>
+                  <tr className="border-b border-slate-200">
+                    <td className="p-2 bg-slate-50 font-bold w-1/4 text-slate-600">পূর্ণ নাম:</td>
+                    <td className="p-2 font-black text-slate-900 w-1/4">{viewingMember.full_name}</td>
+                    <td className="p-2 bg-slate-50 font-bold w-1/4 text-slate-600">পেশা / কর্মক্ষেত্র:</td>
+                    <td className="p-2 font-bold text-slate-900 w-1/4">{viewingMember.occupation || '-'}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="p-2 bg-slate-50 font-bold text-slate-600">মোবাইল নম্বর:</td>
+                    <td className="p-2 font-mono font-bold text-slate-900">{viewingMember.phone || '-'}</td>
+                    <td className="p-2 bg-slate-50 font-bold text-slate-600">ইমেইল:</td>
+                    <td className="p-2 font-bold text-slate-900">{viewingMember.email || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 bg-slate-50 font-bold text-slate-600">রক্তের গ্রুপ:</td>
+                    <td className="p-2 font-black text-rose-600">{viewingMember.blood_group || 'অজানা'}</td>
+                    <td className="p-2 bg-slate-50 font-bold text-slate-600">আবেদনের তারিখ:</td>
+                    <td className="p-2 font-bold text-slate-900">
+                      {viewingMember.created_at || viewingMember.joining_date
+                        ? new Date(viewingMember.created_at || viewingMember.joining_date!).toLocaleDateString('bn-BD')
+                        : '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 2: Address Information */}
+            <div className="mb-4">
+              <h3 className="text-xs font-black uppercase text-[#0B6B3A] border-b border-emerald-200 pb-1 mb-2">
+                ২. ঠিকানা বিবরণী
+              </h3>
+              <table className="w-full text-xs border border-slate-200 rounded">
+                <tbody>
+                  <tr className="border-b border-slate-200">
+                    <td className="p-2 bg-slate-50 font-bold w-1/4 text-slate-600">বর্তমান ঠিকানা:</td>
+                    <td className="p-2 font-medium text-slate-900">
+                      {viewingMember.present_address || extractDeviceAudit(viewingMember.address).cleanAddress || '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 bg-slate-50 font-bold text-slate-600">স্থায়ী ঠিকানা:</td>
+                    <td className="p-2 font-medium text-slate-900">
+                      {viewingMember.permanent_address || extractDeviceAudit(viewingMember.address).cleanAddress || '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 3: Social & Subscription Commitments */}
+            <div className="mb-4">
+              <h3 className="text-xs font-black uppercase text-[#0B6B3A] border-b border-emerald-200 pb-1 mb-2">
+                ৩. সামাজিক ও আর্থিক অঙ্গীকার (চাঁদা ও রক্তদান)
+              </h3>
+              <table className="w-full text-xs border border-slate-200 rounded">
+                <tbody>
+                  <tr className="border-b border-slate-200">
+                    <td className="p-2 bg-slate-50 font-bold w-1/3 text-slate-600">রক্তদানে আগ্রহ:</td>
+                    <td className="p-2 font-bold text-slate-900" colSpan={2}>
+                      {viewingMember.willing_to_donate_blood ? 'হ্যাঁ, প্রয়োজনে স্বেচ্ছায় রক্তদান করবেন' : 'না'}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="p-2 bg-slate-50 font-bold text-slate-600">নিয়মিত চাঁদা প্রদানে আগ্রহ:</td>
+                    <td className="p-2 font-bold text-slate-900" colSpan={2}>
+                      {viewingMember.willing_to_pay_subscription ? 'হ্যাঁ, সংগঠনের কল্যাণে চাঁদা প্রদান করবেন' : 'না (চাঁদা ধার্য নেই)'}
+                    </td>
+                  </tr>
+                  {viewingMember.willing_to_pay_subscription && (
+                    <tr>
+                      <td className="p-2 bg-slate-50 font-bold text-slate-600">চাঁদার ধরণ ও পরিমাণ:</td>
+                      <td className="p-2 font-black text-emerald-800" colSpan={2}>
+                        {viewingMember.subscription_frequency === 'yearly' ? 'বাৎসরিক' : 'মাসিক'} — ৳
+                        {viewingMember.subscription_amount || 0}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 4: Security & Device Verification Footprint */}
+            {(() => {
+              const audit = extractDeviceAudit(viewingMember.address).audit;
+              return (
+                <div className="mb-6">
+                  <h3 className="text-xs font-black uppercase text-[#0B6B3A] border-b border-emerald-200 pb-1 mb-2">
+                    ৪. ডিজিটাল নিরাপত্তা ও ডিভাইস অডিট ফুটপ্রিন্ট
+                  </h3>
+                  <table className="w-full text-[11px] border border-slate-200 rounded">
+                    <tbody>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-2 bg-slate-50 font-bold w-1/4 text-slate-600">ডিভাইস ও ওএস:</td>
+                        <td className="p-2 text-slate-900 w-1/4">
+                          {audit ? `${audit.deviceModel} (${audit.os})` : 'Web Registration'}
+                        </td>
+                        <td className="p-2 bg-slate-50 font-bold w-1/4 text-slate-600">ব্রাউজার ও রেজোলিউশন:</td>
+                        <td className="p-2 text-slate-900 w-1/4">
+                          {audit ? `${audit.browser} • ${audit.screenResolution}` : '-'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 bg-slate-50 font-bold text-slate-600">নেটওয়ার্ক আইপি ও লোকেশন:</td>
+                        <td className="p-2 font-mono text-slate-900">
+                          {audit ? `${audit.ip} ${audit.city ? `(${audit.city})` : ''}` : '-'}
+                        </td>
+                        <td className="p-2 bg-slate-50 font-bold text-slate-600">আবেদনের সঠিক সময়:</td>
+                        <td className="p-2 text-slate-900">
+                          {audit ? new Date(audit.submittedAt).toLocaleString('bn-BD') : '-'}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+
+            {/* Declaration & Oath */}
+            <div className="border border-slate-300 p-3 rounded-lg text-xs text-slate-700 bg-slate-50/50 mb-8 leading-relaxed">
+              <span className="font-bold text-slate-900 block mb-1">অঙ্গীকারনামা:</span>
+              আমি শপথ করছি যে, উপরে প্রদত্ত সকল তথ্য সত্য ও সঠিক। আমি 'সময়ের বাতিঘর' সংগঠনের গঠনতন্ত্র, নীতি ও মানবিক লক্ষ্য-উদ্দেশ্য মেনে চলার অঙ্গীকার করছি। সংগঠনের যেকোনো সিদ্ধান্তে আমি সহমত পোষণ করব।
+            </div>
+
+            {/* Signatures */}
+            <div className="flex justify-between items-end pt-6 mt-6 border-t border-dashed border-slate-300 text-xs">
+              <div className="text-center w-48">
+                <div className="border-b border-slate-400 mb-1 h-10"></div>
+                <p className="font-bold text-slate-800">আবেদনকারীর স্বাক্ষর ও তারিখ</p>
+              </div>
+
+              <div className="text-center w-56">
+                <div className="border-b border-slate-400 mb-1 h-10"></div>
+                <p className="font-bold text-slate-800">সভাপতি / সাধারণ সম্পাদক</p>
+                <p className="text-[10px] text-slate-500">অনুমোদন স্বাক্ষর ও প্রাতিষ্ঠানিক সিল</p>
+              </div>
+            </div>
+
+            {/* Footer Notice */}
+            <div className="text-center text-[9px] text-slate-400 mt-6 pt-2 border-t border-slate-100">
+              কম্পিউটার জেনারেটেড অফিশিয়াল রেকর্ড — সময়ের বাতিঘর কেন্দ্রীয় ডাটাবেজ সিস্টেম (https://samoyerbatighor.pro.bd)
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* =========================================================================
           Official Member ID Card Generator Modal (Professional Level)
@@ -2255,7 +2800,7 @@ const MembersManagement: React.FC = () => {
                       <div className="flex items-center justify-between py-1">
                         <span className="text-[10px] text-gray-500">ঠিকানা / Location:</span>
                         <span className="text-gray-800 text-[10px] truncate max-w-[140px]">
-                          {idCardMember.address || 'নওগাঁ, বাংলাদেশ'}
+                          {extractDeviceAudit(idCardMember.address).cleanAddress || 'নওগাঁ, বাংলাদেশ'}
                         </span>
                       </div>
                     </div>
@@ -2468,7 +3013,7 @@ const MembersManagement: React.FC = () => {
                       {member.email || '-'}
                     </td>
                     <td className="border border-gray-300 px-2 py-1.5 text-[11px]">
-                      {member.address || 'নওগাঁ'}
+                      {extractDeviceAudit(member.address).cleanAddress || 'নওগাঁ'}
                     </td>
                     <td className="border border-gray-300 px-2 py-1.5">{member.occupation || '-'}</td>
                     <td className="border border-gray-300 px-2 py-1.5 text-center font-bold">

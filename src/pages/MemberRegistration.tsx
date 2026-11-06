@@ -43,6 +43,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
+import { captureDeviceAudit, embedDeviceAuditInAddress } from '@/lib/deviceAudit';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -485,6 +486,17 @@ const MemberRegistration: React.FC = () => {
       const isSubYes = data.willing_to_pay_subscription === 'yes';
       const subAmountNum = isSubYes ? parseFloat(data.subscription_amount || '0') || 0 : 0;
 
+      // Capture security audit footprint (device model, browser, screen, timezone, IP/location)
+      let deviceAuditData = null;
+      try {
+        deviceAuditData = await captureDeviceAudit();
+      } catch (auditErr) {
+        console.warn('Device audit capture warning:', auditErr);
+      }
+      const finalAddressWithAudit = deviceAuditData
+        ? embedDeviceAuditInAddress(combinedAddress, deviceAuditData)
+        : combinedAddress;
+
       // 3. Fast direct insertion into members table
       const cleanPhoneDigits = data.phone.trim().replace(/\D/g, '');
       const finalAccountEmail = data.email?.trim() || (cleanPhoneDigits.length >= 10 ? `${cleanPhoneDigits}@batighor.org` : null);
@@ -494,7 +506,7 @@ const MemberRegistration: React.FC = () => {
         full_name: data.full_name.trim(),
         email: finalAccountEmail,
         phone: data.phone.trim(),
-        address: combinedAddress,
+        address: finalAddressWithAudit,
         present_address: data.present_address.trim(),
         permanent_address: permanentFormatted,
         occupation: finalOccupation,
