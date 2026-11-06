@@ -18,22 +18,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ADMIN_EMAILS = [
-  'mehedihasanwork25@mail.com',
-  'mehedihasanwork25@gmail.com',
-  'mehedi.dev26@gmail.com',
   'admin@batighor.org',
   'admin@somoyerbatighor.org',
-  '01720565997@batighor.org',
-  '01916314315@batighor.org',
-  '01711050841@batighor.org',
-  'sb2601@batighor.org',
-  'sb001@batighor.org',
 ];
 
 const ADMIN_PHONES = [
   '01711050841',
   '01916314315',
-  '01720565997',
   '01700000000',
 ];
 
@@ -47,8 +38,7 @@ export const isUserAdmin = (user: User | null, roles: string[] = []): boolean =>
   if (roles.includes('admin')) return true;
 
   const email = (user.email || '').toLowerCase().trim();
-  const emailPhone = email.endsWith('@batighor.org') ? email.split('@')[0].replace(/\D/g, '') : '';
-  const rawPhone = toEnDigits(user.phone || (user.user_metadata?.phone as string) || emailPhone || '').replace(/\D/g, '');
+  const rawPhone = toEnDigits(user.phone || (user.user_metadata?.phone as string) || '').replace(/\D/g, '');
   const localPhone = rawPhone.length === 11 
     ? rawPhone 
     : (rawPhone.length === 13 && rawPhone.startsWith('88')) 
@@ -57,7 +47,6 @@ export const isUserAdmin = (user: User | null, roles: string[] = []): boolean =>
 
   if (ADMIN_EMAILS.some(e => e.toLowerCase() === email)) return true;
   if (email.startsWith('admin@')) return true;
-  if (email.includes('mehedi')) return true;
   if (ADMIN_PHONES.some(p => p === localPhone)) return true;
   if (user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin') return true;
 

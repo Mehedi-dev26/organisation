@@ -79,9 +79,6 @@ const Auth = () => {
 
       // Authorized core administrator accounts
       const ADMIN_ACCOUNTS = [
-        'mehedi.dev26@gmail.com',
-        'mehedihasanwork25@gmail.com',
-        'mehedihasanwork25@mail.com',
         'admin@somoyerbatighor.org',
         'admin@batighor.org'
       ];
@@ -97,7 +94,6 @@ const Auth = () => {
         // If an authorized admin email is used, add other aliases as backup
         if (
           ADMIN_ACCOUNTS.includes(cleanInput.toLowerCase()) || 
-          cleanInput.toLowerCase().includes('mehedi') || 
           cleanInput.toLowerCase().startsWith('admin@')
         ) {
           ADMIN_ACCOUNTS.forEach((ae) => {
@@ -116,7 +112,7 @@ const Auth = () => {
             : digitsOnly;
         
         // If it matches registered admin mobile numbers
-        if (['01711050841', '01916314315', '01720565997', '01700000000'].includes(standardLocal)) {
+        if (['01711050841', '01916314315', '01700000000'].includes(standardLocal)) {
           candidateEmails = [...ADMIN_ACCOUNTS];
         }
 
@@ -126,8 +122,6 @@ const Auth = () => {
           standardLocal,
           `+88${standardLocal}`,
           `88${standardLocal}`,
-          ...(standardLocal === '01916314315' ? ['01720565997', '+8801720565997'] : []),
-          ...(standardLocal === '01720565997' ? ['01916314315', '+8801916314315'] : [])
         ])).filter(Boolean);
 
         const candidateIds = getCandidateMemberIds(cleanInput);
@@ -195,17 +189,12 @@ const Auth = () => {
             if (!candidateEmails.includes(idEmail)) {
               candidateEmails.push(idEmail);
             }
-            if (cleanMid.includes('2601')) {
-              if (!candidateEmails.includes('sb001@batighor.org')) {
-                candidateEmails.push('sb001@batighor.org');
-              }
-            }
           }
 
           // 4. If admin member, ensure all admin accounts are available
           if (
             matchedMember.email &&
-            (ADMIN_ACCOUNTS.includes(matchedMember.email.toLowerCase()) || matchedMember.full_name?.toLowerCase().includes('mehedi'))
+            ADMIN_ACCOUNTS.includes(matchedMember.email.toLowerCase())
           ) {
             ADMIN_ACCOUNTS.forEach((ae) => {
               if (!candidateEmails.includes(ae)) {

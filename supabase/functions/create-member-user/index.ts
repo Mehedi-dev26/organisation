@@ -100,9 +100,8 @@ serve(async (req) => {
 
     const cleanEmail = email.toLowerCase().trim();
     const isAdminAccount = 
-      cleanEmail.includes('mehedi') || 
       cleanEmail.startsWith('admin@') ||
-      ['01720565997', '01916314315', '01711050841'].some(p => cleanEmail.startsWith(p));
+      ['01916314315', '01711050841'].some(p => cleanEmail.startsWith(p));
 
     // 3. Check if user already exists in auth.users
     let targetUserId: string | null = null;
