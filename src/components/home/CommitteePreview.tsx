@@ -264,16 +264,18 @@ const CommitteePreview: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* 4 Large Columns on Desktop */}
-                  <div className="grid grid-cols-4 gap-8 lg:gap-10 max-w-5xl mx-auto items-start justify-items-center">
+                  {/* Automatically Centered on Desktop: 1, 2, 3 or more members always perfectly centered */}
+                  <div className="flex flex-wrap justify-center items-start gap-8 lg:gap-12 max-w-5xl mx-auto">
                     {executiveCouncil.map((member) => (
-                      <HomeCommitteeCleanCard 
-                        key={member.id} 
-                        member={member} 
-                        language={language} 
-                        isCouncil
-                        onOpenInfo={() => setSelectedMember(member)} 
-                      />
+                      <div key={member.id} className="w-full max-w-[210px] sm:max-w-[220px]">
+                        <HomeCommitteeCleanCard 
+                          key={member.id} 
+                          member={member} 
+                          language={language} 
+                          isCouncil
+                          onOpenInfo={() => setSelectedMember(member)} 
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -298,10 +300,10 @@ const CommitteePreview: React.FC = () => {
                 </div>
               )}
 
-              {/* 2. Mobile Remaining Members: ALL paired in 2-column grid (দুইজন করে সবাই) */}
+              {/* 2. Mobile Remaining Members: ALL paired in 2-column grid with comfortable middle spacing */}
               {mobileRemainingMembers.length > 0 && (
                 <div className="pt-2">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-8 max-w-xs sm:max-w-sm mx-auto items-start justify-items-center">
+                  <div className="grid grid-cols-2 gap-x-7 sm:gap-x-9 gap-y-9 sm:gap-y-10 max-w-[340px] sm:max-w-md mx-auto items-start justify-items-center">
                     {mobileRemainingMembers.map((member) => (
                       <HomeCommitteeCleanCard 
                         key={member.id} 

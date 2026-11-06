@@ -81,73 +81,20 @@ const Committee = () => {
   const director = committeeMembers.find(isDirector);
   const nonDirectorMembers = committeeMembers.filter(m => m.id !== director?.id);
 
-  // 1. President (Tier 1 - Top of executive)
-  const president = nonDirectorMembers.find(m => 
-    m.position_bn.includes('সভাপতি') && !m.position_bn.includes('সহ')
-  ) || nonDirectorMembers[0];
+  // Desktop Hierarchy:
+  // Row 1 below Director: 3 leaders (সভাপতি, সহ-সভাপতি, সাধারণ সম্পাদক ইত্যাদি)
+  const top3Desktop = nonDirectorMembers.slice(0, 3);
+  // Row 2 below Director: 2 leaders (৪র্থ ও ৫ম জন) centered
+  const next2Desktop = nonDirectorMembers.slice(3, 5);
 
-  // 2. Core Officers Triad (Tier 2 - 3 Columns):
-  const generalSecretaryOrVp = nonDirectorMembers.find(m => 
-    m.id !== president?.id && (
-      m.position_bn.includes('সাধারণ সম্পাদক') ||
-      m.position_bn.includes('সহ-সভাপতি') ||
-      m.position_bn.includes('সহসভাপতি') ||
-      m.position_bn.includes('সচিব')
-    )
-  );
+  // Executive Council / Departmental Secretaries (from 6th non-director onwards)
+  const executiveCouncil = nonDirectorMembers.slice(5);
 
-  const cashierOrTreasurer = nonDirectorMembers.find(m => 
-    m.id !== president?.id && 
-    m.id !== generalSecretaryOrVp?.id && (
-      m.position_bn.includes('কোষাধ্যক্ষ') ||
-      m.position_bn.includes('ক্যাশিয়ার') ||
-      m.position_bn.toLowerCase().includes('cashier') ||
-      m.position_bn.toLowerCase().includes('treasurer') ||
-      m.position_bn.includes('অর্থ')
-    )
-  );
-
-  const ictSecretary = nonDirectorMembers.find(m => 
-    m.id !== president?.id && 
-    m.id !== generalSecretaryOrVp?.id && 
-    m.id !== cashierOrTreasurer?.id && (
-      m.position_bn.includes('তথ্যপ্রযুক্তি') ||
-      m.position_bn.toLowerCase().includes('ict') ||
-      m.position_bn.includes('আইসিটি') ||
-      m.position_bn.includes('যুগ্ম') ||
-      m.position_bn.includes('সহ-সাধারণ সম্পাদক')
-    )
-  );
-
-  const tier2List = [generalSecretaryOrVp, cashierOrTreasurer, ictSecretary].filter(Boolean) as CommitteeMember[];
-
-  // 3. Tier 3: Executive Members & Departmental Secretaries (Organizing, Office, Publicity, etc.)
-  const assignedIds = new Set([
-    director?.id,
-    president?.id,
-    generalSecretaryOrVp?.id,
-    cashierOrTreasurer?.id,
-    ictSecretary?.id,
-  ].filter(Boolean));
-
-  const executiveMembers = committeeMembers
-    .filter(m => !assignedIds.has(m.id))
-    .sort((a, b) => {
-      const getPriority = (pos: string) => {
-        if (pos.includes('সাংগঠনিক')) return 1;
-        if (pos.includes('দপ্তর')) return 2;
-        if (pos.includes('প্রচার')) return 3;
-        if (pos.includes('রক্তদান')) return 4;
-        if (pos.includes('সমাজকল্যাণ')) return 5;
-        if (pos.includes('শিক্ষা')) return 6;
-        if (pos.includes('সাংস্কৃতিক')) return 7;
-        return 10;
-      };
-      const pA = getPriority(a.position_bn);
-      const pB = getPriority(b.position_bn);
-      if (pA !== pB) return pA - pB;
-      return (a.sort_order || 99) - (b.sort_order || 99);
-    });
+  // Mobile Hierarchy:
+  // 1st alone on top: Director if available, otherwise first leader
+  const mobileTopLeader = director || nonDirectorMembers[0];
+  // Below Top Leader on mobile: Everyone else in 2-column grid with generous middle spacing
+  const mobileRemainingMembers = committeeMembers.filter(m => m.id !== mobileTopLeader?.id);
 
   const handleCopyPhone = (phone: string) => {
     navigator.clipboard.writeText(phone);
@@ -190,8 +137,70 @@ const Committee = () => {
       </section>
 
       {/* Main Committee Section */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+      <section className="py-16 md:py-24 bg-gradient-to-b from-white via-slate-50/60 to-white relative overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+          {/* Signature Section Header */}
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <div className="flex justify-center mb-4 sm:mb-5">
+              <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] shadow-xs">
+                <span className="w-5 h-5 rounded-full bg-[#0B6B3A] flex items-center justify-center text-white flex-shrink-0">
+                  <Award className="w-3.5 h-3.5" />
+                </span>
+                <span className="text-[#0B6B3A] text-xs sm:text-sm font-semibold tracking-wide">
+                  {language === 'bn' ? 'সংগঠন পরিচালনা ও নেতৃত্ব পরিষদ' : 'Governance & Leadership Council'}
+                </span>
+              </div>
+            </div>
+
+            <div className="inline-flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap mb-3">
+              <svg 
+                className="w-6 h-6 sm:w-8 sm:h-8 text-[#0B6B3A] flex-shrink-0 hidden xs:inline-block" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                aria-hidden="true"
+              >
+                <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+                <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+                <path d="M21 11C16 10 11.5 7 8 2" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              </svg>
+
+              <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+                <span className="text-[#14231B] dark:text-slate-100">
+                  {language === 'bn' ? 'পরিষদ ' : 'Council '}
+                </span>
+                <span className="text-[#0B6B3A] relative inline-block">
+                  {language === 'bn' ? 'সদস্যবৃন্দ' : 'Directory'}
+                  <svg 
+                    className="absolute -bottom-2 md:-bottom-2.5 left-0 w-full h-3 md:h-3.5 text-[#9BD038] pointer-events-none" 
+                    viewBox="0 0 240 14" 
+                    fill="none" 
+                    preserveAspectRatio="none" 
+                    aria-hidden="true"
+                  >
+                    <path d="M3 10C52 4 172 3 237 8C194 12.2 88 12 3 10Z" fill="currentColor" opacity="0.95" />
+                  </svg>
+                </span>
+              </h2>
+
+              <svg 
+                className="w-6 h-6 sm:w-8 sm:h-8 text-[#0B6B3A] flex-shrink-0 -scale-x-100 hidden xs:inline-block" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                aria-hidden="true"
+              >
+                <path d="M19 16C14 15 9.5 12 6 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+                <path d="M17 21C12.5 20.5 8 18 3 13.5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+                <path d="M21 11C16 10 11.5 7 8 2" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              </svg>
+            </div>
+
+            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto font-medium">
+              {language === 'bn'
+                ? 'সময়ের বাতিঘরের মানবিক সেবা ও উন্নয়ন কার্যক্রম পরিচালনাকারী বর্তমান কার্যনির্বাহী পরিষদ।'
+                : 'Current governing council steering the humanitarian services of Somoyer Batighor.'}
+            </p>
+          </div>
+
           {isLoading && committeeMembers.length === 0 ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-[#0B6B3A]" />
@@ -202,81 +211,119 @@ const Committee = () => {
               <p>{language === 'bn' ? 'কোন কমিটি সদস্য পাওয়া যায়নি' : 'No committee members found'}</p>
             </div>
           ) : (
-            <div className="space-y-14 sm:space-y-20">
-              {/* 0. TIER 0: Director (পরিচালক) - Single Centered on Top */}
-              {director && (
-                <div className="max-w-md mx-auto text-center px-4">
-                  <div className="mb-2">
-                    <span className="text-[11px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-emerald-50 text-[#0B6B3A] border border-emerald-200">
-                      {language === 'bn' ? 'পরিচালনা পরিষদ' : 'Chief Directorate'}
-                    </span>
+            <div className="space-y-12 sm:space-y-16">
+              {/* =========================================================================
+                  DESKTOP VIEW: DIRECTOR -> 3 LEADERS -> 2 LEADERS -> EXECUTIVE COUNCIL
+              ========================================================================= */}
+              <div className="hidden md:block space-y-10">
+                {/* 1. DIRECTOR (পরিচালক) - Single Person Centered at Top */}
+                {director && (
+                  <div className="flex flex-col items-center justify-center text-center pb-4">
+                    <div className="w-full max-w-xs mx-auto">
+                      <CommitteeCleanCard 
+                        member={director} 
+                        language={language} 
+                        isDirector
+                        onOpenInfo={() => setSelectedMember(director)} 
+                      />
+                    </div>
                   </div>
-                  <CommitteeCleanCard 
-                    member={director} 
-                    language={language} 
-                    isDirector
-                    onOpenInfo={() => setSelectedMember(director)} 
-                  />
-                </div>
-              )}
+                )}
 
-              {/* 1. TIER 1: President (Top of Executive Leadership) */}
-              {president && (
-                <div className="max-w-md mx-auto text-center px-4">
-                  <CommitteeCleanCard 
-                    member={president} 
-                    language={language} 
-                    isPresident 
-                    onOpenInfo={() => setSelectedMember(president)} 
-                  />
-                </div>
-              )}
-
-              {/* 2. TIER 2: 3 Core Officers (General Secretary, Cashier, ICT Secretary) */}
-              {tier2List.length > 0 && (
-                <div className="py-2">
-                  <div className="grid grid-cols-3 gap-4 sm:gap-10 max-w-sm sm:max-w-md md:max-w-4xl mx-auto items-start">
-                    {tier2List.map((member) => (
+                {/* 2. Top Executive Leadership below Director */}
+                {/* Row 1: Top 3 members (সভাপতি, সাধারণ সম্পাদক, ইত্যাদি) */}
+                {top3Desktop.length > 0 && (
+                  <div className="grid grid-cols-3 gap-8 lg:gap-14 max-w-4xl mx-auto items-start justify-items-center">
+                    {top3Desktop.map((member) => (
                       <CommitteeCleanCard 
                         key={member.id} 
                         member={member} 
                         language={language} 
-                        isTier2 
+                        isTopLeader
                         onOpenInfo={() => setSelectedMember(member)} 
                       />
                     ))}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* 3. TIER 3: Executive Members & Departmental Secretaries */}
-              {/* Prominent, enlarged circular cards on Desktop */}
-              {executiveMembers.length > 0 && (
-                <div className="pt-8 border-t border-slate-100">
-                  <div className="text-center mb-10 sm:mb-14">
-                    <h2 className="font-heading font-black text-xl sm:text-2xl text-slate-800">
-                      {language === 'bn' ? 'কার্যনির্বাহী পরিষদ সদস্যবৃন্দ' : 'Executive Council Members'}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                      {language === 'bn' 
-                        ? 'সাংগঠনিক, দপ্তর, প্রচার ও বিভিন্ন বিভাগীয় সম্পাদকীয় পরিষদ' 
-                        : 'Departmental secretaries and executive council members'}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 sm:gap-10 max-w-5xl mx-auto items-start justify-items-center">
-                    {executiveMembers.map((member) => (
-                      <CommitteeCleanCard 
-                        key={member.id} 
-                        member={member} 
-                        language={language} 
-                        isCouncil
-                        onOpenInfo={() => setSelectedMember(member)} 
-                      />
+                {/* Row 2: Next 2 members (৪র্থ ও ৫ম জন) Centered in Middle */}
+                {next2Desktop.length > 0 && (
+                  <div className="flex justify-center items-start gap-12 lg:gap-16 max-w-2xl mx-auto pt-2">
+                    {next2Desktop.map((member) => (
+                      <div key={member.id} className="w-full max-w-[240px]">
+                        <CommitteeCleanCard 
+                          member={member} 
+                          language={language} 
+                          isTopLeader
+                          onOpenInfo={() => setSelectedMember(member)} 
+                        />
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* 3. Executive Council & Departmental Secretaries (বিভাগীয় দায়িত্বপ্রাপ্তবৃন্দ) */}
+                {/* Automatically centered on desktop if 1, 2, 3 or more members */}
+                {executiveCouncil.length > 0 && (
+                  <div className="pt-10 border-t border-slate-100">
+                    <div className="text-center mb-10">
+                      <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold shadow-2xs">
+                        <ShieldCheck className="w-4 h-4 text-[#0B6B3A]" />
+                        <span>{language === 'bn' ? 'কার্যনির্বাহী পরিষদ ও বিভাগীয় দায়িত্বপ্রাপ্তবৃন্দ' : 'Executive Council & Departmental Secretaries'}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap justify-center items-start gap-8 lg:gap-12 max-w-5xl mx-auto">
+                      {executiveCouncil.map((member) => (
+                        <div key={member.id} className="w-full max-w-[210px] sm:max-w-[220px]">
+                          <CommitteeCleanCard 
+                            member={member} 
+                            language={language} 
+                            isCouncil
+                            onOpenInfo={() => setSelectedMember(member)} 
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* =========================================================================
+                  MOBILE VIEW: DIRECTOR / TOP LEADER ON TOP -> ALL OTHERS 2 PER ROW
+              ========================================================================= */}
+              <div className="block md:hidden space-y-8">
+                {/* 1. Mobile Top: Director (or 1st top leader) Single & Centered */}
+                {mobileTopLeader && (
+                  <div className="max-w-[240px] mx-auto text-center px-2">
+                    <CommitteeCleanCard 
+                      member={mobileTopLeader} 
+                      language={language} 
+                      isDirector={mobileTopLeader.id === director?.id}
+                      isTopLeader
+                      isMobileTop
+                      onOpenInfo={() => setSelectedMember(mobileTopLeader)} 
+                    />
+                  </div>
+                )}
+
+                {/* 2. Mobile Remaining Members: ALL paired in 2-column grid with comfortable middle spacing */}
+                {mobileRemainingMembers.length > 0 && (
+                  <div className="pt-2">
+                    <div className="grid grid-cols-2 gap-x-7 sm:gap-x-9 gap-y-9 sm:gap-y-10 max-w-[340px] sm:max-w-md mx-auto items-start justify-items-center">
+                      {mobileRemainingMembers.map((member) => (
+                        <CommitteeCleanCard 
+                          key={member.id} 
+                          member={member} 
+                          language={language} 
+                          isTopLeader
+                          onOpenInfo={() => setSelectedMember(member)} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -485,10 +532,9 @@ interface CommitteeCleanCardProps {
   member: CommitteeMember;
   language: string;
   isDirector?: boolean;
-  isPresident?: boolean;
-  isTier2?: boolean;
+  isTopLeader?: boolean;
+  isMobileTop?: boolean;
   isCouncil?: boolean;
-  isSmall?: boolean;
   onOpenInfo: () => void;
 }
 
@@ -497,8 +543,8 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
   member,
   language,
   isDirector,
-  isPresident,
-  isTier2,
+  isTopLeader,
+  isMobileTop,
   isCouncil,
   onOpenInfo,
 }) => {
@@ -510,19 +556,15 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
     e.currentTarget.src = fallbackImage;
   };
 
-  // Prominent circular dimensions:
-  // Director: Largest, authoritative centerpiece
-  // President: Prominent top executive
-  // Tier 2: 3 core officers
-  // Council: Enlarged and clear on desktop as requested
+  // Prominent circular dimensions matching Homepage Committee Preview
   const imageSize = isDirector
     ? 'w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52'
-    : isPresident 
-    ? 'w-36 h-36 sm:w-44 sm:h-44' 
-    : isTier2 
-    ? 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36' 
+    : isMobileTop
+    ? 'w-36 h-36 sm:w-40 sm:h-40'
     : isCouncil
     ? 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40'
+    : isTopLeader 
+    ? 'w-30 h-30 sm:w-36 sm:h-36 md:w-44 md:h-44' 
     : 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36';
 
   return (
@@ -533,7 +575,7 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
         <div className={`${imageSize} aspect-square rounded-full overflow-hidden border-4 ${
           isDirector
             ? 'border-[#0B6B3A] shadow-md ring-4 ring-[#9BD038]/30 group-hover:ring-[#9BD038]/60'
-            : isPresident 
+            : isTopLeader 
             ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' 
             : 'border-[#0B6B3A]/30 group-hover:border-[#0B6B3A]'
         } transition-all duration-300 mx-auto shadow-sm bg-slate-50 flex items-center justify-center shrink-0`}>
@@ -550,10 +592,8 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
         <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 sm:px-3.5 py-0.5 rounded-full text-white font-bold whitespace-nowrap shadow-xs flex items-center gap-1 ${
           isDirector
             ? 'bg-gradient-to-r from-[#0B6B3A] via-[#0e8045] to-[#14532d] text-xs sm:text-sm border border-amber-300'
-            : isPresident 
-            ? 'bg-[#0B6B3A] text-xs sm:text-sm' 
-            : isTier2
-            ? 'bg-[#0B6B3A] text-[10px] sm:text-xs'
+            : isTopLeader 
+            ? 'bg-[#0B6B3A] text-[11px] sm:text-xs' 
             : 'bg-slate-800 text-[10px] sm:text-xs'
         }`}>
           {isDirector && <Crown className="w-3 h-3 text-amber-300 shrink-0" />}
@@ -566,8 +606,8 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
         <h3 className={`font-heading font-extrabold text-slate-900 group-hover:text-[#0B6B3A] transition-colors leading-tight ${
           isDirector
             ? 'text-lg sm:text-2xl md:text-3xl'
-            : isPresident 
-            ? 'text-lg sm:text-2xl' 
+            : isTopLeader 
+            ? 'text-sm sm:text-base md:text-lg line-clamp-2' 
             : 'text-sm sm:text-base line-clamp-2'
         }`}>
           {name}
