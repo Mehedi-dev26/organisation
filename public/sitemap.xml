@@ -5,12 +5,12 @@
   
   <!-- ১. হোমপেজ (Homepage) -->
   <url>
-    <loc>https://somoyerbatighor.org/</loc>
+    <loc>https://samoyerbatighor.pro.bd/</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://somoyerbatighor.org/og-image.jpg</image:loc>
+      <image:loc>https://samoyerbatighor.pro.bd/og-image.jpg</image:loc>
       <image:title>সময়ের বাতিঘর - মানবতার সেবায় নিবেদিত সামাজিক স্বেচ্ছাসেবী সংগঠন</image:title>
       <image:caption>সময়ের বাতিঘর অফিশিয়াল লোগো ও পরিচিতি</image:caption>
     </image:image>
@@ -18,7 +18,7 @@
 
   <!-- ২. জরুরি রক্তদাতা ডিরেক্টরি (Emergency Blood Donors) -->
   <url>
-    <loc>https://somoyerbatighor.org/blood-donors</loc>
+    <loc>https://samoyerbatighor.pro.bd/blood-donors</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -26,7 +26,7 @@
 
   <!-- ৩. আমাদের সম্পর্কে (About Us) -->
   <url>
-    <loc>https://somoyerbatighor.org/about</loc>
+    <loc>https://samoyerbatighor.pro.bd/about</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
@@ -34,7 +34,7 @@
 
   <!-- ৪. কার্যনির্বাহী পরিষদ (Executive Committee) -->
   <url>
-    <loc>https://somoyerbatighor.org/committee</loc>
+    <loc>https://samoyerbatighor.pro.bd/committee</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
@@ -42,7 +42,7 @@
 
   <!-- ৫. আমাদের কার্যক্রম ও কর্মসূচি (Programs & Initiatives) -->
   <url>
-    <loc>https://somoyerbatighor.org/programs</loc>
+    <loc>https://samoyerbatighor.pro.bd/programs</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
@@ -50,7 +50,7 @@
 
   <!-- ৬. সদস্য আবেদন (Member Registration) -->
   <url>
-    <loc>https://somoyerbatighor.org/member-registration</loc>
+    <loc>https://samoyerbatighor.pro.bd/member-registration</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -58,7 +58,7 @@
 
   <!-- ৭. সংবাদ ও নোটিস (News & Notices) -->
   <url>
-    <loc>https://somoyerbatighor.org/news</loc>
+    <loc>https://samoyerbatighor.pro.bd/news</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -66,7 +66,7 @@
 
   <!-- ৮. ফটো গ্যালারি (Photo Gallery) -->
   <url>
-    <loc>https://somoyerbatighor.org/gallery</loc>
+    <loc>https://samoyerbatighor.pro.bd/gallery</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
@@ -74,7 +74,7 @@
 
   <!-- ৯. যোগাযোগ (Contact Us) -->
   <url>
-    <loc>https://somoyerbatighor.org/contact</loc>
+    <loc>https://samoyerbatighor.pro.bd/contact</loc>
     <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
