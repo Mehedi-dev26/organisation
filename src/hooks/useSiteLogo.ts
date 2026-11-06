@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import defaultLogo from '@/assets/logo.png';
 import defaultLogoRound from '@/assets/logo-round.png';
 
-const STORAGE_KEY = 'batighor_site_logo_url';
+const STORAGE_KEY = 'batighor_site_logo_url_v2';
 
 export const useSiteLogo = () => {
   const queryClient = useQueryClient();

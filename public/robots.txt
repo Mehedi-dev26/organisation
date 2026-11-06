@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Direct Google and Search Crawlers to XML Sitemap
+Sitemap: https://somoyerbatighor.org/sitemap.xml

@@ -67,7 +67,7 @@ import { Switch } from '@/components/ui/switch';
 import { clearSiteSettingsCache, setCachedHeroBanners } from '@/services/siteSettingsService';
 import { preloadBannerImage, preloadAllBanners } from '@/services/bannerCacheService';
 
-const STORAGE_LOGO_KEY = 'batighor_site_logo_url';
+const STORAGE_LOGO_KEY = 'batighor_site_logo_url_v2';
 
 const Settings = () => {
   const { language } = useLanguage();
