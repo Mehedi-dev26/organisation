@@ -85,3 +85,4 @@ export const usePwaInstall = () => {
     hasNativePrompt: !!deferredPrompt,
   };
 };
+
