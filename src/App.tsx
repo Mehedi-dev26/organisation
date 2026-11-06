@@ -96,6 +96,10 @@ const queryClient = new QueryClient({
 const App = () => {
   useEffect(() => {
     initAutoKeepAlive();
+    // Register Service Worker for instant millisecond caching of banners and push notifications
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    }
   }, []);
 
   return (

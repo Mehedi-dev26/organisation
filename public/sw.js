@@ -1,5 +1,7 @@
-// Service Worker for Somoyer Batighor (সময়ের বাতিঘর) Web Push Notifications
-const CACHE_NAME = 'batighor-v1';
+// Service Worker for Somoyer Batighor (সময়ের বাতিঘর)
+// Supports Web Push Notifications & Ultra-Fast Millisecond Image/Banner Caching
+const CACHE_NAME = 'batighor-v2';
+const BANNER_CACHE = 'batighor-banner-cache-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -7,6 +9,47 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
+});
+
+// Intercept image & banner requests for instant millisecond load (Cache-First / Stale-While-Revalidate)
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  const isImageRequest = 
+    event.request.destination === 'image' ||
+    url.pathname.includes('/site/hero-') ||
+    url.pathname.includes('/gallery-images/') ||
+    url.pathname.includes('/images/banner') ||
+    /\.(jpg|jpeg|png|webp|svg|gif)$/i.test(url.pathname);
+
+  // Only cache GET image requests
+  if (event.request.method === 'GET' && isImageRequest) {
+    event.respondWith(
+      caches.open(BANNER_CACHE).then(async (cache) => {
+        const cachedResponse = await cache.match(event.request);
+
+        // Fetch from network to update cache in background
+        const networkFetch = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(event.request, networkResponse.clone()).catch(() => {});
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Return cached response if offline/network fails
+            return cachedResponse;
+          });
+
+        // If we have a cached response, return it in ~1ms!
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        // Otherwise return the network response
+        return networkFetch;
+      })
+    );
+  }
 });
 
 // Handle incoming Web Push notifications
@@ -71,4 +114,3 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
-

@@ -5,14 +5,20 @@ import {
   ChevronRight, 
   HeartHandshake, 
   Sparkles,
-  Droplet,
-  CalendarCheck
+  Sprout
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { useHeroBanners, BannerSlide } from '@/services/siteSettingsService';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { 
+  preloadAllBanners, 
+  preloadBannerImage, 
+  isImageCachedSync, 
+  markImageLoadedInMemory 
+} from '@/services/bannerCacheService';
+import { cn } from '@/lib/utils';
 
 const HeroSection = () => {
   const { language } = useLanguage();
@@ -20,11 +26,14 @@ const HeroSection = () => {
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
+  // Track loaded state for instant smooth fade-in (never a black screen)
+  const [loadedMap, setLoadedMap] = useState<Record<string, boolean>>({});
+
   // Realtime subscription for instant updates on admin banner save
   useRealtimeSubscription({ table: 'site_settings', queryKey: ['hero-banners'] });
 
   // Fetch dynamic banner directly from Supabase database with instant local-first cache
-  const { data: dbBanners, isLoading } = useHeroBanners();
+  const { data: dbBanners } = useHeroBanners();
 
   const slides: BannerSlide[] = dbBanners && dbBanners.length > 0 ? dbBanners : [
     {
@@ -39,9 +48,45 @@ const HeroSection = () => {
     }
   ];
 
+  // Warm-up cache and check instant sync cache on mount or slides change
+  useEffect(() => {
+    if (!slides || slides.length === 0) return;
+
+    // Preload all banners into Cache Storage & browser memory
+    preloadAllBanners(slides);
+
+    // Synchronously check if images are already cached
+    const initialLoaded: Record<string, boolean> = {};
+    slides.forEach((slide) => {
+      if (slide.image && isImageCachedSync(slide.image)) {
+        initialLoaded[slide.id] = true;
+      }
+      if (slide.imageMobile && isImageCachedSync(slide.imageMobile)) {
+        initialLoaded[`${slide.id}-mobile`] = true;
+      }
+    });
+
+    if (Object.keys(initialLoaded).length > 0) {
+      setLoadedMap((prev) => ({ ...prev, ...initialLoaded }));
+    }
+  }, [slides]);
+
+  // Pre-decode next slide whenever currentSlide changes for zero-lag slide transition
+  useEffect(() => {
+    if (!slides || slides.length <= 1) return;
+    const nextIndex = (currentSlide + 1) % slides.length;
+    const nextSlide = slides[nextIndex];
+    if (nextSlide?.image) {
+      preloadBannerImage(nextSlide.image, 'auto');
+    }
+    if (nextSlide?.imageMobile) {
+      preloadBannerImage(nextSlide.imageMobile, 'auto');
+    }
+  }, [currentSlide, slides]);
+
   // Auto-play slide rotation
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || slides.length <= 1) return;
 
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -60,7 +105,8 @@ const HeroSection = () => {
 
   return (
     <section 
-      className="relative w-full h-[520px] sm:h-[580px] md:h-[620px] lg:h-[660px] overflow-hidden bg-slate-950"
+      id="hero-banner-section"
+      className="relative w-full h-[520px] sm:h-[580px] md:h-[620px] lg:h-[660px] overflow-hidden bg-gradient-to-br from-[#062415] via-[#0A3D24] to-[#041A0E]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
@@ -72,10 +118,33 @@ const HeroSection = () => {
         touchStartX.current = null;
       }}
     >
-      {/* Slides Rendering */}
+      {/* 1. Ambient Branded Canvas & Animated Shimmer (Permanently prevents black screens) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+        {/* Soft radial emerald light gradient */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.22),transparent_70%)]" />
+        
+        {/* Subtle animated ambient wave / shimmer */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-pulse" />
+
+        {/* Watermarked Batighor Brand Pattern */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-15">
+          <div className="text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full border-2 border-emerald-400/30 flex items-center justify-center mb-3">
+              <Sprout className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-400/50" />
+            </div>
+            <p className="text-xs font-bold text-emerald-200/40 tracking-widest font-heading">
+              সময়ের বাতিঘর • মানবতার সেবায় নিবেদিত
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Slides Rendering */}
       {slides.map((slide, index) => {
         const isActive = index === currentSlide;
         const hasTextContent = slide.showContent !== false && !!(slide.titleBn || slide.titleEn || slide.subtitleBn || slide.subtitleEn);
+        const isDesktopLoaded = loadedMap[slide.id] || isImageCachedSync(slide.image);
+        const isMobileLoaded = slide.imageMobile ? (loadedMap[`${slide.id}-mobile`] || isImageCachedSync(slide.imageMobile)) : isDesktopLoaded;
 
         return (
           <div
@@ -84,26 +153,49 @@ const HeroSection = () => {
               isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
-            {/* Desktop Background Image */}
-            <div 
-              className={`absolute inset-0 bg-cover bg-center transition-transform ease-out ${
-                isActive ? 'scale-105' : 'scale-100'
-              } ${slide.imageMobile ? 'hidden sm:block' : 'block'}`}
+            {/* Desktop Banner Image (eager fetchPriority on first slide) */}
+            <img
+              src={slide.image}
+              alt={slide.titleBn || 'সময়ের বাতিঘর ব্যানার'}
+              fetchPriority={index === 0 ? 'high' : 'auto'}
+              loading={index === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              onLoad={() => {
+                markImageLoadedInMemory(slide.image);
+                setLoadedMap((prev) => ({ ...prev, [slide.id]: true }));
+              }}
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover transition-all ease-out",
+                isActive ? "scale-105" : "scale-100",
+                slide.imageMobile ? "hidden sm:block" : "block",
+                isDesktopLoaded ? "opacity-100" : "opacity-0"
+              )}
               style={{ 
-                backgroundImage: `url(${slide.image})`,
-                transitionDuration: '7000ms'
+                transitionDuration: '7000ms, 600ms', 
+                transitionProperty: 'transform, opacity' 
               }}
             />
 
-            {/* Mobile Background Image (Dedicated mobile banner if uploaded) */}
+            {/* Mobile Banner Image (Dedicated mobile banner if uploaded) */}
             {slide.imageMobile && (
-              <div 
-                className={`sm:hidden absolute inset-0 bg-cover bg-center transition-transform ease-out ${
-                  isActive ? 'scale-105' : 'scale-100'
-                }`}
+              <img
+                src={slide.imageMobile}
+                alt={slide.titleBn || 'সময়ের বাতিঘর মোবাইল ব্যানার'}
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                onLoad={() => {
+                  markImageLoadedInMemory(slide.imageMobile!);
+                  setLoadedMap((prev) => ({ ...prev, [`${slide.id}-mobile`]: true }));
+                }}
+                className={cn(
+                  "sm:hidden absolute inset-0 w-full h-full object-cover transition-all ease-out",
+                  isActive ? "scale-105" : "scale-100",
+                  isMobileLoaded ? "opacity-100" : "opacity-0"
+                )}
                 style={{ 
-                  backgroundImage: `url(${slide.imageMobile})`,
-                  transitionDuration: '7000ms'
+                  transitionDuration: '7000ms, 600ms', 
+                  transitionProperty: 'transform, opacity' 
                 }}
               />
             )}
@@ -116,8 +208,8 @@ const HeroSection = () => {
               </>
             )}
             
-            {/* Bottom gradient fade */}
-            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent pointer-events-none" />
+            {/* Bottom gradient fade matching deep emerald footer theme */}
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#062415]/90 via-[#062415]/30 to-transparent pointer-events-none" />
 
             {/* Slide Text Content */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full flex items-center relative z-20">
@@ -185,37 +277,41 @@ const HeroSection = () => {
       })}
 
       {/* Slider Controls: Previous & Next Buttons */}
-      <button
-        onClick={handlePrev}
-        className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-emerald-600 text-white backdrop-blur-xs border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-        aria-label="Previous Slide"
-      >
-        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-      </button>
-
-      <button
-        onClick={handleNext}
-        className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-emerald-600 text-white backdrop-blur-xs border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-        aria-label="Next Slide"
-      >
-        <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-      </button>
-
-      {/* Slide Indicators */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-black/40 backdrop-blur-xs px-3 py-1.5 rounded-full border border-white/15">
-        {slides.map((_, idx) => (
+      {slides.length > 1 && (
+        <>
           <button
-            key={idx}
-            onClick={() => setCurrentSlide(idx)}
-            className={`transition-all duration-300 rounded-full ${
-              idx === currentSlide
-                ? 'w-7 sm:w-8 h-2 bg-emerald-400 shadow-xs'
-                : 'w-2 h-2 bg-white/50 hover:bg-white/80'
-            }`}
-            aria-label={`Go to slide ${idx + 1}`}
-          />
-        ))}
-      </div>
+            onClick={handlePrev}
+            className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-emerald-600 text-white backdrop-blur-xs border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+            aria-label="Previous Slide"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          <button
+            onClick={handleNext}
+            className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-emerald-600 text-white backdrop-blur-xs border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+            aria-label="Next Slide"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* Slide Indicators */}
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-black/40 backdrop-blur-xs px-3 py-1.5 rounded-full border border-white/15">
+            {slides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentSlide(idx)}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  idx === currentSlide
+                    ? 'w-7 sm:w-8 h-2 bg-emerald-400 shadow-xs'
+                    : 'w-2 h-2 bg-white/50 hover:bg-white/80'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 };

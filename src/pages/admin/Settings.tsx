@@ -64,7 +64,8 @@ import { sendKeepAlivePing, getKeepAliveStats, KeepAliveStats } from '@/services
 import { compressImage } from '@/lib/imageUtils';
 import { LogoCropModal } from '@/components/common/LogoCropModal';
 import { Switch } from '@/components/ui/switch';
-import { clearSiteSettingsCache } from '@/services/siteSettingsService';
+import { clearSiteSettingsCache, setCachedHeroBanners } from '@/services/siteSettingsService';
+import { preloadBannerImage, preloadAllBanners } from '@/services/bannerCacheService';
 
 const STORAGE_LOGO_KEY = 'batighor_site_logo_url';
 
@@ -380,6 +381,9 @@ const Settings = () => {
       const { data: urlData } = supabase.storage.from('gallery-images').getPublicUrl(data.path);
       const publicUrl = urlData.publicUrl;
 
+      // Immediately cache image in browser cache and Cache Storage API for instant millisecond display
+      preloadBannerImage(publicUrl, 'high');
+
       setHeroBannersList((prev) => {
         const next = [...prev];
         if (next[index]) {
@@ -585,7 +589,24 @@ const Settings = () => {
 
       if (error) throw error;
 
-      clearSiteSettingsCache();
+      if (section === 'hero') {
+        // Prime local cache and background Cache Storage with the newest banner list
+        setCachedHeroBanners(heroBannersList.map((b, i) => ({
+          id: b.id || `banner-${i + 1}`,
+          image: b.image_url,
+          imageMobile: b.image_mobile_url,
+          tagBn: b.tagline_bn || '',
+          tagEn: b.tagline_en || '',
+          titleBn: b.title_bn || '',
+          titleEn: b.title_en || '',
+          subtitleBn: b.subtitle_bn || '',
+          subtitleEn: b.subtitle_en || '',
+          showContent: b.show_content !== false,
+        })));
+        clearSiteSettingsCache(false);
+      } else {
+        clearSiteSettingsCache(false);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['site-settings'] });
       queryClient.invalidateQueries({ queryKey: ['hero-banners'] });

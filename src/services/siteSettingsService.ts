@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { preloadAllBanners } from './bannerCacheService';
 
 export interface HeroBannerData {
   id?: string;
@@ -61,11 +62,23 @@ export interface CtaSectionData {
 const STORAGE_KEY_SETTINGS = 'batighor_site_settings_cache';
 const STORAGE_KEY_HERO_BANNERS = 'batighor_hero_banners_cache';
 
-// Helper to safely clear all site settings and banner caches
-export const clearSiteSettingsCache = () => {
+// Helper to safely clear settings cache (preserves hero banner cache so users never see black/blank screens)
+export const clearSiteSettingsCache = (clearBanners: boolean = false) => {
   try {
     localStorage.removeItem(STORAGE_KEY_SETTINGS);
-    localStorage.removeItem(STORAGE_KEY_HERO_BANNERS);
+    if (clearBanners) {
+      localStorage.removeItem(STORAGE_KEY_HERO_BANNERS);
+    }
+  } catch {
+    // Safe ignore
+  }
+};
+
+// Helper to manually update and warm hero banners cache
+export const setCachedHeroBanners = (slides: BannerSlide[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY_HERO_BANNERS, JSON.stringify(slides));
+    preloadAllBanners(slides);
   } catch {
     // Safe ignore
   }
@@ -241,10 +254,11 @@ export const useHeroBanners = () => {
         });
       }
 
-      // If database yielded slides, save to cache
+      // If database yielded slides, save to cache and preload images immediately
       if (slides.length > 0) {
         try {
           localStorage.setItem(STORAGE_KEY_HERO_BANNERS, JSON.stringify(slides));
+          preloadAllBanners(slides);
         } catch {
           // Safe ignore localStorage write errors
         }
