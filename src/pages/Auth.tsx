@@ -271,34 +271,38 @@ const Auth = () => {
         }
       }
 
-      // C. Self-healing auto-provision fallback:
-      // If sign in failed but member is approved in database, ensure auth user is created with default password
-      if (!loginSuccessful && matchedMember && matchedMember.status === 'approved') {
-        const mDigits = matchedMember.phone ? matchedMember.phone.replace(/\D/g, '') : '';
-        const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
-        const autoTargetEmail = mStd.length >= 10 ? `${mStd}@batighor.org` : (matchedMember.email || null);
+      // C. Safe initial-provision fallback:
+      // ONLY for approved members who do NOT yet have an auth account in database (!matchedMember.user_id),
+      // attempting first-time setup with the default initial password 'member@123'.
+      // If matchedMember.user_id already exists, WE NEVER OVERWRITE OR RESET EXISTING PASSWORDS!
+      if (!loginSuccessful && matchedMember && matchedMember.status === 'approved' && !matchedMember.user_id) {
+        if (cleanPassword === 'member@123') {
+          const mDigits = matchedMember.phone ? matchedMember.phone.replace(/\D/g, '') : '';
+          const mStd = mDigits.length === 11 ? mDigits : (mDigits.length === 13 && mDigits.startsWith('88')) ? mDigits.slice(2) : mDigits;
+          const autoTargetEmail = mStd.length >= 10 ? `${mStd}@batighor.org` : (matchedMember.email || null);
 
-        if (autoTargetEmail && (cleanPassword === 'member@123' || !matchedMember.user_id)) {
-          try {
-            const { data: provisionData } = await supabase.functions.invoke('create-member-user', {
-              body: {
-                email: autoTargetEmail,
-                password: cleanPassword,
-                memberId: matchedMember.id,
-                fullName: matchedMember.full_name,
-              },
-            });
+          if (autoTargetEmail) {
+            try {
+              const { data: provisionData } = await supabase.functions.invoke('create-member-user', {
+                body: {
+                  email: autoTargetEmail,
+                  password: cleanPassword,
+                  memberId: matchedMember.id,
+                  fullName: matchedMember.full_name,
+                },
+              });
 
-            if (provisionData?.success) {
-              // Immediately retry sign in with newly provisioned credentials
-              const retryRes = await signIn(autoTargetEmail, cleanPassword);
-              if (retryRes && !retryRes.error) {
-                lastAuthResult = retryRes;
-                loginSuccessful = true;
+              if (provisionData?.success) {
+                // Immediately retry sign in with newly provisioned credentials
+                const retryRes = await signIn(autoTargetEmail, cleanPassword);
+                if (retryRes && !retryRes.error) {
+                  lastAuthResult = retryRes;
+                  loginSuccessful = true;
+                }
               }
+            } catch (provisionErr) {
+              console.warn('Initial member provision attempt failed:', provisionErr);
             }
-          } catch (provisionErr) {
-            console.warn('Auto-provision during member login attempt failed:', provisionErr);
           }
         }
       }

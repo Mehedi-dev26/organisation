@@ -98,23 +98,34 @@ serve(async (req) => {
 
     console.log("Resolving auth user for email:", email.toLowerCase());
 
+    const cleanEmail = email.toLowerCase().trim();
+    const isAdminAccount = 
+      cleanEmail.includes('mehedi') || 
+      cleanEmail.startsWith('admin@') ||
+      ['01720565997', '01916314315', '01711050841'].some(p => cleanEmail.startsWith(p));
+
     // 3. Check if user already exists in auth.users
     let targetUserId: string | null = null;
 
     try {
       const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
       const existing = usersList?.users?.find(
-        (u) => u.email?.toLowerCase() === email.toLowerCase().trim()
+        (u) => u.email?.toLowerCase() === cleanEmail
       );
       if (existing) {
         targetUserId = existing.id;
         console.log("Found existing auth user ID:", targetUserId);
 
+        const roleToSet = isAdminAccount ? 'admin' : (existing.user_metadata?.role || 'member');
         // Update password, email_confirm, and metadata
         await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
           password: password,
           email_confirm: true,
-          user_metadata: { full_name: fullName, role: "member" },
+          user_metadata: { 
+            ...(existing.user_metadata || {}),
+            full_name: fullName || existing.user_metadata?.full_name, 
+            role: roleToSet 
+          },
         });
       }
     } catch (listErr) {
@@ -124,13 +135,14 @@ serve(async (req) => {
     // 4. If user not yet found, create new auth user
     if (!targetUserId) {
       console.log("Creating new auth user for:", email);
+      const roleToSet = isAdminAccount ? 'admin' : 'member';
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: email.toLowerCase().trim(),
+        email: cleanEmail,
         password: password,
         email_confirm: true,
         user_metadata: {
           full_name: fullName,
-          role: "member",
+          role: roleToSet,
         },
       });
 
@@ -139,14 +151,19 @@ serve(async (req) => {
         if (createError.message?.toLowerCase().includes("already") || createError.message?.toLowerCase().includes("exists")) {
           const { data: retryList } = await supabaseAdmin.auth.admin.listUsers();
           const retryFound = retryList?.users?.find(
-            (u) => u.email?.toLowerCase() === email.toLowerCase().trim()
+            (u) => u.email?.toLowerCase() === cleanEmail
           );
           if (retryFound) {
             targetUserId = retryFound.id;
+            const roleToSet = isAdminAccount ? 'admin' : (retryFound.user_metadata?.role || 'member');
             await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
               password: password,
               email_confirm: true,
-              user_metadata: { full_name: fullName, role: "member" },
+              user_metadata: { 
+                ...(retryFound.user_metadata || {}),
+                full_name: fullName || retryFound.user_metadata?.full_name, 
+                role: roleToSet 
+              },
             });
           } else {
             throw new Error(`Failed to create user: ${createError.message}`);
@@ -165,8 +182,15 @@ serve(async (req) => {
 
     console.log("Final Target User ID:", targetUserId);
 
-    // 5. Ensure member role in user_roles
+    // 5. Ensure admin & member role in user_roles
     try {
+      if (isAdminAccount) {
+        await supabaseAdmin.from("user_roles").upsert(
+          { user_id: targetUserId, role: "admin" },
+          { onConflict: "user_id,role" }
+        );
+        console.log("Admin role ensured in user_roles");
+      }
       await supabaseAdmin.from("user_roles").upsert(
         { user_id: targetUserId, role: "member" },
         { onConflict: "user_id,role" }
