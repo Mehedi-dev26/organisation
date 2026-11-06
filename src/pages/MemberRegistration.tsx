@@ -64,7 +64,10 @@ import {
 const registrationSchema = z.object({
   full_name: z.string().min(3, 'নাম কমপক্ষে ৩ অক্ষরের হতে হবে'),
   email: z.string().email('সঠিক ইমেইল দিন').optional().or(z.literal('')),
-  phone: z.string().min(11, 'সঠিক ১১ ডিজিটের ফোন নম্বর দিন'),
+  phone: z
+    .string()
+    .min(1, 'মোবাইল নম্বর আবশ্যক')
+    .regex(/^01[3-9]\d{8}$/, 'ইংরেজি সংখ্যায় সঠিক ১১ ডিজিটের বাংলাদেশি নম্বর দিন (যেমন: 01712345678)'),
   present_address: z.string().min(3, 'বর্তমান ঠিকানা লিখুন'),
   permanent_division: z.string().min(1, 'বিভাগ নির্বাচন করুন'),
   permanent_district: z.string().min(1, 'জেলা নির্বাচন করুন'),
@@ -1398,14 +1401,32 @@ const MemberRegistration: React.FC = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Phone Number */}
                             <div className="space-y-1.5">
-                              <Label htmlFor="phone" className="text-xs sm:text-sm font-medium">
-                                {language === 'bn' ? 'মোবাইল নম্বর' : 'Mobile Number'} <span className="text-red-500">*</span>
-                              </Label>
+                              <div className="flex items-center justify-between">
+                                <Label htmlFor="phone" className="text-xs sm:text-sm font-medium">
+                                  {language === 'bn' ? 'মোবাইল নম্বর (ইংরেজিতে)' : 'Mobile Number (English)'} <span className="text-red-500">*</span>
+                                </Label>
+                                <span className="text-[11px] text-muted-foreground font-mono">01XXXXXXXXX</span>
+                              </div>
                               <Input
                                 id="phone"
-                                placeholder="০১৭১২xxxxxx"
-                                className="h-10 text-sm rounded-xl border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-[#0B6B3A] focus:ring-[#0B6B3A]"
-                                {...register('phone')}
+                                type="tel"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={11}
+                                placeholder="01712xxxxxx"
+                                className="h-10 text-sm font-mono tracking-wider rounded-xl border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-[#0B6B3A] focus:ring-[#0B6B3A]"
+                                {...register('phone', {
+                                  onChange: (e) => {
+                                    // Strip any Bengali characters, Bengali digits or non-English characters immediately
+                                    let val = e.target.value.replace(/[^0-9]/g, '');
+                                    if (val.startsWith('8801')) {
+                                      val = val.slice(2);
+                                    }
+                                    const englishDigitsOnly = val.slice(0, 11);
+                                    e.target.value = englishDigitsOnly;
+                                    setValue('phone', englishDigitsOnly, { shouldValidate: true });
+                                  }
+                                })}
                               />
                               {errors.phone && (
                                 <p className="text-xs text-destructive">{errors.phone.message}</p>
