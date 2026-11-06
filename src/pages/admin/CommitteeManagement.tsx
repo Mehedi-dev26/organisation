@@ -981,15 +981,15 @@ const CommitteeManagement: React.FC = () => {
 
                       {/* Photo Avatar */}
                       <TableCell className="text-center py-3">
-                        <Avatar className="w-11 h-11 border-2 border-emerald-300 shadow-xs mx-auto">
+                        <Avatar className="w-11 h-11 border-2 border-emerald-300 shadow-xs mx-auto overflow-hidden bg-white">
                           <AvatarImage
-                            src={member.photo_url || undefined}
+                            src={member.photo_url || '/default-avatar-cap.svg'}
                             alt={member.name_bn}
                             className="object-cover"
                             style={{ objectPosition: 'center 20%' }}
                           />
-                          <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] font-bold text-sm">
-                            {member.name_bn?.charAt(0) || 'K'}
+                          <AvatarFallback className="bg-emerald-50 p-0.5">
+                            <img src="/default-avatar-cap.svg" alt="Default avatar" className="w-full h-full object-cover" />
                           </AvatarFallback>
                         </Avatar>
                       </TableCell>
@@ -1660,15 +1660,15 @@ const CommitteeManagement: React.FC = () => {
               {/* Avatar & Badges */}
               <div className="px-6 pb-6 pt-0 relative space-y-4">
                 <div className="flex justify-between items-end -mt-12">
-                  <Avatar className="w-24 h-24 border-4 border-background shadow-lg rounded-full">
+                  <Avatar className="w-24 h-24 border-4 border-background shadow-lg rounded-full overflow-hidden bg-white">
                     <AvatarImage
-                      src={viewingMember.photo_url || undefined}
+                      src={viewingMember.photo_url || '/default-avatar-cap.svg'}
                       alt={viewingMember.name_bn}
                       className="object-cover"
                       style={{ objectPosition: 'center 20%' }}
                     />
-                    <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] text-2xl font-bold rounded-full">
-                      {viewingMember.name_bn.charAt(0)}
+                    <AvatarFallback className="bg-emerald-50 p-1">
+                      <img src="/default-avatar-cap.svg" alt="Default avatar" className="w-full h-full object-cover" />
                     </AvatarFallback>
                   </Avatar>
 

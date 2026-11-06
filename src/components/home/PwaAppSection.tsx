@@ -353,9 +353,9 @@ export const PwaAppSection: React.FC = () => {
                     
                     {/* Top Organization Brand Card with Official Uploaded Logo */}
                     <div className="pt-1">
-                      <div className="relative w-18 h-18 sm:w-20 sm:h-20 mx-auto mb-2">
+                      <div className="relative w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-2">
                         <img 
-                          src="/logo-app.jpg" 
+                          src="/pwa-icon-192.png" 
                           alt="সময়ের বাতিঘর" 
                           className="w-full h-full object-contain rounded-2xl shadow-md border border-slate-200 bg-white p-1"
                           onError={(e) => {

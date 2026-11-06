@@ -371,10 +371,13 @@ const Committee = () => {
                 <div className="-mt-10 text-center">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 shadow-xl mx-auto bg-slate-50 relative z-10">
                     <img
-                      src={selectedMember.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedMember.name_bn)}`}
+                      src={selectedMember.photo_url || '/default-avatar-cap.svg'}
                       alt={selectedMember.name_bn}
                       style={{ objectPosition: 'center 20%' }}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/default-avatar-cap.svg';
+                      }}
                     />
                   </div>
 
@@ -550,7 +553,7 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
 }) => {
   const name = language === 'bn' ? member.name_bn : (member.name_en || member.name_bn);
   const position = language === 'bn' ? member.position_bn : (member.position_en || member.position_bn);
-  const fallbackImage = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.name_bn)}`;
+  const fallbackImage = '/default-avatar-cap.svg';
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = fallbackImage;

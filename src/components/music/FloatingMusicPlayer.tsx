@@ -7,12 +7,12 @@ import {
   RotateCcw, 
   RotateCw, 
   X, 
-  Music2, 
+  Music, 
   Sparkles,
   Repeat,
-  Headphones
+  Headphones,
+  Radio
 } from 'lucide-react';
-import Canvas3DMusicNote from './Canvas3DMusicNote';
 
 export const FloatingMusicPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,11 +29,10 @@ export const FloatingMusicPlayer: React.FC = () => {
   });
   const [isMuted, setIsMuted] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize audio element with zero preloading to prevent slowing down homepage
+  // Initialize audio element
   useEffect(() => {
     const audio = new Audio('/audio/sotter-songram.mp3');
     audio.preload = 'none';
@@ -100,17 +99,14 @@ export const FloatingMusicPlayer: React.FC = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    setHasInteracted(true);
-
     if (isPlaying) {
       audio.pause();
     } else {
       audio.play().then(() => {
         setIsPlaying(true);
       }).catch((err) => {
-        console.warn('Audio play request interrupted or blocked:', err);
+        console.warn('Audio play request error:', err);
       });
-      // Automatically show the aesthetic player card when playing
       setIsCardOpen(true);
     }
   };
@@ -154,27 +150,27 @@ export const FloatingMusicPlayer: React.FC = () => {
 
   return (
     <>
-      {/* Floating 3D Music Button (Bottom Right - Same position as previous support bot) */}
+      {/* Floating Music Widget Container (Bottom Right) */}
       <div className="fixed z-40 bottom-20 right-4 md:bottom-8 md:right-8 flex flex-col items-end select-none">
         
-        {/* Expanded Glassmorphic Music Player Card */}
+        {/* Expanded White Glassmorphic Music Player Card */}
         {isCardOpen && (
           <div 
-            className="mb-3 w-[320px] sm:w-[350px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[26px] p-5 shadow-[0_20px_50px_rgba(11,107,58,0.25)] border border-emerald-500/20 dark:border-emerald-500/30 animate-in fade-in zoom-in-95 duration-200 transition-all"
+            className="mb-3 w-[320px] sm:w-[350px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-[28px] p-5 shadow-[0_20px_50px_rgba(11,107,58,0.22)] border border-emerald-500/20 dark:border-emerald-500/30 animate-in fade-in zoom-in-95 duration-200 transition-all"
             role="region"
-            aria-label="Islamic Music Player"
+            aria-label="Theme Song Player"
           >
             {/* Header with pill and close button */}
-            <div className="flex items-center justify-between gap-2 border-b border-emerald-950/10 dark:border-emerald-500/10 pb-3">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
-                <Music2 className="w-3.5 h-3.5 text-emerald-600 animate-spin-slow" />
-                <span>সময়ের বাতিঘর থিম সংগীত</span>
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                <Music className="w-3.5 h-3.5 text-[#0B6B3A]" />
+                <span>সময়ের বাতিঘর থিম সং</span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCardOpen(false)}
                 className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                aria-label="Close music player card"
+                aria-label="Close player card"
                 title="প্লেয়ার মিনিমাইজ করুন"
               >
                 <X className="w-4 h-4" />
@@ -184,27 +180,27 @@ export const FloatingMusicPlayer: React.FC = () => {
             {/* Song Meta with Dancing Waveform Equalizer */}
             <div className="mt-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <h4 className="font-heading font-extrabold text-slate-900 dark:text-slate-50 text-base leading-tight truncate">
+                <h4 className="font-heading font-black text-slate-900 dark:text-slate-50 text-base leading-tight truncate">
                   সত্যের সংগ্রাম
                 </h4>
                 <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 truncate flex items-center gap-1">
                   <span>সত্যের সংগ্রামে ফোটা ফুল</span>
                   <span>•</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">ইসলামী সংগীত</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">অফিসিয়াল থিম সং</span>
                 </p>
               </div>
 
               {/* Animated Audio Equalizer Bars */}
-              <div className="flex items-end gap-1 h-6 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50">
+              <div className="flex items-end gap-1 h-6 px-2.5 py-1 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/60">
                 {[
-                  isPlaying ? 'h-5 animate-pulse' : 'h-1.5',
-                  isPlaying ? 'h-3 animate-pulse delay-75' : 'h-2',
+                  isPlaying ? 'h-5 animate-pulse' : 'h-2',
+                  isPlaying ? 'h-3 animate-pulse delay-75' : 'h-1.5',
                   isPlaying ? 'h-6 animate-pulse delay-150' : 'h-3',
-                  isPlaying ? 'h-4 animate-pulse delay-100' : 'h-1.5'
+                  isPlaying ? 'h-4 animate-pulse delay-100' : 'h-2'
                 ].map((barClass, idx) => (
                   <span
                     key={idx}
-                    className={`w-1 bg-gradient-to-t from-emerald-600 to-amber-400 rounded-full transition-all duration-300 ${barClass}`}
+                    className={`w-1 bg-[#0B6B3A] rounded-full transition-all duration-300 ${barClass}`}
                   />
                 ))}
               </div>
@@ -265,7 +261,7 @@ export const FloatingMusicPlayer: React.FC = () => {
               <button
                 type="button"
                 onClick={togglePlay}
-                className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0B6B3A] via-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-700/30 hover:shadow-emerald-700/50 hover:scale-105 active:scale-95 flex items-center justify-center transition-all cursor-pointer"
+                className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0B6B3A] via-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-700/30 hover:shadow-emerald-700/50 hover:scale-105 active:scale-95 flex items-center justify-center transition-all cursor-pointer"
                 title={isPlaying ? 'বিরতি দিন' : 'প্লে করুন'}
                 aria-label={isPlaying ? 'Pause song' : 'Play song'}
               >
@@ -302,7 +298,6 @@ export const FloatingMusicPlayer: React.FC = () => {
                     <Volume2 className="w-4 h-4" />
                   )}
                 </button>
-                {/* Mini volume slider on hover */}
                 <input
                   type="range"
                   min="0"
@@ -318,56 +313,67 @@ export const FloatingMusicPlayer: React.FC = () => {
           </div>
         )}
 
-        {/* 3D Music Button Trigger Pedestal */}
+        {/* White Glassmorphic (সাদা গ্লাসি) "থিম সং" Floating Trigger Button */}
         <div className="relative group">
-          {/* Concentric soundwave ripples when playing */}
           {isPlaying && (
-            <>
-              <span className="absolute inset-0 -m-3 rounded-full bg-emerald-500/25 animate-ping duration-1000 pointer-events-none" />
-              <span className="absolute inset-0 -m-1.5 rounded-full border-2 border-amber-400/50 animate-pulse pointer-events-none" />
-            </>
+            <span className="absolute inset-0 rounded-full bg-emerald-500/30 animate-ping duration-1000 pointer-events-none" />
           )}
 
-          {/* Interactive 3D Circular Pedestal Button */}
           <button
             type="button"
-            onClick={togglePlay}
-            className={`relative w-16 h-16 md:w-[72px] md:h-[72px] rounded-full p-1 bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-900 shadow-[0_12px_35px_rgba(11,107,58,0.4)] border-2 border-emerald-300/40 hover:border-amber-300 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer overflow-hidden ${
-              isPlaying ? 'ring-4 ring-emerald-400/40' : ''
+            onClick={() => {
+              if (isCardOpen) {
+                togglePlay();
+              } else {
+                setIsCardOpen(true);
+                if (!isPlaying) togglePlay();
+              }
+            }}
+            className={`group/btn relative px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-900 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.12)] hover:shadow-[0_12px_35px_rgba(11,107,58,0.25)] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-2.5 cursor-pointer ${
+              isPlaying ? 'ring-2 ring-[#0B6B3A]/40' : ''
             }`}
             aria-label={isPlaying ? 'Pause theme song' : 'Play theme song'}
-            title={isPlaying ? 'গান থামাতে ক্লিক করুন' : 'ইসলামী সংগীত শুনুন (সত্যের সংগ্রাম)'}
+            title="সময়ের বাতিঘর থিম সং"
           >
-            {/* Soft inner glow gradient */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_70%)] pointer-events-none" />
-
-            {/* Embedded 3D Canvas with Cartoon Music Note */}
-            <div className="w-full h-full relative z-10 flex items-center justify-center">
-              <Canvas3DMusicNote isPlaying={isPlaying} />
+            {/* Modern 2D Circular Emerald Icon with Audio Waves */}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              isPlaying 
+                ? 'bg-[#0B6B3A] text-white shadow-md' 
+                : 'bg-emerald-50 dark:bg-emerald-950 text-[#0B6B3A] border border-emerald-200 dark:border-emerald-800'
+            }`}>
+              {isPlaying ? (
+                <div className="flex items-end gap-0.5 h-3.5">
+                  <span className="w-0.5 h-3 bg-white rounded-full animate-pulse" />
+                  <span className="w-0.5 h-2 bg-white rounded-full animate-pulse delay-75" />
+                  <span className="w-0.5 h-3.5 bg-white rounded-full animate-pulse delay-150" />
+                </div>
+              ) : (
+                <Headphones className="w-4 h-4 text-[#0B6B3A] group-hover/btn:scale-110 transition-transform" />
+              )}
             </div>
 
-            {/* Mini status badge (headphones / play indicator) */}
-            <div className="absolute bottom-1 right-1 z-20 w-5 h-5 rounded-full bg-white dark:bg-slate-900 text-emerald-700 shadow-md flex items-center justify-center border border-emerald-200">
+            {/* Distinct "থিম সং" Text in Bengali */}
+            <div className="flex items-center gap-1.5 pr-1">
+              <span className="text-xs sm:text-sm font-black font-heading tracking-tight text-[#14231B] dark:text-white">
+                থিম সং
+              </span>
+              <Sparkles className="w-3 h-3 text-amber-500" />
+            </div>
+
+            {/* Mini Play / Pause State Icon */}
+            <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
               {isPlaying ? (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <Pause className="w-2.5 h-2.5 fill-current" />
               ) : (
-                <Headphones className="w-2.5 h-2.5 text-emerald-600" />
+                <Play className="w-2.5 h-2.5 fill-current ml-0.5 text-emerald-700" />
               )}
             </div>
           </button>
-
-          {/* Floating Tooltip Pill (shows before interaction or on hover) */}
-          {!isPlaying && !hasInteracted && (
-            <div className="absolute -top-10 right-0 bg-slate-900/90 text-white text-[11px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-xl border border-white/10 flex items-center gap-1.5 animate-bounce">
-              <Sparkles className="w-3 h-3 text-amber-300" />
-              <span>ইসলামী সংগীত শুনুন</span>
-            </div>
-          )}
         </div>
+
       </div>
     </>
   );
 };
 
 export default FloatingMusicPlayer;
-

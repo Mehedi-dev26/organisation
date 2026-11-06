@@ -1993,10 +1993,10 @@ const MembersManagement: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2">
-                    <Avatar className="w-20 h-20 border-3 border-white shadow-md rounded-2xl shrink-0">
-                      <AvatarImage src={viewingMember.photo_url || undefined} alt={viewingMember.full_name} />
-                      <AvatarFallback className="bg-emerald-100 text-[#0B6B3A] text-2xl font-bold rounded-2xl">
-                        {viewingMember.full_name.charAt(0)}
+                    <Avatar className="w-20 h-20 border-3 border-white shadow-md rounded-2xl shrink-0 overflow-hidden bg-white">
+                      <AvatarImage src={viewingMember.photo_url || '/default-avatar-cap.svg'} alt={viewingMember.full_name} className="object-cover" />
+                      <AvatarFallback className="bg-emerald-50 p-1">
+                        <img src="/default-avatar-cap.svg" alt="Default avatar" className="w-full h-full object-cover" />
                       </AvatarFallback>
                     </Avatar>
 
@@ -2426,11 +2426,14 @@ const MembersManagement: React.FC = () => {
                     src={viewingMember.photo_url}
                     alt={viewingMember.full_name}
                     className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/default-avatar-cap.svg'; }}
                   />
                 ) : (
-                  <span className="text-[10px] text-slate-400 font-semibold text-center p-1">
-                    পাসপোর্ট সাইজ ছবি
-                  </span>
+                  <img
+                    src="/default-avatar-cap.svg"
+                    alt={viewingMember.full_name}
+                    className="w-full h-full object-cover"
+                  />
                 )}
               </div>
             </div>

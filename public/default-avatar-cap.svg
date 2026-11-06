@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F4FAF6"/>
+      <stop offset="100%" stop-color="#E2F0E7"/>
+    </linearGradient>
+
+    <!-- Cap Fill Gradient -->
+    <linearGradient id="capGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#EAF2ED"/>
+    </linearGradient>
+
+    <!-- Soft Face Shadow -->
+    <linearGradient id="skinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FDFBF7"/>
+      <stop offset="100%" stop-color="#F4EADB"/>
+    </linearGradient>
+
+    <!-- Kurta Collar Gradient -->
+    <linearGradient id="clothGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E3EAE5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle with Soft Border -->
+  <circle cx="100" cy="100" r="98" fill="url(#bgGrad)" stroke="#C8E6C9" stroke-width="2.5"/>
+
+  <!-- Bust / Shoulders & Kurta (Panjabi) Body -->
+  <path d="M35 186 C40 152 64 136 82 133 L100 148 L118 133 C136 136 160 152 165 186 Z" fill="url(#clothGrad)" stroke="#2C4A3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Kurta Collar (Panjabi Band Neckline) -->
+  <path d="M82 133 C88 144 94 148 100 148 C106 148 112 144 118 133" fill="none" stroke="#2C4A3E" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Kurta Center Placket Line -->
+  <line x1="100" y1="148" x2="100" y2="186" stroke="#2C4A3E" stroke-width="2" stroke-dasharray="1 3"/>
+  <!-- Kurta Buttons -->
+  <circle cx="100" cy="158" r="1.8" fill="#0B6B3A"/>
+  <circle cx="100" cy="168" r="1.8" fill="#0B6B3A"/>
+  <circle cx="100" cy="178" r="1.8" fill="#0B6B3A"/>
+
+  <!-- Neck -->
+  <path d="M85 118 L85 136 C92 141 108 141 115 136 L115 118 Z" fill="#F0E4D3" stroke="#2C4A3E" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Dignified Face / Head Structure -->
+  <path d="M68 84 C68 114 80 134 100 134 C120 134 132 114 132 84 C132 72 128 66 100 66 C72 66 68 72 68 84 Z" fill="url(#skinGrad)" stroke="#2C4A3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Ears with sketch details -->
+  <path d="M68 86 C64 86 62 92 64 98 C66 103 69 103 69 101" fill="#F4EADB" stroke="#2C4A3E" stroke-width="2" stroke-linecap="round"/>
+  <path d="M132 86 C136 86 138 92 136 98 C134 103 131 103 131 101" fill="#F4EADB" stroke="#2C4A3E" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Islamic Cap / Tupi (টুপি) - Classical Dome Shape with Embroidery Texture -->
+  <!-- Cap Base & Crown -->
+  <path d="M64 78 C64 42 78 30 100 30 C122 30 136 42 136 78 C136 80 134 81 126 80 C110 78 90 78 74 80 C66 81 64 80 64 78 Z" fill="url(#capGrad)" stroke="#0B6B3A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Cap Lower Border Rim (সুন্দর টুপি বর্ডার) -->
+  <path d="M64 76 C76 74 90 73 100 73 C110 73 124 74 136 76" fill="none" stroke="#0B6B3A" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M66 79 C78 77 90 76 100 76 C110 76 122 77 134 79" fill="none" stroke="#9BD038" stroke-width="1.6" stroke-linecap="round"/>
+
+  <!-- Cap Geometric Embroidered Texture Lines (সূক্ষ্ম জ্যামিতিক কারুকাজ) -->
+  <path d="M78 48 C86 42 114 42 122 48" fill="none" stroke="#0B6B3A" stroke-width="1.4" stroke-dasharray="3 2" opacity="0.8"/>
+  <path d="M72 60 C84 54 116 54 128 60" fill="none" stroke="#0B6B3A" stroke-width="1.4" stroke-dasharray="3 2" opacity="0.8"/>
+  <path d="M67 69 C82 64 118 64 133 69" fill="none" stroke="#0B6B3A" stroke-width="1.4" stroke-dasharray="3 2" opacity="0.8"/>
+
+  <!-- Cap Top Arc Stitch -->
+  <path d="M92 31 C97 30 103 30 108 31" fill="none" stroke="#0B6B3A" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Subtle Dignified Facial Features (Line Art Sketch) -->
+  <!-- Eyebrows -->
+  <path d="M78 85 C83 83 89 84 93 86" fill="none" stroke="#2C4A3E" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M122 85 C117 83 111 84 107 86" fill="none" stroke="#2C4A3E" stroke-width="2.2" stroke-linecap="round"/>
+
+  <!-- Eyes (Calm & Dignified) -->
+  <ellipse cx="86" cy="91" rx="3.5" ry="2.2" fill="#2C4A3E"/>
+  <ellipse cx="114" cy="91" rx="3.5" ry="2.2" fill="#2C4A3E"/>
+
+  <!-- Nose Outline -->
+  <path d="M99 87 L98 99 C97 101 100 102 102 101" fill="none" stroke="#2C4A3E" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Gentle Smile -->
+  <path d="M92 110 C97 113 103 113 108 110" fill="none" stroke="#2C4A3E" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Modest Trimmed Beard / Silhouette Shade -->
+  <path d="M74 98 C72 118 84 129 100 129 C116 129 128 118 126 98 C122 107 116 117 100 119 C84 117 78 107 74 98 Z" fill="#2C4A3E" opacity="0.18"/>
+  <path d="M78 104 C84 120 92 126 100 126 C108 126 116 120 122 104" fill="none" stroke="#2C4A3E" stroke-width="1.4" stroke-dasharray="2 2" stroke-linecap="round" opacity="0.5"/>
+</svg>

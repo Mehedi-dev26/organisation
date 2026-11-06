@@ -89,7 +89,7 @@ const Members = () => {
             /* Members Grid */
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredMembers?.map((member) => {
-                const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.full_name)}`;
+                const fallbackAvatar = '/default-avatar-cap.svg';
                 const memberTypeLabel = language === 'bn' 
                   ? (member.member_type === 'life' ? 'আজীবন সদস্য' : member.member_type === 'donor' ? 'দাতা সদস্য' : member.member_type === 'executive' ? 'কার্যনির্বাহী পরিষদ' : 'সাধারণ সদস্য')
                   : (member.member_type || 'General');
