@@ -62,7 +62,7 @@ export interface CommitteeMember {
 // Predefined Standard Bangladeshi Social Organization Roles / Portfolios
 interface OrganizationRole {
   id: string;
-  category: 'executive' | 'advisory' | 'subcommittee';
+  category: 'directorate' | 'executive' | 'advisory' | 'subcommittee';
   category_bn: string;
   title_bn: string;
   title_en: string;
@@ -70,32 +70,37 @@ interface OrganizationRole {
 }
 
 const PREDEFINED_ROLES: OrganizationRole[] = [
+  // ০. পরিচালনা পরিষদ ও শীর্ষ নেতৃত্ব (Directorate)
+  { id: 'director', category: 'directorate', category_bn: 'পরিচালনা পরিষদ', title_bn: 'পরিচালক', title_en: 'Director', default_sort: 1 },
+  { id: 'managing_dir', category: 'directorate', category_bn: 'পরিচালনা পরিষদ', title_bn: 'ব্যবস্থাপনা পরিচালক', title_en: 'Managing Director', default_sort: 2 },
+  { id: 'exec_dir', category: 'directorate', category_bn: 'পরিচালনা পরিষদ', title_bn: 'নির্বাহী পরিচালক', title_en: 'Executive Director', default_sort: 3 },
+
   // ১. শীর্ষ নেতৃত্ব (Executive Leadership)
-  { id: 'pres', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সভাপতি', title_en: 'President', default_sort: 1 },
-  { id: 'sr_vp', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সিনিয়র সহ-সভাপতি', title_en: 'Senior Vice President', default_sort: 2 },
-  { id: 'vp', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সভাপতি', title_en: 'Vice President', default_sort: 3 },
-  { id: 'gs', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাধারণ সম্পাদক', title_en: 'General Secretary', default_sort: 4 },
-  { id: 'cashier', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'কোষাধ্যক্ষ', title_en: 'Treasurer / Cashier', default_sort: 5 },
-  { id: 'ict_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'আইসিটি ও তথ্যপ্রযুক্তি সম্পাদক', title_en: 'ICT & IT Affairs Secretary', default_sort: 6 },
-  { id: 'jgs', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'যুগ্ম সাধারণ সম্পাদক', title_en: 'Joint General Secretary', default_sort: 7 },
-  { id: 'ags', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সাধারণ সম্পাদক', title_en: 'Assistant General Secretary', default_sort: 8 },
-  { id: 'org_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাংগঠনিক সম্পাদক', title_en: 'Organizing Secretary', default_sort: 9 },
-  { id: 'asst_org_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সাংগঠনিক সম্পাদক', title_en: 'Assistant Organizing Secretary', default_sort: 10 },
+  { id: 'pres', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সভাপতি', title_en: 'President', default_sort: 4 },
+  { id: 'sr_vp', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সিনিয়র সহ-সভাপতি', title_en: 'Senior Vice President', default_sort: 5 },
+  { id: 'vp', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সভাপতি', title_en: 'Vice President', default_sort: 6 },
+  { id: 'gs', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাধারণ সম্পাদক', title_en: 'General Secretary', default_sort: 7 },
+  { id: 'cashier', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'কোষাধ্যক্ষ', title_en: 'Treasurer / Cashier', default_sort: 8 },
+  { id: 'ict_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'আইসিটি ও তথ্যপ্রযুক্তি সম্পাদক', title_en: 'ICT & IT Affairs Secretary', default_sort: 9 },
+  { id: 'jgs', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'যুগ্ম সাধারণ সম্পাদক', title_en: 'Joint General Secretary', default_sort: 10 },
+  { id: 'ags', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সাধারণ সম্পাদক', title_en: 'Assistant General Secretary', default_sort: 11 },
+  { id: 'org_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাংগঠনিক সম্পাদক', title_en: 'Organizing Secretary', default_sort: 12 },
+  { id: 'asst_org_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-সাংগঠনিক সম্পাদক', title_en: 'Assistant Organizing Secretary', default_sort: 13 },
 
   // ২. বিভাগীয় সম্পাদকীয় দায়িত্ব (Secretarial Portfolios)
-  { id: 'fin_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'অর্থ ও হিসাব সম্পাদক', title_en: 'Finance & Accounts Secretary', default_sort: 11 },
-  { id: 'asst_fin_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-অর্থ সম্পাদক', title_en: 'Assistant Finance Secretary', default_sort: 12 },
-  { id: 'office_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'দপ্তর সম্পাদক', title_en: 'Office Secretary', default_sort: 13 },
-  { id: 'asst_office_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-দপ্তর সম্পাদক', title_en: 'Assistant Office Secretary', default_sort: 14 },
-  { id: 'pub_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'প্রচার ও প্রকাশনা সম্পাদক', title_en: 'Publicity & Publication Secretary', default_sort: 15 },
-  { id: 'blood_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'রক্তদান ও স্বাস্থ্য বিষয়ক সম্পাদক', title_en: 'Blood Donation & Health Affairs Secretary', default_sort: 16 },
-  { id: 'social_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সমাজকল্যাণ ও ত্রাণ সম্পাদক', title_en: 'Social Welfare & Relief Secretary', default_sort: 17 },
-  { id: 'edu_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'শিক্ষা ও পাঠাগার বিষয়ক সম্পাদক', title_en: 'Education & Library Affairs Secretary', default_sort: 18 },
-  { id: 'cult_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাংস্কৃতিক ও ক্রীড়া সম্পাদক', title_en: 'Cultural & Sports Secretary', default_sort: 19 },
-  { id: 'women_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'নারী ও শিশু বিষয়ক সম্পাদিকা', title_en: 'Women & Child Welfare Secretary', default_sort: 20 },
-  { id: 'env_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'পরিবেশ ও বৃক্ষরোপণ সম্পাদক', title_en: 'Environment & Tree Plantation Secretary', default_sort: 21 },
-  { id: 'law_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'আইন ও মানবাধিকার বিষয়ক সম্পাদক', title_en: 'Law & Human Rights Secretary', default_sort: 22 },
-  { id: 'vol_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'দুর্যোগ ব্যবস্থাপনা ও স্বেচ্ছাসেবক সম্পাদক', title_en: 'Disaster Management & Volunteer Secretary', default_sort: 23 },
+  { id: 'fin_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'অর্থ ও হিসাব সম্পাদক', title_en: 'Finance & Accounts Secretary', default_sort: 14 },
+  { id: 'asst_fin_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-অর্থ সম্পাদক', title_en: 'Assistant Finance Secretary', default_sort: 15 },
+  { id: 'office_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'দপ্তর সম্পাদক', title_en: 'Office Secretary', default_sort: 16 },
+  { id: 'asst_office_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সহ-দপ্তর সম্পাদক', title_en: 'Assistant Office Secretary', default_sort: 17 },
+  { id: 'pub_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'প্রচার ও প্রকাশনা সম্পাদক', title_en: 'Publicity & Publication Secretary', default_sort: 18 },
+  { id: 'blood_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'রক্তদান ও স্বাস্থ্য বিষয়ক সম্পাদক', title_en: 'Blood Donation & Health Affairs Secretary', default_sort: 19 },
+  { id: 'social_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সমাজকল্যাণ ও ত্রাণ সম্পাদক', title_en: 'Social Welfare & Relief Secretary', default_sort: 20 },
+  { id: 'edu_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'শিক্ষা ও পাঠাগার বিষয়ক সম্পাদক', title_en: 'Education & Library Affairs Secretary', default_sort: 21 },
+  { id: 'cult_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'সাংস্কৃতিক ও ক্রীড়া সম্পাদক', title_en: 'Cultural & Sports Secretary', default_sort: 22 },
+  { id: 'women_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'নারী ও শিশু বিষয়ক সম্পাদিকা', title_en: 'Women & Child Welfare Secretary', default_sort: 23 },
+  { id: 'env_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'পরিবেশ ও বৃক্ষরোপণ সম্পাদক', title_en: 'Environment & Tree Plantation Secretary', default_sort: 24 },
+  { id: 'law_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'আইন ও মানবাধিকার বিষয়ক সম্পাদক', title_en: 'Law & Human Rights Secretary', default_sort: 25 },
+  { id: 'vol_sec', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'দুর্যোগ ব্যবস্থাপনা ও স্বেচ্ছাসেবক সম্পাদক', title_en: 'Disaster Management & Volunteer Secretary', default_sort: 26 },
   { id: 'exec_mem', category: 'executive', category_bn: 'কার্যনির্বাহী পরিষদ', title_bn: 'কার্যনির্বাহী সদস্য', title_en: 'Executive Member', default_sort: 30 },
 
   // ৩. উপদেষ্টা পরিষদ (Advisory Council)
@@ -338,6 +343,28 @@ const CommitteeManagement: React.FC = () => {
     });
   }, [committeeMembers, selectedFilterTab, selectedRoleCategory, selectedTenureFilter, searchQuery]);
 
+  // Safe Image Cropping Launcher with CORS SecurityError Protection
+  const handleOpenCrop = async (srcUrl: string) => {
+    if (!srcUrl) return;
+    try {
+      if (srcUrl.startsWith('data:') || srcUrl.startsWith('blob:')) {
+        setCropImageSrc(srcUrl);
+        setIsCropModalOpen(true);
+        return;
+      }
+      // Convert remote URL to local Blob Object URL to avoid Canvas CORS SecurityError
+      const res = await fetch(srcUrl);
+      const blob = await res.blob();
+      const localUrl = URL.createObjectURL(blob);
+      setCropImageSrc(localUrl);
+      setIsCropModalOpen(true);
+    } catch (err) {
+      console.warn('Direct image crop fallback:', err);
+      setCropImageSrc(srcUrl);
+      setIsCropModalOpen(true);
+    }
+  };
+
   // Image Selection & Launch Crop Modal
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -369,7 +396,7 @@ const CommitteeManagement: React.FC = () => {
     setIsCropModalOpen(false);
     toast({
       title: language === 'bn' ? 'ছবি ফ্রেম সমন্বয় সম্পন্ন' : 'Photo framing saved',
-      description: language === 'bn' ? 'মুখমণ্ডল সুন্দরভাবে ফ্রেমে বসানো হয়েছে।' : 'Head & face positioned inside circular frame.',
+      description: language === 'bn' ? 'মুখমণ্ডল বৃত্তের মাঝে সফলভাবে সমন্বয় করা হয়েছে। নিচে "সংরক্ষণ" বা "আপডেট" বাটনে ক্লিক করুন।' : 'Head & face positioned inside circular frame. Click Save / Update below.',
     });
   };
 
@@ -379,12 +406,14 @@ const CommitteeManagement: React.FC = () => {
 
     try {
       setIsUploading(true);
-      const fileName = `committee/${Date.now()}-${(selectedImage?.name || 'leader_photo.jpg').replace(/\s+/g, '_')}`;
+      const fileExt = blobToUpload.type === 'image/png' ? 'png' : 'jpg';
+      const baseName = (selectedImage?.name || 'leader_photo').replace(/\s+/g, '_').replace(/\.[^/.]+$/, '');
+      const fileName = `committee/${Date.now()}-${baseName}.${fileExt}`;
 
       const { data, error } = await supabase.storage
         .from('member-photos')
         .upload(fileName, blobToUpload, {
-          contentType: 'image/jpeg',
+          contentType: blobToUpload.type || 'image/jpeg',
           upsert: true,
         });
 
@@ -463,6 +492,9 @@ const CommitteeManagement: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-committee'] });
+      queryClient.invalidateQueries({ queryKey: ['home-committee-preview'] });
+      queryClient.invalidateQueries({ queryKey: ['public-committee'] });
+      queryClient.invalidateQueries({ queryKey: ['committee-custom-details'] });
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
@@ -513,6 +545,9 @@ const CommitteeManagement: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-committee'] });
+      queryClient.invalidateQueries({ queryKey: ['home-committee-preview'] });
+      queryClient.invalidateQueries({ queryKey: ['public-committee'] });
+      queryClient.invalidateQueries({ queryKey: ['committee-custom-details'] });
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
@@ -555,6 +590,9 @@ const CommitteeManagement: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-committee'] });
+      queryClient.invalidateQueries({ queryKey: ['home-committee-preview'] });
+      queryClient.invalidateQueries({ queryKey: ['public-committee'] });
+      queryClient.invalidateQueries({ queryKey: ['committee-custom-details'] });
       toast({
         title: language === 'bn' ? 'সফল!' : 'Success!',
         description:
@@ -1207,7 +1245,17 @@ const CommitteeManagement: React.FC = () => {
                     <SelectValue placeholder={language === 'bn' ? 'কমিটির দায়িত্ব / ক্যাটাগরি বেছে নিন...' : 'Choose portfolio role...'} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
-                    <div className="px-2 py-1.5 text-xs font-bold text-muted-foreground bg-muted">
+                    <div className="px-2 py-1.5 text-xs font-bold text-emerald-950 bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-between">
+                      <span>পরিচালনা পরিষদ (Directorate)</span>
+                      <span className="text-[10px] text-[#0B6B3A] font-extrabold uppercase">শীর্ষ পর্যায়</span>
+                    </div>
+                    {PREDEFINED_ROLES.filter((r) => r.category === 'directorate').map((r) => (
+                      <SelectItem key={r.id} value={r.id} className="text-sm font-semibold text-[#0B6B3A]">
+                        {r.title_bn} ({r.title_en})
+                      </SelectItem>
+                    ))}
+
+                    <div className="px-2 py-1.5 text-xs font-bold text-muted-foreground bg-muted mt-2">
                       কার্যনির্বাহী পরিষদ (Executive Council)
                     </div>
                     {PREDEFINED_ROLES.filter((r) => r.category === 'executive').map((r) => (
@@ -1469,10 +1517,7 @@ const CommitteeManagement: React.FC = () => {
                     {/* Re-Crop Button on Hover or Mobile */}
                     <button
                       type="button"
-                      onClick={() => {
-                        setCropImageSrc(imagePreview);
-                        setIsCropModalOpen(true);
-                      }}
+                      onClick={() => handleOpenCrop(imagePreview)}
                       title={language === 'bn' ? 'ছবি পুনরায় ক্রপ / মুখমণ্ডল কেন্দ্রিক করুন' : 'Recrop / Center Face'}
                       className="absolute inset-0 bg-black/45 rounded-full text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
@@ -1528,10 +1573,7 @@ const CommitteeManagement: React.FC = () => {
                         type="button"
                         variant="secondary"
                         size="sm"
-                        onClick={() => {
-                          setCropImageSrc(imagePreview);
-                          setIsCropModalOpen(true);
-                        }}
+                        onClick={() => handleOpenCrop(imagePreview)}
                         className="gap-1.5 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-semibold text-xs"
                       >
                         <Crop className="w-3.5 h-3.5 text-amber-700" />

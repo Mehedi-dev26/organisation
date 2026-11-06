@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 import { 
+  PhoneCall, 
   Loader2, 
   Award, 
   Sparkles, 
-  ShieldCheck, 
-  ArrowRight, 
-  PhoneCall, 
   Info, 
   Copy, 
   Check, 
@@ -17,8 +13,13 @@ import {
   MapPin, 
   Briefcase,
   CheckCircle2,
-  FileText
+  ArrowRight,
+  ShieldCheck,
+  FileText,
+  X,
+  Crown
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
@@ -26,10 +27,15 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getMemberRoleDetails, CommitteeMember, CommitteeCustomDetailsMap } from '@/lib/committeeUtils';
+import { 
+  getMemberRoleDetails, 
+  CommitteeMember, 
+  CommitteeCustomDetailsMap 
+} from '@/lib/committeeUtils';
 
-const CommitteePreview = () => {
+const CommitteePreview: React.FC = () => {
   const { language } = useLanguage();
   const { toast } = useToast();
 
@@ -48,7 +54,7 @@ const CommitteePreview = () => {
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
-        .limit(20);
+        .limit(25);
       
       if (error) {
         console.warn('Error fetching committee preview:', error);
@@ -75,18 +81,30 @@ const CommitteePreview = () => {
     staleTime: 1000 * 60,
   });
 
-  // Group members strictly according to layout specifications:
-  // Top 5 Leaders: 1st, 2nd, 3rd, 4th, 5th
-  const top5Leaders = committeeMembers.slice(0, 5);
-  const top3Desktop = top5Leaders.slice(0, 3); // Desktop row 1: 3 members
-  const next2Desktop = top5Leaders.slice(3, 5); // Desktop row 2: 2 members centered
+  // Identify Director (পরিচালক) - Topmost single person
+  const isDirector = (m: CommitteeMember) => {
+    const posBn = (m.position_bn || '').trim().toLowerCase();
+    const posEn = (m.position_en || '').trim().toLowerCase();
+    return posBn.includes('পরিচালক') || posEn.includes('director');
+  };
 
-  // Mobile: 1st alone on top, next 4 in 2x2 grid
-  const mobileLeader1 = top5Leaders[0];
-  const mobileNext4 = top5Leaders.slice(1, 5);
+  const director = committeeMembers.find(isDirector);
+  const nonDirectorMembers = committeeMembers.filter(m => m.id !== director?.id);
 
-  // Remaining members from 6th onwards belong to Executive Council (কার্যনির্বাহী পরিষদ)
-  const executiveCouncil = committeeMembers.slice(5);
+  // Desktop Hierarchy:
+  // Row 1 below Director: 3 leaders (সভাপতি, সহ-সভাপতি, সাধারণ সম্পাদক ইত্যাদি)
+  const top3Desktop = nonDirectorMembers.slice(0, 3);
+  // Row 2 below Director: 2 leaders (৪র্থ ও ৫ম জন) centered
+  const next2Desktop = nonDirectorMembers.slice(3, 5);
+
+  // Executive Council / Departmental Secretaries (from 6th non-director onwards)
+  const executiveCouncil = nonDirectorMembers.slice(5);
+
+  // Mobile Hierarchy:
+  // 1st alone on top: Director if available, otherwise first leader
+  const mobileTopLeader = director || nonDirectorMembers[0];
+  // Below Top Leader on mobile: Everyone else in 2-column grid (দুইজন করে সবাই থাকবে)
+  const mobileRemainingMembers = committeeMembers.filter(m => m.id !== mobileTopLeader?.id);
 
   const handleCopyPhone = (phone: string) => {
     navigator.clipboard.writeText(phone);
@@ -186,106 +204,117 @@ const CommitteePreview = () => {
           <div className="space-y-12 sm:space-y-16">
             
             {/* =========================================================================
-                SECTION 1: TOP 5 EXECUTIVE LEADERS (শীর্ষ ৫ জন কর্মকর্তা)
-                Desktop: Row 1 = 3 members | Row 2 = 2 members centered
-                Mobile:  1st member on top | Next 4 members in 2x2 centered grid
+                DESKTOP VIEW: DIRECTOR (TOP CENTER) -> 3 LEADERS -> 2 LEADERS -> COUNCIL
             ========================================================================= */}
-            {top5Leaders.length > 0 && (
-              <div className="space-y-6">
-                {/* 1. Desktop Layout (hidden on mobile, visible on md and up) */}
-                <div className="hidden md:block space-y-8">
-                  {/* Row 1: Top 3 (1st, 2nd, 3rd) */}
-                  {top3Desktop.length > 0 && (
-                    <div className="grid grid-cols-3 gap-8 sm:gap-12 max-w-4xl mx-auto items-start justify-items-center">
-                      {top3Desktop.map((member) => (
-                        <HomeCommitteeCleanCard 
-                          key={member.id} 
-                          member={member} 
-                          language={language} 
-                          isTopLeader
-                          onOpenInfo={() => setSelectedMember(member)} 
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Row 2: Next 2 (4th, 5th) Centered Exactly in the Middle */}
-                  {next2Desktop.length > 0 && (
-                    <div className="flex justify-center items-start gap-12 sm:gap-16 max-w-2xl mx-auto">
-                      {next2Desktop.map((member) => (
-                        <div key={member.id} className="w-full max-w-[220px]">
-                          <HomeCommitteeCleanCard 
-                            member={member} 
-                            language={language} 
-                            isTopLeader
-                            onOpenInfo={() => setSelectedMember(member)} 
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            <div className="hidden md:block space-y-10">
+              {/* 1. DIRECTOR (পরিচালক) - Single Person Centered at the very top */}
+              {director && (
+                <div className="flex flex-col items-center justify-center text-center pb-4">
+                  <div className="w-full max-w-xs mx-auto">
+                    <HomeCommitteeCleanCard 
+                      member={director} 
+                      language={language} 
+                      isDirector
+                      onOpenInfo={() => setSelectedMember(director)} 
+                    />
+                  </div>
                 </div>
+              )}
 
-                {/* 2. Mobile Layout (visible on mobile, hidden on md and up) */}
-                <div className="block md:hidden space-y-6">
-                  {/* Mobile Row 1: 1st Member (President / 1st) Centered on Top */}
-                  {mobileLeader1 && (
-                    <div className="max-w-[220px] mx-auto text-center px-2">
-                      <HomeCommitteeCleanCard 
-                        member={mobileLeader1} 
-                        language={language} 
-                        isTopLeader
-                        isMobileTop
-                        onOpenInfo={() => setSelectedMember(mobileLeader1)} 
-                      />
-                    </div>
-                  )}
-
-                  {/* Mobile Row 2 & 3: Next 4 Members in 2x2 Centered Grid (2 per row) */}
-                  {mobileNext4.length > 0 && (
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-7 max-w-xs sm:max-w-sm mx-auto items-start justify-items-center">
-                      {mobileNext4.map((member) => (
-                        <HomeCommitteeCleanCard 
-                          key={member.id} 
-                          member={member} 
-                          language={language} 
-                          isTopLeader
-                          onOpenInfo={() => setSelectedMember(member)} 
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* =========================================================================
-                SECTION 2: EXECUTIVE COUNCIL (কার্যনির্বাহী পরিষদ - ৬ নম্বর থেকে বাকী সবাই)
-                Desktop: 4 columns | Mobile: 2 columns
-            ========================================================================= */}
-            {executiveCouncil.length > 0 && (
-              <div className="pt-8 border-t border-slate-100">
-                <div className="text-center mb-8 sm:mb-12">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold shadow-2xs">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0B6B3A]" />
-                    <span>{language === 'bn' ? 'কার্যনির্বাহী পরিষদ ও বিভাগীয় দায়িত্বপ্রাপ্তবৃন্দ' : 'Executive Council & Departmental Secretaries'}</span>
-                  </span>
-                </div>
-
-                {/* 4 per row on Desktop, 2 per row on Mobile */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10 max-w-5xl mx-auto items-start justify-items-center">
-                  {executiveCouncil.map((member) => (
+              {/* 2. Top Executive Leadership below Director */}
+              {/* Row 1: Top 3 members (সভাপতি, সাধারণ সম্পাদক, ইত্যাদি) */}
+              {top3Desktop.length > 0 && (
+                <div className="grid grid-cols-3 gap-8 lg:gap-14 max-w-4xl mx-auto items-start justify-items-center">
+                  {top3Desktop.map((member) => (
                     <HomeCommitteeCleanCard 
                       key={member.id} 
                       member={member} 
                       language={language} 
-                      isSmall 
+                      isTopLeader
                       onOpenInfo={() => setSelectedMember(member)} 
                     />
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Row 2: Next 2 members (৪র্থ ও ৫ম জন) Centered Exactly in the Middle */}
+              {next2Desktop.length > 0 && (
+                <div className="flex justify-center items-start gap-12 lg:gap-16 max-w-2xl mx-auto pt-2">
+                  {next2Desktop.map((member) => (
+                    <div key={member.id} className="w-full max-w-[240px]">
+                      <HomeCommitteeCleanCard 
+                        member={member} 
+                        language={language} 
+                        isTopLeader
+                        onOpenInfo={() => setSelectedMember(member)} 
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 3. Executive Council & Departmental Secretaries (বিভাগীয় দায়িত্বপ্রাপ্তবৃন্দ) */}
+              {/* Prominent, significantly larger circular cards on Desktop */}
+              {executiveCouncil.length > 0 && (
+                <div className="pt-10 border-t border-slate-100">
+                  <div className="text-center mb-10">
+                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold shadow-2xs">
+                      <ShieldCheck className="w-4 h-4 text-[#0B6B3A]" />
+                      <span>{language === 'bn' ? 'কার্যনির্বাহী পরিষদ ও বিভাগীয় দায়িত্বপ্রাপ্তবৃন্দ' : 'Executive Council & Departmental Secretaries'}</span>
+                    </span>
+                  </div>
+
+                  {/* 4 Large Columns on Desktop */}
+                  <div className="grid grid-cols-4 gap-8 lg:gap-10 max-w-5xl mx-auto items-start justify-items-center">
+                    {executiveCouncil.map((member) => (
+                      <HomeCommitteeCleanCard 
+                        key={member.id} 
+                        member={member} 
+                        language={language} 
+                        isCouncil
+                        onOpenInfo={() => setSelectedMember(member)} 
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* =========================================================================
+                MOBILE VIEW: DIRECTOR / TOP LEADER ON TOP -> ALL OTHERS 2 PER ROW
+            ========================================================================= */}
+            <div className="block md:hidden space-y-8">
+              {/* 1. Mobile Top: Director (or 1st top leader) Single & Centered */}
+              {mobileTopLeader && (
+                <div className="max-w-[240px] mx-auto text-center px-2">
+                  <HomeCommitteeCleanCard 
+                    member={mobileTopLeader} 
+                    language={language} 
+                    isDirector={mobileTopLeader.id === director?.id}
+                    isTopLeader
+                    isMobileTop
+                    onOpenInfo={() => setSelectedMember(mobileTopLeader)} 
+                  />
+                </div>
+              )}
+
+              {/* 2. Mobile Remaining Members: ALL paired in 2-column grid (দুইজন করে সবাই) */}
+              {mobileRemainingMembers.length > 0 && (
+                <div className="pt-2">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-8 max-w-xs sm:max-w-sm mx-auto items-start justify-items-center">
+                    {mobileRemainingMembers.map((member) => (
+                      <HomeCommitteeCleanCard 
+                        key={member.id} 
+                        member={member} 
+                        language={language} 
+                        isTopLeader
+                        onOpenInfo={() => setSelectedMember(member)} 
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* View Full Committee CTA Button */}
             <div className="text-center pt-6">
@@ -304,19 +333,35 @@ const CommitteePreview = () => {
         )}
       </div>
 
-      {/* Professional Member Details Dossier Modal */}
+      {/* =========================================================================
+          Professional Member Details Dossier Modal (Fully Responsive with Close Button)
+      ========================================================================= */}
       <Dialog open={!!selectedMember} onOpenChange={(open) => !open && setSelectedMember(null)}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-3xl border-slate-200 shadow-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-lg p-0 max-h-[88vh] flex flex-col overflow-hidden rounded-3xl border border-emerald-500/30 shadow-2xl bg-white dark:bg-slate-950">
           {selectedMember && (
-            <div>
+            <div className="flex flex-col h-full overflow-hidden">
               {/* Executive Header Banner */}
-              <div className="bg-gradient-to-r from-[#0B6B3A] via-[#095A31] to-[#04331A] text-white p-6 pb-12 relative text-center">
-                <div className="absolute top-3 right-3">
+              <div className="bg-gradient-to-r from-[#0B6B3A] via-[#095A31] to-[#04331A] text-white p-6 pb-12 relative text-center shrink-0">
+                {/* Close Button at Top-Right */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedMember(null)}
+                  className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center transition-all cursor-pointer z-30 shadow-md active:scale-95"
+                  title={language === 'bn' ? 'বন্ধ করুন' : 'Close'}
+                >
+                  <X className="w-4 h-4 stroke-[2.8]" />
+                </button>
+
+                {/* Left Header Tag */}
+                <div className="absolute top-3.5 left-4">
                   <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full bg-white/15 border border-white/20">
-                    {language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive Council'}
+                    {selectedMember.position_bn?.includes('পরিচালক') 
+                      ? (language === 'bn' ? 'পরিচালনা পরিষদ' : 'Directorate')
+                      : (language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive Council')}
                   </span>
                 </div>
-                <h4 className="text-xs font-semibold text-emerald-200 tracking-wide uppercase">
+
+                <h4 className="text-xs font-semibold text-emerald-200 tracking-wide uppercase mt-1">
                   {language === 'bn' ? 'সময়ের বাতিঘর ফাউন্ডেশন' : 'Somoyer Batighor Foundation'}
                 </h4>
                 <p className="text-[11px] text-white/70 mt-0.5">
@@ -324,44 +369,48 @@ const CommitteePreview = () => {
                 </p>
               </div>
 
-              {/* Overlapping Photo & Main Info */}
-              <div className="px-6 -mt-10 text-center">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white shadow-xl mx-auto bg-slate-50 relative z-10 aspect-square">
-                  <img
-                    src={selectedMember.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedMember.name_bn)}`}
-                    alt={selectedMember.name_bn}
-                    className="w-full h-full object-cover rounded-full"
-                    style={{ objectPosition: 'center 20%' }}
-                  />
-                </div>
+              {/* Scrollable Dossier Body */}
+              <div className="p-5 pt-0 space-y-4 overflow-y-auto flex-1 min-h-0">
+                {/* Overlapping Photo & Main Info */}
+                <div className="-mt-10 text-center">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 shadow-xl mx-auto bg-slate-50 relative z-10">
+                    <img
+                      src={selectedMember.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedMember.name_bn)}`}
+                      alt={selectedMember.name_bn}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: 'center 20%' }}
+                    />
+                  </div>
 
-                <div className="mt-3 space-y-1">
-                  <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 leading-tight">
-                    {language === 'bn' ? selectedMember.name_bn : (selectedMember.name_en || selectedMember.name_bn)}
-                  </h3>
-                  {selectedMember.name_en && language === 'bn' && (
-                    <p className="text-xs text-slate-500 font-semibold">{selectedMember.name_en}</p>
-                  )}
-                  <div className="pt-1">
-                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-extrabold shadow-2xs">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>{language === 'bn' ? selectedMember.position_bn : (selectedMember.position_en || selectedMember.position_bn)}</span>
-                    </span>
+                  <div className="mt-3 space-y-1">
+                    <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-tight">
+                      {language === 'bn' ? selectedMember.name_bn : (selectedMember.name_en || selectedMember.name_bn)}
+                    </h3>
+                    {selectedMember.name_en && language === 'bn' && (
+                      <p className="text-xs text-slate-500 font-semibold">{selectedMember.name_en}</p>
+                    )}
+                    <div className="pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-extrabold shadow-2xs">
+                        {selectedMember.position_bn?.includes('পরিচালক') ? (
+                          <Crown className="w-3.5 h-3.5 text-amber-500" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        )}
+                        <span>{language === 'bn' ? selectedMember.position_bn : (selectedMember.position_en || selectedMember.position_bn)}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Dossier Body Content */}
-              <div className="p-6 pt-4 space-y-4 max-h-[62vh] overflow-y-auto">
-                {/* 1. সংগঠনের ভূমিকা ও মূল দায়িত্ব (Customized or Standard Role & Responsibilities) */}
+                {/* 1. সংগঠনের ভূমিকা ও মূল দায়িত্ব (Role & Responsibilities) */}
                 {selectedMemberRole && (
-                  <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-2.5">
-                    <div className="flex items-center gap-2 text-slate-900 font-extrabold text-xs">
+                  <div className="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5">
+                    <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-xs">
                       <Briefcase className="w-4 h-4 text-[#0B6B3A]" />
                       <span>{language === 'bn' ? 'সংগঠনের ভূমিকা ও দায়িত্ব' : 'Role & Responsibilities'}:</span>
                       <span className="text-xs font-bold text-[#0B6B3A]">{selectedMemberRole.category}</span>
                     </div>
-                    <ul className="space-y-1.5 text-xs text-slate-600 pl-1">
+                    <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 pl-1">
                       {selectedMemberRole.responsibilities.map((resp, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
@@ -372,50 +421,50 @@ const CommitteePreview = () => {
                   </div>
                 )}
 
-                {/* 2. Custom About / Bio note if provided by Admin */}
-                {customDetail?.about && customDetail.about.trim() && (
-                  <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1.5">
-                    <div className="flex items-center gap-2 text-emerald-950 font-extrabold text-xs">
-                      <FileText className="w-4 h-4 text-[#0B6B3A]" />
-                      <span>{language === 'bn' ? 'সদস্য পরিচিতি ও বিশেষ ভূমিকা' : 'About & Contributions'}:</span>
+                {/* 2. Custom Bio / Short About Message */}
+                {customDetail?.about && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                    <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-bold">
+                      <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>{language === 'bn' ? 'সদস্যের বার্তা ও পরিচিতি' : 'Message & Bio'}</span>
                     </div>
-                    <p className="text-xs text-slate-700 leading-relaxed font-medium pl-6">
-                      {customDetail.about}
+                    <p className="leading-relaxed italic pl-5 text-slate-600 dark:text-slate-400">
+                      "{customDetail.about}"
                     </p>
                   </div>
                 )}
 
                 {/* 3. পরিচিতি, এলাকা ও কার্যকাল (Origin, Area & Term) */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1">
-                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+                  <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 space-y-1">
+                    <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-bold">
                       <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>{language === 'bn' ? 'উৎস ও এলাকা' : 'Origin & Area'}</span>
                     </div>
-                    <p className="font-semibold text-slate-800 pl-5">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 pl-5">
                       {language === 'bn' ? 'নওগাঁ জেলা, বাংলাদেশ' : 'Naogaon, Bangladesh'}
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-100 space-y-1">
-                    <div className="flex items-center gap-1.5 text-amber-900 font-bold">
+                  <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900 space-y-1">
+                    <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-300 font-bold">
                       <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                       <span>{language === 'bn' ? 'পরিষদ কার্যকাল' : 'Council Term'}</span>
                     </div>
-                    <p className="font-semibold text-slate-800 pl-5">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 pl-5">
                       {selectedMember.term_start 
                         ? `${new Date(selectedMember.term_start).getFullYear()} - ${selectedMember.term_end ? new Date(selectedMember.term_end).getFullYear() : 'চলমান'}`
-                        : (language === 'bn' ? '২০২৬ - ২০২৭ পরিষদ' : '2026 - 2027 Term')}
+                        : (language === 'bn' ? '২০২৪ - ২০২৬ পরিষদ' : '2024 - 2026 Term')}
                     </p>
                   </div>
                 </div>
 
                 {/* 4. যোগাযোগ অ্যাকশন: কল ও কপি বাটন */}
                 {selectedMember.phone && (
-                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500 font-medium">{language === 'bn' ? 'মোবাইল নম্বর:' : 'Phone:'}</span>
-                      <span className="font-mono font-bold text-slate-900 text-sm tracking-wide">{selectedMember.phone}</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white text-sm tracking-wide">{selectedMember.phone}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
@@ -431,9 +480,9 @@ const CommitteePreview = () => {
                         type="button"
                         variant="outline"
                         onClick={() => selectedMember.phone && handleCopyPhone(selectedMember.phone)}
-                        className="rounded-xl border-slate-200 text-xs font-bold gap-1.5 hover:bg-slate-100 h-auto py-2.5"
+                        className="rounded-xl border-slate-200 dark:border-slate-700 text-xs font-bold gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 h-auto py-2.5"
                       >
-                        {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-700" />}
+                        {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />}
                         <span>{copiedPhone ? (language === 'bn' ? 'কপি হয়েছে' : 'Copied') : (language === 'bn' ? 'নম্বর কপি' : 'Copy')}</span>
                       </Button>
                     </div>
@@ -442,7 +491,7 @@ const CommitteePreview = () => {
 
                 {/* Additional Info: Member ID & Email */}
                 {(selectedMember.member_id || selectedMember.email) && (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1.5">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
                     {selectedMember.member_id && (
                       <div className="flex items-center justify-between">
                         <span>{language === 'bn' ? 'সদস্য পরিচিতি নম্বর:' : 'Member ID:'}</span>
@@ -455,11 +504,25 @@ const CommitteePreview = () => {
                           <Mail className="w-3 h-3 text-slate-400" />
                           <span>{language === 'bn' ? 'ইমেইল:' : 'Email:'}</span>
                         </span>
-                        <span className="font-mono text-slate-700 truncate max-w-[200px]">{selectedMember.email}</span>
+                        <span className="font-mono text-slate-700 dark:text-slate-300 truncate max-w-[200px]">{selectedMember.email}</span>
                       </div>
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Modal Footer with explicit Close Button */}
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedMember(null)}
+                  className="rounded-xl border-slate-300 dark:border-slate-700 text-xs font-bold gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>{language === 'bn' ? 'বন্ধ করুন' : 'Close'}</span>
+                </Button>
               </div>
             </div>
           )}
@@ -472,9 +535,10 @@ const CommitteePreview = () => {
 interface HomeCommitteeCleanCardProps {
   member: CommitteeMember;
   language: string;
+  isDirector?: boolean;
   isTopLeader?: boolean;
   isMobileTop?: boolean;
-  isSmall?: boolean;
+  isCouncil?: boolean;
   onOpenInfo: () => void;
 }
 
@@ -482,9 +546,10 @@ interface HomeCommitteeCleanCardProps {
 const HomeCommitteeCleanCard: React.FC<HomeCommitteeCleanCardProps> = ({
   member,
   language,
+  isDirector,
   isTopLeader,
   isMobileTop,
-  isSmall,
+  isCouncil,
   onOpenInfo,
 }) => {
   const name = language === 'bn' ? member.name_bn : (member.name_en || member.name_bn);
@@ -495,21 +560,32 @@ const HomeCommitteeCleanCard: React.FC<HomeCommitteeCleanCardProps> = ({
     e.currentTarget.src = fallbackImage;
   };
 
-  // Prominent circular dimensions for top leaders, with head framing
-  const imageSize = isMobileTop
+  // Prominent circular dimensions:
+  // Director: Largest, authoritative centerpiece
+  // Top Leaders: Prominent and well-proportioned
+  // Council/Departmental: Enlarged and clear on desktop as requested
+  const imageSize = isDirector
+    ? 'w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52'
+    : isMobileTop
     ? 'w-36 h-36 sm:w-40 sm:h-40'
+    : isCouncil
+    ? 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40'
     : isTopLeader 
-    ? 'w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40' 
-    : 'w-24 h-24 sm:w-28 sm:h-28';
+    ? 'w-30 h-30 sm:w-36 sm:h-36 md:w-44 md:h-44' 
+    : 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36';
 
   return (
     <div className="text-center group flex flex-col items-center w-full">
       {/* Relative container for Circular Image + Badge Pill */}
       <div className="relative mb-3.5 inline-block shrink-0">
-        {/* Round Image with elegant green border - Guaranteed Perfect Circle with Head Framing */}
+        {/* Round Image with elegant green/gold border - Guaranteed Perfect Circle with Head Framing */}
         <div className={`${imageSize} aspect-square rounded-full overflow-hidden border-4 ${
-          isTopLeader ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' : 'border-[#0B6B3A]/25 group-hover:border-[#0B6B3A]'
-        } transition-colors duration-300 mx-auto shadow-sm bg-slate-50 flex items-center justify-center shrink-0`}>
+          isDirector
+            ? 'border-[#0B6B3A] shadow-md ring-4 ring-[#9BD038]/30 group-hover:ring-[#9BD038]/60'
+            : isTopLeader 
+            ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' 
+            : 'border-[#0B6B3A]/30 group-hover:border-[#0B6B3A]'
+        } transition-all duration-300 mx-auto shadow-sm bg-slate-50 flex items-center justify-center shrink-0`}>
           <img
             src={member.photo_url || fallbackImage}
             alt={name}
@@ -520,21 +596,26 @@ const HomeCommitteeCleanCard: React.FC<HomeCommitteeCleanCardProps> = ({
         </div>
 
         {/* Position Badge Pill at bottom of circle */}
-        <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 sm:px-3 py-0.5 rounded-full text-white font-bold whitespace-nowrap shadow-xs ${
-          isTopLeader 
+        <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 sm:px-3.5 py-0.5 rounded-full text-white font-bold whitespace-nowrap shadow-xs flex items-center gap-1 ${
+          isDirector
+            ? 'bg-gradient-to-r from-[#0B6B3A] via-[#0e8045] to-[#14532d] text-xs sm:text-sm border border-amber-300'
+            : isTopLeader 
             ? 'bg-[#0B6B3A] text-[11px] sm:text-xs' 
-            : 'bg-[#0B6B3A] text-[10px] sm:text-xs'
+            : 'bg-slate-800 text-[10px] sm:text-xs'
         }`}>
-          {position}
+          {isDirector && <Crown className="w-3 h-3 text-amber-300 shrink-0" />}
+          <span>{position}</span>
         </div>
       </div>
 
       {/* Member Name Section with Distinctive Colorful (i) Button at Corner */}
       <div className="flex items-center justify-center gap-1.5 mt-1.5 max-w-full px-1">
         <h3 className={`font-heading font-extrabold text-slate-900 group-hover:text-[#0B6B3A] transition-colors leading-tight ${
-          isTopLeader 
+          isDirector
+            ? 'text-lg sm:text-2xl md:text-3xl'
+            : isTopLeader 
             ? 'text-sm sm:text-base md:text-lg line-clamp-2' 
-            : 'text-xs sm:text-sm line-clamp-1'
+            : 'text-sm sm:text-base line-clamp-2'
         }`}>
           {name}
         </h3>

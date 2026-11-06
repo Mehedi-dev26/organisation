@@ -15,7 +15,9 @@ import {
   MapPin, 
   Briefcase,
   CheckCircle2,
-  FileText
+  FileText,
+  X,
+  Crown
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,14 +71,23 @@ const Committee = () => {
     staleTime: 1000 * 60,
   });
 
-  // 1. President (Tier 1 - Top)
-  const president = committeeMembers.find(m => 
+  // 0. Director (পরিচালক) - Top Single Centered
+  const isDirector = (m: CommitteeMember) => {
+    const posBn = (m.position_bn || '').trim().toLowerCase();
+    const posEn = (m.position_en || '').trim().toLowerCase();
+    return posBn.includes('পরিচালক') || posEn.includes('director');
+  };
+
+  const director = committeeMembers.find(isDirector);
+  const nonDirectorMembers = committeeMembers.filter(m => m.id !== director?.id);
+
+  // 1. President (Tier 1 - Top of executive)
+  const president = nonDirectorMembers.find(m => 
     m.position_bn.includes('সভাপতি') && !m.position_bn.includes('সহ')
-  ) || committeeMembers[0];
+  ) || nonDirectorMembers[0];
 
   // 2. Core Officers Triad (Tier 2 - 3 Columns):
-  // Col 1: General Secretary or Vice President
-  const generalSecretaryOrVp = committeeMembers.find(m => 
+  const generalSecretaryOrVp = nonDirectorMembers.find(m => 
     m.id !== president?.id && (
       m.position_bn.includes('সাধারণ সম্পাদক') ||
       m.position_bn.includes('সহ-সভাপতি') ||
@@ -85,8 +96,7 @@ const Committee = () => {
     )
   );
 
-  // Col 2: Cashier (ক্যাশিয়ার / কোষাধ্যক্ষ)
-  const cashierOrTreasurer = committeeMembers.find(m => 
+  const cashierOrTreasurer = nonDirectorMembers.find(m => 
     m.id !== president?.id && 
     m.id !== generalSecretaryOrVp?.id && (
       m.position_bn.includes('কোষাধ্যক্ষ') ||
@@ -97,8 +107,7 @@ const Committee = () => {
     )
   );
 
-  // Col 3: ICT & IT Secretary (তথ্যপ্রযুক্তি / আইসিটি)
-  const ictSecretary = committeeMembers.find(m => 
+  const ictSecretary = nonDirectorMembers.find(m => 
     m.id !== president?.id && 
     m.id !== generalSecretaryOrVp?.id && 
     m.id !== cashierOrTreasurer?.id && (
@@ -114,6 +123,7 @@ const Committee = () => {
 
   // 3. Tier 3: Executive Members & Departmental Secretaries (Organizing, Office, Publicity, etc.)
   const assignedIds = new Set([
+    director?.id,
     president?.id,
     generalSecretaryOrVp?.id,
     cashierOrTreasurer?.id,
@@ -193,7 +203,24 @@ const Committee = () => {
             </div>
           ) : (
             <div className="space-y-14 sm:space-y-20">
-              {/* 1. TIER 1: President (Top, Centered, Prominent Round Photo, Spaced Out & Clean) */}
+              {/* 0. TIER 0: Director (পরিচালক) - Single Centered on Top */}
+              {director && (
+                <div className="max-w-md mx-auto text-center px-4">
+                  <div className="mb-2">
+                    <span className="text-[11px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-emerald-50 text-[#0B6B3A] border border-emerald-200">
+                      {language === 'bn' ? 'পরিচালনা পরিষদ' : 'Chief Directorate'}
+                    </span>
+                  </div>
+                  <CommitteeCleanCard 
+                    member={director} 
+                    language={language} 
+                    isDirector
+                    onOpenInfo={() => setSelectedMember(director)} 
+                  />
+                </div>
+              )}
+
+              {/* 1. TIER 1: President (Top of Executive Leadership) */}
               {president && (
                 <div className="max-w-md mx-auto text-center px-4">
                   <CommitteeCleanCard 
@@ -206,10 +233,9 @@ const Committee = () => {
               )}
 
               {/* 2. TIER 2: 3 Core Officers (General Secretary, Cashier, ICT Secretary) */}
-              {/* Desktop: 3 Columns | Mobile: Enlarged images with generous breathing room */}
               {tier2List.length > 0 && (
                 <div className="py-2">
-                  <div className="grid grid-cols-3 gap-3.5 sm:gap-10 max-w-sm sm:max-w-md md:max-w-4xl mx-auto items-start">
+                  <div className="grid grid-cols-3 gap-4 sm:gap-10 max-w-sm sm:max-w-md md:max-w-4xl mx-auto items-start">
                     {tier2List.map((member) => (
                       <CommitteeCleanCard 
                         key={member.id} 
@@ -224,9 +250,9 @@ const Committee = () => {
               )}
 
               {/* 3. TIER 3: Executive Members & Departmental Secretaries */}
-              {/* Desktop: 4 per row | Mobile: 2 per row with larger photos and clean margins */}
+              {/* Prominent, enlarged circular cards on Desktop */}
               {executiveMembers.length > 0 && (
-                <div className="pt-6 border-t border-slate-100">
+                <div className="pt-8 border-t border-slate-100">
                   <div className="text-center mb-10 sm:mb-14">
                     <h2 className="font-heading font-black text-xl sm:text-2xl text-slate-800">
                       {language === 'bn' ? 'কার্যনির্বাহী পরিষদ সদস্যবৃন্দ' : 'Executive Council Members'}
@@ -238,13 +264,13 @@ const Committee = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10 max-w-5xl mx-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 sm:gap-10 max-w-5xl mx-auto items-start justify-items-center">
                     {executiveMembers.map((member) => (
                       <CommitteeCleanCard 
                         key={member.id} 
                         member={member} 
                         language={language} 
-                        isSmall 
+                        isCouncil
                         onOpenInfo={() => setSelectedMember(member)} 
                       />
                     ))}
@@ -256,19 +282,35 @@ const Committee = () => {
         </div>
       </section>
 
-      {/* Professional Member Details Dossier Modal */}
+      {/* =========================================================================
+          Professional Member Details Dossier Modal (Responsive with Prominent Close)
+      ========================================================================= */}
       <Dialog open={!!selectedMember} onOpenChange={(open) => !open && setSelectedMember(null)}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-3xl border-slate-200 shadow-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-lg p-0 max-h-[88vh] flex flex-col overflow-hidden rounded-3xl border border-emerald-500/30 shadow-2xl bg-white dark:bg-slate-950">
           {selectedMember && (
-            <div>
+            <div className="flex flex-col h-full overflow-hidden">
               {/* Executive Header Banner */}
-              <div className="bg-gradient-to-r from-[#0B6B3A] via-[#095A31] to-[#04331A] text-white p-6 pb-12 relative text-center">
-                <div className="absolute top-3 right-3">
+              <div className="bg-gradient-to-r from-[#0B6B3A] via-[#095A31] to-[#04331A] text-white p-6 pb-12 relative text-center shrink-0">
+                {/* Prominent Close Button Top-Right */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedMember(null)}
+                  className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center transition-all cursor-pointer z-30 shadow-md active:scale-95"
+                  title={language === 'bn' ? 'বন্ধ করুন' : 'Close'}
+                >
+                  <X className="w-4 h-4 stroke-[2.8]" />
+                </button>
+
+                {/* Left Header Tag */}
+                <div className="absolute top-3.5 left-4">
                   <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full bg-white/15 border border-white/20">
-                    {language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive Council'}
+                    {selectedMember.position_bn?.includes('পরিচালক') 
+                      ? (language === 'bn' ? 'পরিচালনা পরিষদ' : 'Directorate')
+                      : (language === 'bn' ? 'কার্যনির্বাহী পরিষদ' : 'Executive Council')}
                   </span>
                 </div>
-                <h4 className="text-xs font-semibold text-emerald-200 tracking-wide uppercase">
+
+                <h4 className="text-xs font-semibold text-emerald-200 tracking-wide uppercase mt-1">
                   {language === 'bn' ? 'সময়ের বাতিঘর ফাউন্ডেশন' : 'Somoyer Batighor Foundation'}
                 </h4>
                 <p className="text-[11px] text-white/70 mt-0.5">
@@ -276,44 +318,48 @@ const Committee = () => {
                 </p>
               </div>
 
-              {/* Overlapping Photo & Main Info */}
-              <div className="px-6 -mt-10 text-center">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white shadow-xl mx-auto bg-slate-50 relative z-10">
-                  <img
-                    src={selectedMember.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedMember.name_bn)}`}
-                    alt={selectedMember.name_bn}
-                    style={{ objectPosition: 'center 20%' }}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              {/* Scrollable Dossier Body */}
+              <div className="p-5 pt-0 space-y-4 overflow-y-auto flex-1 min-h-0">
+                {/* Overlapping Photo & Main Info */}
+                <div className="-mt-10 text-center">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 shadow-xl mx-auto bg-slate-50 relative z-10">
+                    <img
+                      src={selectedMember.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedMember.name_bn)}`}
+                      alt={selectedMember.name_bn}
+                      style={{ objectPosition: 'center 20%' }}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
-                <div className="mt-3 space-y-1">
-                  <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 leading-tight">
-                    {language === 'bn' ? selectedMember.name_bn : (selectedMember.name_en || selectedMember.name_bn)}
-                  </h3>
-                  {selectedMember.name_en && language === 'bn' && (
-                    <p className="text-xs text-slate-500 font-semibold">{selectedMember.name_en}</p>
-                  )}
-                  <div className="pt-1">
-                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-extrabold shadow-2xs">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>{language === 'bn' ? selectedMember.position_bn : (selectedMember.position_en || selectedMember.position_bn)}</span>
-                    </span>
+                  <div className="mt-3 space-y-1">
+                    <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-tight">
+                      {language === 'bn' ? selectedMember.name_bn : (selectedMember.name_en || selectedMember.name_bn)}
+                    </h3>
+                    {selectedMember.name_en && language === 'bn' && (
+                      <p className="text-xs text-slate-500 font-semibold">{selectedMember.name_en}</p>
+                    )}
+                    <div className="pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E6F4EA] border border-[#C8E6C9] text-[#0B6B3A] text-xs font-extrabold shadow-2xs">
+                        {selectedMember.position_bn?.includes('পরিচালক') ? (
+                          <Crown className="w-3.5 h-3.5 text-amber-500" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        )}
+                        <span>{language === 'bn' ? selectedMember.position_bn : (selectedMember.position_en || selectedMember.position_bn)}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Dossier Body Content */}
-              <div className="p-6 pt-4 space-y-4 max-h-[62vh] overflow-y-auto">
                 {/* 1. সংগঠনের ভূমিকা ও মূল দায়িত্ব (Role & Responsibilities) */}
                 {selectedMemberRole && (
-                  <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-2.5">
-                    <div className="flex items-center gap-2 text-slate-900 font-extrabold text-xs">
+                  <div className="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5">
+                    <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-xs">
                       <Briefcase className="w-4 h-4 text-[#0B6B3A]" />
                       <span>{language === 'bn' ? 'সংগঠনের ভূমিকা ও দায়িত্ব' : 'Role & Responsibilities'}:</span>
                       <span className="text-xs font-bold text-[#0B6B3A]">{selectedMemberRole.category}</span>
                     </div>
-                    <ul className="space-y-1.5 text-xs text-slate-600 pl-1">
+                    <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 pl-1">
                       {selectedMemberRole.responsibilities.map((resp, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
@@ -326,12 +372,12 @@ const Committee = () => {
 
                 {/* 2. Custom Bio / Short About Message */}
                 {customDetailsMap?.[selectedMember.id]?.about && (
-                  <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-1.5 text-xs text-slate-700">
-                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                    <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-bold">
                       <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>{language === 'bn' ? 'পরিচিতি ও বার্তা' : 'About / Bio'}</span>
                     </div>
-                    <p className="leading-relaxed italic pl-5 text-slate-600">
+                    <p className="leading-relaxed italic pl-5 text-slate-600 dark:text-slate-400">
                       "{customDetailsMap[selectedMember.id].about}"
                     </p>
                   </div>
@@ -339,22 +385,22 @@ const Committee = () => {
 
                 {/* 3. পরিচিতি, এলাকা ও কার্যকাল (Origin, Area & Term) */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1">
-                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+                  <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 space-y-1">
+                    <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-bold">
                       <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>{language === 'bn' ? 'উৎস ও এলাকা' : 'Origin & Area'}</span>
                     </div>
-                    <p className="font-semibold text-slate-800 pl-5">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 pl-5">
                       {language === 'bn' ? 'নওগাঁ জেলা, বাংলাদেশ' : 'Naogaon, Bangladesh'}
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-100 space-y-1">
-                    <div className="flex items-center gap-1.5 text-amber-900 font-bold">
+                  <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900 space-y-1">
+                    <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-300 font-bold">
                       <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                       <span>{language === 'bn' ? 'পরিষদ কার্যকাল' : 'Council Term'}</span>
                     </div>
-                    <p className="font-semibold text-slate-800 pl-5">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 pl-5">
                       {selectedMember.term_start 
                         ? `${new Date(selectedMember.term_start).getFullYear()} - ${selectedMember.term_end ? new Date(selectedMember.term_end).getFullYear() : 'চলমান'}`
                         : (language === 'bn' ? '২০২৪ - ২০২৬ পরিষদ' : '2024 - 2026 Term')}
@@ -364,10 +410,10 @@ const Committee = () => {
 
                 {/* 4. যোগাযোগ অ্যাকশন: কল ও কপি বাটন */}
                 {selectedMember.phone && (
-                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500 font-medium">{language === 'bn' ? 'মোবাইল নম্বর:' : 'Phone:'}</span>
-                      <span className="font-mono font-bold text-slate-900 text-sm tracking-wide">{selectedMember.phone}</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white text-sm tracking-wide">{selectedMember.phone}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
@@ -383,9 +429,9 @@ const Committee = () => {
                         type="button"
                         variant="outline"
                         onClick={() => selectedMember.phone && handleCopyPhone(selectedMember.phone)}
-                        className="rounded-xl border-slate-200 text-xs font-bold gap-1.5 hover:bg-slate-100 h-auto py-2.5"
+                        className="rounded-xl border-slate-200 dark:border-slate-700 text-xs font-bold gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 h-auto py-2.5"
                       >
-                        {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-700" />}
+                        {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />}
                         <span>{copiedPhone ? (language === 'bn' ? 'কপি হয়েছে' : 'Copied') : (language === 'bn' ? 'নম্বর কপি' : 'Copy')}</span>
                       </Button>
                     </div>
@@ -394,7 +440,7 @@ const Committee = () => {
 
                 {/* Additional Info: Member ID & Email */}
                 {(selectedMember.member_id || selectedMember.email) && (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1.5">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
                     {selectedMember.member_id && (
                       <div className="flex items-center justify-between">
                         <span>{language === 'bn' ? 'সদস্য পরিচিতি নম্বর:' : 'Member ID:'}</span>
@@ -407,11 +453,25 @@ const Committee = () => {
                           <Mail className="w-3 h-3 text-slate-400" />
                           <span>{language === 'bn' ? 'ইমেইল:' : 'Email:'}</span>
                         </span>
-                        <span className="font-mono text-slate-700 truncate max-w-[200px]">{selectedMember.email}</span>
+                        <span className="font-mono text-slate-700 dark:text-slate-300 truncate max-w-[200px]">{selectedMember.email}</span>
                       </div>
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Modal Footer with explicit Close Button */}
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedMember(null)}
+                  className="rounded-xl border-slate-300 dark:border-slate-700 text-xs font-bold gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>{language === 'bn' ? 'বন্ধ করুন' : 'Close'}</span>
+                </Button>
               </div>
             </div>
           )}
@@ -424,19 +484,22 @@ const Committee = () => {
 interface CommitteeCleanCardProps {
   member: CommitteeMember;
   language: string;
+  isDirector?: boolean;
   isPresident?: boolean;
   isTier2?: boolean;
+  isCouncil?: boolean;
   isSmall?: boolean;
   onOpenInfo: () => void;
 }
 
-// Clean, borderless committee card with larger photos on mobile and colorful (i) info button beside name
+// Clean, borderless committee card with prominent circular photo, head protection and colorful (i) info button beside name
 const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
   member,
   language,
+  isDirector,
   isPresident,
   isTier2,
-  isSmall,
+  isCouncil,
   onOpenInfo,
 }) => {
   const name = language === 'bn' ? member.name_bn : (member.name_en || member.name_bn);
@@ -447,21 +510,33 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
     e.currentTarget.src = fallbackImage;
   };
 
-  // Exact standard Tailwind dimensions with aspect-square to guarantee 100% perfect circle
-  const imageSize = isPresident 
+  // Prominent circular dimensions:
+  // Director: Largest, authoritative centerpiece
+  // President: Prominent top executive
+  // Tier 2: 3 core officers
+  // Council: Enlarged and clear on desktop as requested
+  const imageSize = isDirector
+    ? 'w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52'
+    : isPresident 
     ? 'w-36 h-36 sm:w-44 sm:h-44' 
     : isTier2 
-    ? 'w-24 h-24 sm:w-28 sm:h-28' 
-    : 'w-28 h-28 sm:w-32 sm:h-32';
+    ? 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36' 
+    : isCouncil
+    ? 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40'
+    : 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36';
 
   return (
-    <div className="text-center group flex flex-col items-center">
+    <div className="text-center group flex flex-col items-center w-full">
       {/* Relative container for Circular Image + Badge Pill */}
       <div className="relative mb-3.5 inline-block shrink-0">
-        {/* Round Image with elegant green border - Guaranteed Perfect Circle */}
+        {/* Round Image with elegant green/gold border - Guaranteed Perfect Circle */}
         <div className={`${imageSize} aspect-square rounded-full overflow-hidden border-4 ${
-          isPresident ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' : 'border-[#0B6B3A]/25 group-hover:border-[#0B6B3A]'
-        } transition-colors duration-300 mx-auto shadow-sm bg-slate-50 flex items-center justify-center shrink-0`}>
+          isDirector
+            ? 'border-[#0B6B3A] shadow-md ring-4 ring-[#9BD038]/30 group-hover:ring-[#9BD038]/60'
+            : isPresident 
+            ? 'border-[#0B6B3A]/40 group-hover:border-[#0B6B3A]' 
+            : 'border-[#0B6B3A]/30 group-hover:border-[#0B6B3A]'
+        } transition-all duration-300 mx-auto shadow-sm bg-slate-50 flex items-center justify-center shrink-0`}>
           <img
             src={member.photo_url || fallbackImage}
             alt={name}
@@ -472,25 +547,28 @@ const CommitteeCleanCard: React.FC<CommitteeCleanCardProps> = ({
         </div>
 
         {/* Position Badge Pill at bottom of circle */}
-        <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 sm:px-3 py-0.5 rounded-full text-white font-bold whitespace-nowrap shadow-xs ${
-          isPresident 
+        <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 sm:px-3.5 py-0.5 rounded-full text-white font-bold whitespace-nowrap shadow-xs flex items-center gap-1 ${
+          isDirector
+            ? 'bg-gradient-to-r from-[#0B6B3A] via-[#0e8045] to-[#14532d] text-xs sm:text-sm border border-amber-300'
+            : isPresident 
             ? 'bg-[#0B6B3A] text-xs sm:text-sm' 
             : isTier2
             ? 'bg-[#0B6B3A] text-[10px] sm:text-xs'
-            : 'bg-[#0B6B3A] text-[10px] sm:text-xs'
+            : 'bg-slate-800 text-[10px] sm:text-xs'
         }`}>
-          {position}
+          {isDirector && <Crown className="w-3 h-3 text-amber-300 shrink-0" />}
+          <span>{position}</span>
         </div>
       </div>
 
       {/* Member Name Section with Distinctive Colorful (i) Button at Corner */}
       <div className="flex items-center justify-center gap-1.5 mt-1.5 max-w-full px-1">
         <h3 className={`font-heading font-extrabold text-slate-900 group-hover:text-[#0B6B3A] transition-colors leading-tight ${
-          isPresident 
+          isDirector
+            ? 'text-lg sm:text-2xl md:text-3xl'
+            : isPresident 
             ? 'text-lg sm:text-2xl' 
-            : isTier2 
-            ? 'text-xs sm:text-base line-clamp-2' 
-            : 'text-xs sm:text-sm line-clamp-1'
+            : 'text-sm sm:text-base line-clamp-2'
         }`}>
           {name}
         </h3>

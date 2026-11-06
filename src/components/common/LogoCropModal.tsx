@@ -258,6 +258,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error cropping logo:', error);
+      alert(language === 'bn' ? 'ছবি ক্রপ করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।' : 'Error cropping image. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -277,8 +278,8 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSaving && !isProcessing && onClose()}>
-      <DialogContent className="max-w-2xl sm:max-w-3xl p-0 overflow-hidden rounded-3xl border border-[#11DFC0]/40 shadow-[0_20px_60px_rgba(17,223,192,0.18)] bg-white dark:bg-slate-950">
-        <DialogHeader className="p-5 sm:p-6 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white dark:from-emerald-950/40 dark:to-slate-900 border-b border-[#11DFC0]/30">
+      <DialogContent className="max-w-2xl sm:max-w-3xl p-0 max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-[#11DFC0]/40 shadow-[0_20px_60px_rgba(17,223,192,0.18)] bg-white dark:bg-slate-950">
+        <DialogHeader className="p-4 sm:p-5 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white dark:from-emerald-950/40 dark:to-slate-900 border-b border-[#11DFC0]/30 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-xl bg-[#11DFC0]/20 border border-[#11DFC0]/50 flex items-center justify-center text-teal-800 dark:text-teal-300 shadow-2xs">
@@ -301,9 +302,9 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
           </div>
         </DialogHeader>
 
-        {/* Interactive Cropper Area */}
-        <div className="p-5 sm:p-6 space-y-4">
-          <div className="relative w-full h-[280px] sm:h-[340px] bg-slate-950 rounded-2xl overflow-hidden shadow-inner border border-slate-800">
+        {/* Interactive Cropper Area - Fully scrollable on mobile and laptops */}
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+          <div className="relative w-full h-[250px] sm:h-[300px] bg-slate-950 rounded-2xl overflow-hidden shadow-inner border border-slate-800 shrink-0">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -498,7 +499,7 @@ export const LogoCropModal: React.FC<LogoCropModalProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row gap-2">
+        <DialogFooter className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row gap-2 shrink-0">
           <Button
             type="button"
             variant="outline"

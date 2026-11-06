@@ -46,6 +46,21 @@ export const getMemberRoleDetails = (
 
   const pos = (position || '').toLowerCase();
 
+  if (pos.includes('পরিচালক') || pos.includes('director')) {
+    return {
+      category: language === 'bn' ? 'প্রধান পরিচালনা ও সর্বোচ্চ দিকনির্দেশনা' : 'Chief Directorate & Direction',
+      responsibilities: language === 'bn' ? [
+        'সংগঠনের সামগ্রিক রূপরেখা, দীর্ঘমেয়াদী পরিকল্পনা ও ভিশন নির্ধারণ।',
+        'সকল প্রকল্প, সমাজকল্যাণমূলক কর্মসূচি ও প্রাতিষ্ঠানিক কার্যক্রমের সর্বোচ্চ তদারকি।',
+        'কার্যনির্বাহী পরিষদ ও উপদেষ্টা পরিষদের মাঝে সুষ্ঠু সমন্বয় রক্ষা ও উন্নয়ন নীতি অনুমোদন।'
+      ] : [
+        'Defines organizational vision, mission and strategic roadmap.',
+        'Supreme oversight of all developmental and humanitarian programs.',
+        'Harmonizes coordination between Executive and Advisory Councils.'
+      ]
+    };
+  }
+
   if (pos.includes('সভাপতি') && !pos.includes('সহ')) {
     return {
       category: language === 'bn' ? 'শীর্ষ নেতৃত্ব ও নীতিনির্ধারণ' : 'Supreme Executive Leadership',
