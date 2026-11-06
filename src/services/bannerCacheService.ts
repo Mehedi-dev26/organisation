@@ -152,3 +152,4 @@ export const preloadAllBanners = (slides: Array<{ image?: string; imageMobile?: 
     });
   }, 1000);
 };
+
